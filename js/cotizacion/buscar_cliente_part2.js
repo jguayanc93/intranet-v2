@@ -303,9 +303,14 @@ function mostrarSugerenciasProductos(productos) {
         const stock2 = document.createElement("p");
         stock2.className = "text-gray-600";
         stock2.innerHTML = `<span class="font-semibold text-blue-600">${producto[3]}</span> MYM.`;
+        /////revisar parte de inclusion de alm piura
+        const stock3 = document.createElement("p");
+        stock2.className = "text-gray-600";
+        stock2.innerHTML = `<span class="font-semibold text-blue-600">${producto[6]}</span> Piura.`;
         
         stockContainer.appendChild(stock1);
         stockContainer.appendChild(stock2);
+        stockContainer.appendChild(stock3);
         
         contenedor.appendChild(nombre);
         contenedor.appendChild(stockContainer);
