@@ -1,111 +1,90 @@
-// document.getElementById("loggin").addEventListener("click",()=>{
-//     let dataenviada=new Object();
-//     dataenviada.userclient=document.getElementById("user").value;
-//     dataenviada.passclient=document.getElementById("pass").value;
-//     let objefetch= new Object();
-//     objefetch.method="POST";
-//     objefetch.headers={"Content-Type":"application/json"};
-//     objefetch.mode="cors",
-//     objefetch.credentials="include";
-//     objefetch.body=JSON.stringify(dataenviada);
+/**
+ * Inicio de sesión.
+ *
+ * Un único manejador del submit: valida, envía y gobierna el indicador de carga
+ * con la respuesta real. Antes había dos manejadores compitiendo (ver el
+ * comentario de js/login/validacion.js).
+ *
+ * El envío sigue siendo FormData, como espera el backend. No se fija
+ * Content-Type a propósito: lo pone el navegador con su boundary.
+ */
+;(function () {
+    "use strict";
 
-//     fetch(rutalogin,objefetch)
-//     .then(resultado=>{
-//         if(resultado.ok){ return resultado.json(); }
-//         else{ return resultado.text(); }
-//     })
-//     .then(resultado=>{
-//         let decodificar = JSON.parse(resultado);
-//         console.log("cookie externa aceptada");
-//         window.location.replace("http://127.0.0.1/demo1/main.html")
-//     })
-//     .catch(err=>{
-//         document.getElementById("user").value="";
-//         document.getElementById("pass").value="";
-//         document.getElementById("respuesta").textContent="error en logeo";
-//         // document.getElementById("respuesta").textContent=`${err}`;
-//     })
-// })
+    var formulario = document.getElementById("cdk-logeo");
+    if (!formulario) return;
 
-document.getElementById("cdk-logeo").addEventListener("submit",logearse)
-function logearse(ev){
-    ev.preventDefault();
-    console.log("cancelado a tiempo accion por defecto")
-    //////////////////////////////
-    let form=document.getElementById("cdk-logeo");
-    let formulario=new FormData(form);
-    /////peticion completa con la data requerida en el lado del cliente
-    let peticion=new Request(rutalogin,{
-        method:"POST",
-        ////no sirve porqe se usa el tipo de constructor new FormData
-        // headers:{},
-        body:formulario,
-        mode:"cors",
-        credentials:"include"
-    })
-    ///////fechar la peticion para el exito
-    fetch(peticion)
-    .then(resultado=>{
-        if(!resultado.ok){
+    var validador = window.validadorLogin;
 
-            return resultado.json().then(errordata=>{
-                const ups = new Error(`HTTP error status: ${resultado.status}`)
-                ups.detalles=errordata;
-                throw ups;
-            })
-            // throw new Error(`HTTP error status: ${resultado.status}`);
-        }
-        return resultado.json();
-    })
-    .then(resultado=>{
-        let decodificar = JSON.parse(resultado);
-        console.log("que sucedera? con la redireccion");
-        // window.location.replace("http://127.0.0.1/demo1/main.html")
-        window.location.replace("https://landing.compudiskett.com.pe/main.html")
-    })
-    .catch(err=>{
-        console.log(err);
-        document.getElementById("user").value="";
-        document.getElementById("pass").value="";
-        document.getElementById("respuesta").textContent="usuario y/o password incorrecto";
-        if(err.detalles){error_manejador(err.detalles)}
-    })
-}
-
-function error_manejador(errobj){
-    ////MANEJA CON CUIDADO LOS PARAMETROS PORQE DEPENDERA DE LA REDIRECCION
-    switch (errobj.status) {
-        case "error query":
-            console.log("la webada fallo consulte con su equipo de sistemas");
-            break;
-
-        case "no cdk user":
-            console.log("oe weon no estas registrado en el navachof");
-            break;
-
-        case "falsa galleta":
-            console.log("que mrd hiciste con tu logeo en la sesion");
-            break;
-
-        case "no identificado":
-            // console.log("registrate primero chistoso para poder usar la intranet");
-            autenticarse();
-            break;
-    
-        default:
-            console.log("paso algo rarisimo y esqe nose que mrd es esto");
-            console.log(errobj.msg);
-            break;
+    function cargando(activo) {
+        if (validador) validador.cargando(activo);
     }
-}
 
-function autenticarse(){
-    window.location.assign("https://landing.compudiskett.com.pe/registro.html")
-    // let peticion=new Request(rutaidentificador,{
-    //     method:"POST",
-    //     // headers:{},
-    //     body:{"user":usuario},
-    //     mode:"cors",
-    //     credentials:"include"
-    // })
-}
+    function error(mensaje) {
+        if (validador) validador.mensaje(mensaje, "error");
+        else document.getElementById("respuesta").textContent = mensaje;
+    }
+
+    formulario.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+
+        // Ahora la validación sí frena el envío.
+        if (validador && !validador.validarTodo()) return;
+        if (validador) validador.ocultarMensaje();
+
+        cargando(true);
+
+        // sin401: aquí un 401 significa "credenciales incorrectas", no "sesión
+        // expirada". Sin esto, el guard mandaría al login estando ya en el login.
+        CDK.http.post(CDK.rutas.api("/login"), new FormData(formulario), { sin401: true })
+            .then(function () {
+                // No se quita el indicador: la página está a punto de cambiar y
+                // devolver el botón a su estado normal produce un parpadeo.
+                location.replace(CDK.rutas.inicio());
+            })
+            .catch(function (err) {
+                cargando(false);
+
+                document.getElementById("user").value = "";
+                document.getElementById("pass").value = "";
+
+                if (err.status === 0) {
+                    error("No se pudo conectar con el servidor. Revisa tu conexión.");
+                    return;
+                }
+
+                error("Usuario y/o contraseña incorrectos");
+
+                if (err.detalles) manejarDetalle(err.detalles);
+            });
+    });
+
+    /**
+     * El backend acompaña el error de un campo `status` con texto propio, que no
+     * es el código HTTP.
+     */
+    function manejarDetalle(detalle) {
+        switch (detalle.status) {
+            case "no identificado":
+                // Cuenta válida que aún no ha completado su registro.
+                location.assign(CDK.rutas.registro());
+                break;
+
+            case "no cdk user":
+                error("Esta cuenta no está registrada en el sistema.");
+                break;
+
+            case "falsa galleta":
+                error("Tu sesión anterior quedó en mal estado. Vuelve a intentarlo.");
+                break;
+
+            case "error query":
+                error("Hubo un problema en el servidor. Avisa al equipo de sistemas.");
+                break;
+
+            default:
+                console.error("[login] respuesta no contemplada:", detalle);
+                break;
+        }
+    }
+})();

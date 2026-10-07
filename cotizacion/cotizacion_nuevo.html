@@ -4,706 +4,434 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Crear nueva cotización - CDK Sistema de Gestión de Ventas">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>CDK - Crear Cotización</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <!-- Tailwind y Font Awesome se retiraron: la página no usa ni una clase de
+         ninguno de los dos desde el rediseño. El CDN de Tailwind no es gratis
+         aunque no se use: instala un MutationObserver y reescanea el DOM en
+         cada cambio, y esta pantalla repinta listas todo el rato. -->
+    <title>CDK · Crear Cotización</title>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-  
-  <!-- HEADER/NAVBAR -->
-  <nav class="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
-    <div class="px-4 py-3 sm:px-6">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center space-x-2">
-          <h1 class="text-lg sm:text-xl font-bold text-indigo-600">CDK</h1>
-          <span class="text-xs sm:text-sm text-gray-600">Crear Cotización</span>
+
+<!-- La barra superior, el menú lateral y la barra inferior los inyecta
+     core/cdk-shell.js. El botón de volver lleva al hub del módulo, no al
+     panel, para no saltarse un nivel. -->
+<body data-modulo="cotizacion" data-titulo="Crear Cotización">
+
+  <main class="cdk-pagina">
+
+    <!-- ===================== PASO 1 · CLIENTE ===================== -->
+    <section class="cdk-seccion cdk-seccion--paso">
+      <div class="cdk-paso__cabecera">
+        <span class="cdk-paso__numero">1</span>
+        <h2 class="cdk-paso__titulo">Cliente</h2>
+      </div>
+
+      <div class="cdk-buscador">
+        <div class="cdk-buscador__campo">
+          <button id="btn-buscar-cliente" type="button" class="cdk-boton cdk-boton--suave" style="width:100%">
+            Buscar cliente
+          </button>
         </div>
-        <a href="/main.html" 
-        class="flex items-center justify-center space-x-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs sm:text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
-          <i class="fas fa-home"></i>
-          <span class="hidden sm:inline">Menú</span>
-        </a>
-      </div>
-    </div>
-  </nav>
-
-  <!-- MAIN CONTAINER -->
-  <main class="px-4 py-4 sm:px-6 pb-20">
-    
-    <!-- PASO 1: BUSCAR CLIENTE - COMPACTO PARA MOBILE -->
-    <div class="bg-white rounded-lg shadow-md p-4 mb-4 border-l-4 border-indigo-600">
-      <div class="flex items-center mb-3">
-        <div class="flex items-center justify-center w-6 h-6 bg-indigo-600 text-white rounded-full font-bold text-xs">1</div>
-        <h2 class="ml-2 text-base sm:text-lg font-bold text-gray-900">
-          <i class="fas fa-user mr-2 text-indigo-600"></i>
-          Cliente
-        </h2>
-      </div>
-
-      <!-- Búsqueda + Moneda en fila compacta -->
-      <div class="flex gap-2 mb-3">
-        <button id="btn-buscar-cliente" type="button"
-        class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border-2 border-indigo-200 bg-indigo-50 text-indigo-700 font-medium text-sm transition-colors hover:bg-indigo-100 active:scale-95">
-          <i class="fas fa-search"></i>
-          <span>Buscar</span>
-        </button>
-        <select id="alm" name="alm" 
-        class="px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors focus:border-indigo-500 focus:outline-none">
-          <option value="D">💵 USD</option>
-          <option value="S">S/ PEN</option>
+        <!-- El <select> se llama "alm" por herencia, pero aquí es la MONEDA
+             del documento. Ver js/cotizacion/moneda.js. -->
+        <select id="alm" name="alm" class="cdk-entrada" aria-label="Moneda" style="width:auto">
+          <option value="D">USD</option>
+          <option value="S">PEN</option>
         </select>
       </div>
 
-      <!-- Cliente seleccionado -->
-      <div id="cliente-seleccionado" class="hidden">
-        <div class="px-3 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-check-circle text-green-600"></i>
-            <span id="nombre-cliente" class="text-sm font-medium text-gray-900"></span>
+      <!-- El RUC va aquí a propósito: con razones sociales tan parecidas
+           entre sí, es lo único que confirma que es el cliente correcto.
+           El círculo indicará si el cliente tiene línea de crédito
+           disponible, en cuanto el backend envíe ese dato. -->
+      <div id="cliente-seleccionado" class="hidden" style="margin-top:12px">
+        <div class="cdk-elegido">
+          <span id="credito-cliente" class="cdk-credito cdk-credito--nd" title="Sin información de crédito">–</span>
+          <div class="cdk-elegido__datos">
+            <div id="nombre-cliente" class="cdk-elegido__nombre"></div>
+            <div id="detalle-cliente" class="cdk-elegido__detalle"></div>
           </div>
-          <button id="btn-cambiar-cliente" type="button"
-          class="text-xs font-medium text-indigo-600 hover:text-indigo-700 underline">
-            Cambiar
-          </button>
+          <button id="btn-cambiar-cliente" type="button" class="cdk-enlace-accion">Cambiar</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- BOTTOM SHEET MODAL DE BÚSQUEDA -->
-    <div id="modal-busqueda-cliente" class="fixed inset-0 z-40 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop"></div>
-      
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom">
-        <!-- HEADER DEL MODAL -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-          <h3 class="text-lg font-bold text-gray-900">Buscar Cliente</h3>
-          <button id="btn-cerrar-busqueda" type="button"
-          class="p-1 text-gray-500 hover:text-gray-700 transition-colors">
-            <i class="fas fa-times text-xl"></i>
+    <!-- ============ PANEL DE BÚSQUEDA DE CLIENTE ============ -->
+    <div id="modal-busqueda-cliente" class="cdk-panel hidden" role="dialog" aria-modal="true" aria-labelledby="titulo-busca-cliente">
+      <div class="cdk-panel__fondo" id="modal-backdrop"></div>
+
+      <div class="cdk-panel__caja">
+        <div class="cdk-panel__cabecera">
+          <h3 class="cdk-panel__titulo" id="titulo-busca-cliente">Buscar cliente</h3>
+          <button id="btn-cerrar-busqueda" type="button" class="cdk-panel__cerrar" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" class="cdk-icono" aria-hidden="true">
+              <path d="M6 18 18 6M6 6l12 12"/>
+            </svg>
           </button>
         </div>
 
-        <!-- CONTENIDO DEL MODAL -->
-        <div class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          
-          <!-- INPUT DE BÚSQUEDA -->
-          <div class="relative">
-            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
-            <input type="search" id="input-busqueda" 
-            class="w-full pl-9 pr-9 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 text-sm transition-colors focus:border-indigo-500 focus:outline-none placeholder:text-gray-400"
-            placeholder="Nombre o RUC...">
-            <button id="btn-limpiar-busqueda" type="button"
-            class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 hidden">
-              <i class="fas fa-times-circle text-lg"></i>
+        <div class="cdk-panel__cuerpo">
+          <div class="cdk-busca">
+            <svg class="cdk-busca__lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+              <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+            </svg>
+
+            <!-- type="search" da la X nativa del navegador; inputmode queda
+                 en texto porque se busca tanto por nombre como por RUC. -->
+            <input type="search" id="input-busqueda" class="cdk-entrada"
+                   placeholder="Razón social o RUC" autocomplete="off"
+                   enterkeyhint="search" aria-describedby="indicador-busqueda">
+
+            <button id="btn-limpiar-busqueda" type="button" class="cdk-busca__limpiar hidden" aria-label="Limpiar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" class="cdk-icono cdk-icono--sm" aria-hidden="true">
+                <path d="M6 18 18 6M6 6l12 12"/>
+              </svg>
             </button>
           </div>
 
-          <!-- INDICADOR DE BÚSQUEDA -->
-          <div id="indicador-busqueda" class="text-xs text-gray-500 hidden">
-            <i class="fas fa-info-circle mr-1"></i>
-            Escribe al menos 3 caracteres
+          <p id="indicador-busqueda" class="cdk-pista hidden">
+            Escribe al menos 3 letras, o un RUC completo de 11 dígitos.
+          </p>
+
+          <div id="busqueda-loading" class="cdk-estado hidden">
+            <div class="cdk-spinner"></div>
+            <p class="cdk-estado__texto">Buscando…</p>
           </div>
 
-          <!-- LOADING -->
-          <div id="busqueda-loading" class="hidden py-4 text-center">
-            <div class="inline-block">
-              <i class="fas fa-spinner fa-spin text-indigo-600 text-lg"></i>
-              <p class="text-sm text-gray-600 mt-2">Buscando...</p>
-            </div>
-          </div>
+          <div id="recorrer-clientes" style="margin-top:12px"></div>
 
-          <!-- LISTA DE SUGERENCIAS -->
-          <div id="recorrer-clientes" class="space-y-2"></div>
-
-          <!-- SIN RESULTADOS -->
-          <div id="sin-resultados" class="hidden py-8 text-center">
-            <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
-            <p class="text-sm text-gray-600">No se encontraron clientes</p>
+          <div id="sin-resultados" class="cdk-estado hidden">
+            <p class="cdk-estado__texto">No se encontró ningún cliente con ese dato.</p>
           </div>
         </div>
 
-        <!-- FOOTER DEL MODAL -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-          <button id="btn-cancelar-busqueda" type="button"
-          class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
+        <div class="cdk-panel__pie">
+          <button id="btn-cancelar-busqueda" type="button" class="cdk-boton cdk-boton--suave" style="width:100%">
             Cancelar
           </button>
         </div>
       </div>
     </div>
 
-    <!-- PASO 2: BUSCAR PRODUCTOS -->
-    <div id="paso2" class="bg-white rounded-lg shadow-md p-4 mb-4 border-l-4 border-green-600 hidden">
-      <div class="flex items-center mb-3">
-        <div class="flex items-center justify-center w-6 h-6 bg-green-600 text-white rounded-full font-bold text-xs">2</div>
-        <h2 class="ml-2 text-base sm:text-lg font-bold text-gray-900">
-          <i class="fas fa-box mr-2 text-green-600"></i>
-          Productos
-        </h2>
+    <!-- ===================== PASO 2 · PRODUCTOS ===================== -->
+    <section id="paso2" class="cdk-seccion cdk-seccion--paso hidden">
+      <div class="cdk-paso__cabecera">
+        <span class="cdk-paso__numero">2</span>
+        <h2 class="cdk-paso__titulo">Productos</h2>
       </div>
 
-      <!-- Búsqueda normal + Búsqueda por voz -->
-      <div class="flex gap-2 mb-3">
-        <button id="btn-buscar-producto" type="button"
-        class="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border-2 border-green-200 bg-green-50 text-green-700 font-medium text-sm transition-colors hover:bg-green-100 active:scale-95">
-          <i class="fas fa-search"></i>
-          <span>Buscar</span>
-        </button>
-        <button id="btn-buscar-voz" type="button"
-        class="px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-700 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95 relative group">
-          <i class="fas fa-microphone"></i>
-          <span id="estado-voz" class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-            Comenzar a escuchar
-          </span>
-        </button>
-      </div>
-    </div>
+      <!-- El botón de micrófono se retiró: solo cambiaba el texto a
+           "Escuchando..." sin reconocimiento de voz detrás. Para reponerlo
+           habría que conectar js/audio/, que hoy no carga ninguna página. -->
+      <button id="btn-buscar-producto" type="button" class="cdk-boton cdk-boton--suave" style="width:100%">
+        Buscar producto
+      </button>
+    </section>
 
-    <!-- BOTTOM SHEET MODAL DE BÚSQUEDA DE PRODUCTOS -->
-    <div id="modal-busqueda-producto" class="fixed inset-0 z-40 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop-producto"></div>
-      
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom">
-        <!-- HEADER DEL MODAL -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-          <h3 class="text-lg font-bold text-gray-900">Buscar Producto</h3>
-          <button id="btn-cerrar-busqueda-producto" type="button"
-          class="p-1 text-gray-500 hover:text-gray-700 transition-colors">
-            <i class="fas fa-times text-xl"></i>
+    <!-- ============ PANEL DE BÚSQUEDA DE PRODUCTO ============ -->
+    <div id="modal-busqueda-producto" class="cdk-panel hidden" role="dialog" aria-modal="true" aria-labelledby="titulo-busca-producto">
+      <div class="cdk-panel__fondo" id="modal-backdrop-producto"></div>
+
+      <div class="cdk-panel__caja">
+        <div class="cdk-panel__cabecera">
+          <h3 class="cdk-panel__titulo" id="titulo-busca-producto">Buscar producto</h3>
+          <button id="btn-cerrar-busqueda-producto" type="button" class="cdk-panel__cerrar" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" class="cdk-icono" aria-hidden="true">
+              <path d="M6 18 18 6M6 6l12 12"/>
+            </svg>
           </button>
         </div>
 
-        <!-- CONTENIDO DEL MODAL -->
-        <div class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          
-          <!-- SELECTOR DE TIPO DE BÚSQUEDA -->
-          <div>
-            <label class="block text-xs font-semibold text-gray-700 mb-2">Tipo de Búsqueda</label>
-            <select id="tipo-busqueda-producto"
-            class="w-full px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors focus:border-green-500 focus:outline-none">
-              <option value="1">📋 Descripción</option>
-              <option value="2">🔍 Part Number</option>
+        <div class="cdk-panel__cuerpo">
+          <div class="cdk-campo">
+            <label class="cdk-campo__etiqueta" for="tipo-busqueda-producto">Buscar por</label>
+            <!-- Cambiar de tipo rebusca lo ya escrito, sin tener que reteclear. -->
+            <select id="tipo-busqueda-producto" class="cdk-entrada">
+              <option value="1">Descripción</option>
+              <option value="2">Part number</option>
             </select>
           </div>
 
-          <!-- INPUT DE BÚSQUEDA -->
-          <div class="relative">
-            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
-            <input type="search" id="input-busqueda-producto" 
-            class="w-full pl-9 pr-9 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 text-sm transition-colors focus:border-green-500 focus:outline-none placeholder:text-gray-400"
-            placeholder="Nombre o Part Number...">
-            <button id="btn-limpiar-busqueda-producto" type="button"
-            class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 hidden">
-              <i class="fas fa-times-circle text-lg"></i>
+          <div class="cdk-busca">
+            <svg class="cdk-busca__lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+              <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+            </svg>
+
+            <input type="search" id="input-busqueda-producto" class="cdk-entrada"
+                   placeholder="Nombre o part number" autocomplete="off"
+                   enterkeyhint="search" aria-describedby="indicador-busqueda-producto">
+
+            <button id="btn-limpiar-busqueda-producto" type="button" class="cdk-busca__limpiar hidden" aria-label="Limpiar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" class="cdk-icono cdk-icono--sm" aria-hidden="true">
+                <path d="M6 18 18 6M6 6l12 12"/>
+              </svg>
             </button>
           </div>
 
-          <!-- INDICADOR DE BÚSQUEDA -->
-          <div id="indicador-busqueda-producto" class="text-xs text-gray-500 hidden">
-            <i class="fas fa-info-circle mr-1"></i>
-            Escribe al menos 3 caracteres
+          <p id="indicador-busqueda-producto" class="cdk-pista hidden">
+            Escribe al menos 3 caracteres.
+          </p>
+
+          <div id="busqueda-producto-loading" class="cdk-estado hidden">
+            <div class="cdk-spinner"></div>
+            <p class="cdk-estado__texto">Buscando…</p>
           </div>
 
-          <!-- LOADING -->
-          <div id="busqueda-producto-loading" class="hidden py-4 text-center">
-            <div class="inline-block">
-              <i class="fas fa-spinner fa-spin text-green-600 text-lg"></i>
-              <p class="text-sm text-gray-600 mt-2">Buscando productos...</p>
-            </div>
-          </div>
+          <div id="recorrer-productos" style="margin-top:12px"></div>
 
-          <!-- LISTA DE SUGERENCIAS -->
-          <div id="recorrer-productos" class="space-y-2"></div>
-
-          <!-- SIN RESULTADOS -->
-          <div id="sin-resultados-producto" class="hidden py-8 text-center">
-            <i class="fas fa-search text-4xl text-gray-300 mb-3"></i>
-            <p class="text-sm text-gray-600">No se encontraron productos</p>
+          <div id="sin-resultados-producto" class="cdk-estado hidden">
+            <p class="cdk-estado__texto">No se encontró ningún producto con ese dato.</p>
           </div>
         </div>
 
-        <!-- FOOTER DEL MODAL -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-          <button id="btn-cancelar-busqueda-producto" type="button"
-          class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
-            Cancelar
+        <div class="cdk-panel__pie">
+          <!-- El panel ya no se cierra al agregar, asi que se lleva la cuenta
+               de lo que va entrando y el boton dice "Listo", no "Cancelar". -->
+          <p id="conteo-agregados" class="cdk-pista hidden" aria-live="polite"></p>
+          <button id="btn-cancelar-busqueda-producto" type="button" class="cdk-boton cdk-boton--primario" style="width:100%">
+            Listo
           </button>
         </div>
       </div>
     </div>
 
-    <!-- MODAL DE CONFIRMACIÓN DE PRODUCTO -->
-    <div id="modal-confirmacion-producto" class="fixed inset-0 z-40 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop-confirmacion"></div>
-      
-      <div class="fixed inset-0 overflow-y-auto z-50 flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md animate-in slide-in-from-bottom sm:slide-in-from-center">
-          
-          <!-- HEADER -->
-          <div class="px-4 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-gray-900">
-              <i class="fas fa-check-circle text-green-600 mr-2"></i>
-              Confirmar Producto
-            </h3>
+    <!-- ===================== PASO 3 · CARRITO ===================== -->
+    <section id="paso3" class="cdk-seccion cdk-seccion--paso hidden">
+      <div class="cdk-paso__cabecera">
+        <span class="cdk-paso__numero">3</span>
+        <h2 class="cdk-paso__titulo">Carrito</h2>
+        <!-- Cuantos y cuanto, sin abrir nada: es lo que mas se mira. -->
+        <span id="cantidad-productos" class="cdk-paso__resumen">0 productos</span>
+      </div>
+
+      <!-- Las lineas y, debajo, las promociones adjuntas. Tocar una linea la
+           edita: antes habia que abrir "Modificar", elegir el producto y recien
+           entonces editar, tres toques para lo mismo. -->
+      <div id="lista-carrito"></div>
+
+      <div id="totales-carrito" class="cdk-totales" style="margin-top:12px"></div>
+
+      <div class="cdk-acciones-fila">
+        <button id="btn-promociones" type="button" class="cdk-boton cdk-boton--suave" style="width:100%">
+          Buscar promociones
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ PANEL DE EDITAR PRODUCTO ============ -->
+    <div id="modal-editar-producto" class="cdk-panel hidden" role="dialog" aria-modal="true" aria-labelledby="titulo-editar-producto">
+      <div class="cdk-panel__fondo" id="modal-backdrop-editar"></div>
+
+      <div class="cdk-panel__caja">
+        <div class="cdk-panel__cabecera">
+          <div>
+            <h3 class="cdk-panel__titulo" id="titulo-editar-producto">Modificar producto</h3>
+            <p id="edit-producto-nombre" class="cdk-pista"></p>
+          </div>
+          <button id="btn-cerrar-edicion" type="button" class="cdk-panel__cerrar" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" class="cdk-icono" aria-hidden="true">
+              <path d="M6 18 18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="cdk-panel__cuerpo">
+          <!-- Modificar una linea retira las promociones: sus umbrales se
+               midieron contra el carrito de antes. Se avisa aqui, no despues. -->
+          <p id="edit-aviso-promos" class="cdk-ficha__aviso hidden"></p>
+
+          <div class="cdk-pareja">
+            <div class="cdk-campo">
+              <label class="cdk-campo__etiqueta" for="edit-cantidad">Cantidad</label>
+              <!-- Mismo contador que el paso 2: campo escribible con - y +.
+                   Solo con botones, pasar de 1 a 40 serian 39 toques. -->
+              <div class="cdk-contador">
+                <button id="edit-cantidad-menos" type="button" class="cdk-contador__boton" aria-label="Quitar uno">−</button>
+                <input type="text" id="edit-cantidad" class="cdk-contador__campo"
+                       inputmode="numeric" autocomplete="off" value="1" aria-label="Cantidad">
+                <button id="edit-cantidad-mas" type="button" class="cdk-contador__boton" aria-label="Agregar uno">+</button>
+              </div>
+              <p id="error-edit-cantidad" class="cdk-campo__error hidden"></p>
+            </div>
+
+            <div class="cdk-campo">
+              <label class="cdk-campo__etiqueta" for="edit-descuento">
+                Descuento <span class="cdk-campo__pista">máx. <span id="edit-descuento-maximo">0.00%</span></span>
+              </label>
+              <input type="number" id="edit-descuento" class="cdk-entrada"
+                     inputmode="decimal" min="0" step="0.01" value="0.00">
+              <p id="error-edit-descuento" class="cdk-campo__error hidden"></p>
+            </div>
           </div>
 
-          <!-- CONTENIDO -->
-          <div class="px-4 py-4 space-y-4">
-            
-            <!-- INFO DEL PRODUCTO -->
-            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p class="text-xs text-gray-600 mb-1">Descripción</p>
-              <p id="conf-producto-descripcion" class="font-semibold text-gray-900 text-sm"></p>
-              <div class="grid grid-cols-2 gap-2 mt-2">
-                <div>
-                  <p class="text-xs text-gray-600">Stock Principal</p>
-                  <p id="conf-producto-stock1" class="font-bold text-blue-600"></p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-600">Stock Secundario</p>
-                  <p id="conf-producto-stock2" class="font-bold text-blue-600"></p>
-                </div>
-              </div>
+          <div class="cdk-totales" style="margin-top:4px">
+            <div class="cdk-total cdk-total--principal">
+              <span class="cdk-total__etiqueta">Importe</span>
+              <span class="cdk-total__valor">
+                <span id="edit-moneda-venta"></span> <span id="edit-valor-venta">0.00</span>
+              </span>
             </div>
-
-            <!-- PRECIO UNITARIO Y DESCUENTO MÁXIMO -->
-            <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <p class="text-xs text-gray-600 mb-1">Precio Unitario</p>
-                  <p class="font-bold text-purple-600 text-sm">
-                    <span id="conf-precio-unitario">0.00</span>
-                    <span id="conf-moneda-precio" class="text-xs ml-1">USD</span>
-                  </p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-600 mb-1">Desc. Máximo</p>
-                  <p id="conf-descuento-maximo" class="font-bold text-purple-600 text-sm">0.00%</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- VALOR DE VENTA -->
-            <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-              <p class="text-xs text-gray-600 mb-1">Valor de Venta</p>
-              <p class="font-bold text-green-600 text-lg">
-                <span id="conf-valor-venta">0.00</span>
-                <span id="conf-moneda-venta" class="text-sm ml-1">USD</span>
-              </p>
-            </div>
-
-            <!-- CANTIDAD -->
-            <div>
-              <label for="conf-cantidad" class="block text-sm font-semibold text-gray-900 mb-2">
-                Cantidad <span class="text-red-600">*</span>
-              </label>
-              <div class="relative">
-                <input type="number" id="conf-cantidad" 
-                min="1" max="500" value="1"
-                class="w-full px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 text-sm transition-colors focus:border-green-500 focus:outline-none">
-              </div>
-              <p class="text-xs text-gray-500 mt-1">Mínimo: 1 | Máximo: 500</p>
-              <p id="error-cantidad" class="text-xs text-red-600 mt-1 hidden"></p>
-            </div>
-
-            <!-- DESCUENTO -->
-            <div>
-              <label for="conf-descuento" class="block text-sm font-semibold text-gray-900 mb-2">
-                Descuento (%)
-              </label>
-              <div class="relative">
-                <input type="number" id="conf-descuento" 
-                min="0" max="100" step="0.01" value="0.00" placeholder="0.00"
-                class="w-full px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 text-sm transition-colors focus:border-green-500 focus:outline-none">
-                <span class="absolute right-3 top-3 text-gray-500 text-sm">%</span>
-              </div>
-              <p class="text-xs text-gray-500 mt-1">Máximo 2 decimales</p>
-              <p id="error-descuento" class="text-xs text-red-600 mt-1 hidden"></p>
-            </div>
-
           </div>
+        </div>
 
-          <!-- FOOTER -->
-          <div class="px-4 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl space-y-2">
-            <button id="btn-confirmar-producto" type="button"
-            class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-sm transition-colors hover:from-green-600 hover:to-green-700 active:scale-95 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:opacity-60">
-              <i class="fas fa-check mr-2"></i>
-              Agregar al Carrito
-            </button>
-            <button id="btn-cancelar-confirmacion-producto" type="button"
-            class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
+        <div class="cdk-panel__pie">
+          <div class="cdk-pareja">
+            <button id="btn-cancelar-edicion" type="button" class="cdk-boton cdk-boton--suave">
               Cancelar
             </button>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- PASO 3: CARRITO DE PRODUCTOS -->
-    <div id="paso3" class="bg-white rounded-lg shadow-md p-4 mb-4 border-l-4 border-blue-600 hidden">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center">
-          <div class="flex items-center justify-center w-6 h-6 bg-blue-600 text-white rounded-full font-bold text-xs">3</div>
-          <h2 class="ml-2 text-base sm:text-lg font-bold text-gray-900">
-            <i class="fas fa-shopping-cart mr-2 text-blue-600"></i>
-            Carrito
-          </h2>
-        </div>
-      </div>
-      <p class="text-xs sm:text-sm text-gray-600 mb-4">
-        <i class="fas fa-info-circle mr-1 text-blue-500"></i>
-        Revisa los productos antes de generar la cotización
-      </p>
-
-      <!-- RESUMEN DE PRODUCTOS -->
-      <div id="resumen-productos" class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <p class="text-xs text-gray-600 mb-1">Productos seleccionados</p>
-        <p id="cantidad-productos" class="text-sm font-bold text-blue-600">0 productos</p>
-      </div>
-
-      <!-- BOTONES DE ACCIONES -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <button id="btn-detallado" type="button"
-        class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-blue-300 bg-blue-50 text-blue-700 font-medium text-sm transition-colors hover:bg-blue-100 active:scale-95">
-          <i class="fas fa-eye"></i>
-          <span>Detallado</span>
-        </button>
-        <button id="btn-modificar" type="button"
-        class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-amber-300 bg-amber-50 text-amber-700 font-medium text-sm transition-colors hover:bg-amber-100 active:scale-95">
-          <i class="fas fa-edit"></i>
-          <span>Modificar</span>
-        </button>
-        <button id="btn-promociones" type="button"
-        class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-purple-300 bg-purple-50 text-purple-700 font-medium text-sm transition-colors hover:bg-purple-100 active:scale-95">
-          <i class="fas fa-gift"></i>
-          <span>Promociones</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- MODAL DETALLADO - Ver productos -->
-    <div id="modal-detallado" class="fixed inset-0 z-40 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop-detallado"></div>
-      
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom">
-        <!-- HEADER -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-          <h3 class="text-lg font-bold text-gray-900">Detallado de Productos</h3>
-          <button id="btn-cerrar-detallado" type="button"
-          class="p-1 text-gray-500 hover:text-gray-700 transition-colors">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-
-        <!-- CONTENIDO -->
-        <div class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          <div id="lista-detallado" class="space-y-3"></div>
-        </div>
-
-        <!-- TOTALES -->
-        <div class="px-4 py-4 border-t border-gray-200 bg-gray-50 space-y-2">
-          <div class="grid grid-cols-2 gap-2">
-            <div class="p-3 bg-white rounded-lg border border-gray-200">
-              <p class="text-xs text-gray-600 mb-1">Sin Venta sin IGV</p>
-              <p id="total-sin-igv" class="text-lg font-bold text-gray-900">0.00</p>
-            </div>
-            <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-              <p class="text-xs text-gray-600 mb-1">Venta con IGV (18%)</p>
-              <p id="total-con-igv" class="text-lg font-bold text-green-600">0.00</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl space-y-2">
-          <button id="btn-ok-detallado" type="button"
-          class="w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium text-sm transition-colors hover:bg-blue-700 active:scale-95">
-            OK
-          </button>
-          <button id="btn-conformidad" type="button"
-          class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
-            Conformidad
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL MODIFICAR - Seleccionar y modificar producto -->
-    <div id="modal-modificar" class="fixed inset-0 z-40 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop-modificar"></div>
-      
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom">
-        <!-- HEADER -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
-          <h3 class="text-lg font-bold text-gray-900">Modificar Productos</h3>
-          <button id="btn-cerrar-modificar" type="button"
-          class="p-1 text-gray-500 hover:text-gray-700 transition-colors">
-            <i class="fas fa-times text-xl"></i>
-          </button>
-        </div>
-
-        <!-- CONTENIDO -->
-        <div class="flex-1 overflow-y-auto px-4 py-4">
-          <div id="lista-productos-modificar" class="space-y-2"></div>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
-          <button id="btn-cancelar-modificar" type="button"
-          class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL EDITAR PRODUCTO (dentro de Modificar) -->
-    <div id="modal-editar-producto" class="fixed inset-0 z-50 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop-editar"></div>
-      
-      <div class="fixed inset-0 overflow-y-auto z-50 flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md animate-in slide-in-from-bottom sm:slide-in-from-center">
-          
-          <!-- HEADER -->
-          <div class="px-4 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-gray-900">
-              <i class="fas fa-edit text-amber-600 mr-2"></i>
-              Modificar Producto
-            </h3>
-            <p id="edit-producto-nombre" class="text-sm text-gray-600 mt-1"></p>
-          </div>
-
-          <!-- CONTENIDO -->
-          <div class="px-4 py-4 space-y-4">
-            
-            <!-- CANTIDAD -->
-            <div>
-              <label for="edit-cantidad" class="block text-sm font-semibold text-gray-900 mb-2">
-                Cantidad <span class="text-red-600">*</span>
-              </label>
-              <input type="number" id="edit-cantidad" 
-              min="1" max="500" value="1"
-              class="w-full px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 text-sm transition-colors focus:border-amber-500 focus:outline-none">
-              <p class="text-xs text-gray-500 mt-1">Mínimo: 1 | Máximo: 500</p>
-              <p id="error-edit-cantidad" class="text-xs text-red-600 mt-1 hidden"></p>
-            </div>
-
-            <!-- DESCUENTO -->
-            <div>
-              <label for="edit-descuento" class="block text-sm font-semibold text-gray-900 mb-2">
-                Descuento (%)
-              </label>
-              <input type="number" id="edit-descuento" 
-              min="0" max="100" step="0.01" value="0.00" placeholder="0.00"
-              class="w-full px-3 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 text-sm transition-colors focus:border-amber-500 focus:outline-none">
-              <p class="text-xs text-gray-500 mt-1">Máximo 2 decimales</p>
-              <p id="error-edit-descuento" class="text-xs text-red-600 mt-1 hidden"></p>
-            </div>
-
-            <!-- VALOR DE VENTA PREVIEW -->
-            <div class="p-3 bg-green-50 rounded-lg border border-green-200">
-              <p class="text-xs text-gray-600 mb-1">Valor de Venta</p>
-              <p id="edit-valor-venta" class="text-lg font-bold text-green-600">0.00</p>
-            </div>
-
-          </div>
-
-          <!-- FOOTER -->
-          <div class="px-4 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl space-y-2">
-            <button id="btn-guardar-cambios" type="button"
-            class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold text-sm transition-colors hover:from-amber-600 hover:to-amber-700 active:scale-95">
-              <i class="fas fa-save mr-2"></i>
-              Guardar Cambios
-            </button>
-            <button id="btn-cancelar-edicion" type="button"
-            class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
-              Cancelar Modificación
+            <button id="btn-guardar-cambios" type="button" class="cdk-boton cdk-boton--primario">
+              Guardar
             </button>
           </div>
-
         </div>
       </div>
     </div>
 
     <!-- MODAL PROMOCIONES - Ver promociones disponibles -->
-    <div id="modal-promociones" class="fixed inset-0 z-40 hidden" aria-hidden="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" id="modal-backdrop-promociones"></div>
-      
-      <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom">
-        <!-- HEADER -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
+    <!-- ============ PANEL DE PROMOCIONES ============ -->
+    <div id="modal-promociones" class="cdk-panel hidden" role="dialog" aria-modal="true" aria-labelledby="titulo-promociones">
+      <div class="cdk-panel__fondo" id="modal-backdrop-promociones"></div>
+
+      <div class="cdk-panel__caja">
+        <div class="cdk-panel__cabecera">
           <div>
-            <h3 class="text-lg font-bold text-gray-900">
-              <i class="fas fa-gift text-purple-600 mr-2"></i>
-              Promociones Disponibles
-            </h3>
-            <p id="contador-promos" class="text-xs text-gray-600 mt-1"></p>
+            <h3 class="cdk-panel__titulo" id="titulo-promociones">Promociones</h3>
+            <p id="contador-promos" class="cdk-pista" aria-live="polite"></p>
           </div>
-          <button id="btn-cerrar-promociones" type="button"
-          class="p-1 text-gray-500 hover:text-gray-700 transition-colors">
-            <i class="fas fa-times text-xl"></i>
+          <button id="btn-cerrar-promociones" type="button" class="cdk-panel__cerrar" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" class="cdk-icono" aria-hidden="true">
+              <path d="M6 18 18 6M6 6l12 12"/>
+            </svg>
           </button>
         </div>
 
-        <!-- ESTADO DE CARGA -->
-        <div id="promos-loading" class="hidden py-8 text-center">
-          <i class="fas fa-spinner fa-spin text-purple-600 text-3xl mb-3"></i>
-          <p class="text-sm text-gray-600">Buscando promociones disponibles...</p>
-        </div>
-
-        <!-- SIN PROMOCIONES -->
-        <div id="sin-promociones" class="hidden py-12 text-center px-4">
-          <i class="fas fa-gift text-6xl text-gray-300 mb-3"></i>
-          <p class="text-base font-semibold text-gray-900 mb-1">No hay promociones disponibles</p>
-          <p class="text-sm text-gray-600">Tu lista actual no cumple con los requisitos de las promociones activas</p>
-        </div>
-
-        <!-- CONTENIDO - LISTA DE PROMOCIONES -->
-        <div class="flex-1 min-h-0 max-h-[46vh] overflow-y-auto px-4 py-4 space-y-3">
-          <div id="lista-promociones" class="space-y-3"></div>
-        </div>
-
-        <!-- TOTALES Y AHORRO -->
-        <div id="promos-totales-container" class="hidden max-h-[32vh] overflow-y-auto px-4 py-4 border-t border-gray-200 bg-gradient-to-br from-purple-50 to-pink-50 space-y-3">
-          <!-- Observación 1: Cálculo con descuento -->
-          <div class="p-3 bg-white rounded-lg border border-purple-200">
-            <p class="text-xs text-gray-600 mb-2">Valor con Descuento (sin IGV)</p>
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-              <div class="flex-1 min-w-[120px]">
-                <p class="text-sm text-gray-700">Valor Venta</p>
-                <p class="text-lg font-bold text-gray-900">
-                  <span id="promo-valor-venta">0.00</span>
-                  <span id="promo-moneda-venta" class="text-xs ml-1">USD</span>
-                </p>
-              </div>
-              <div class="flex-1 min-w-[120px] text-right sm:text-right">
-                <p class="text-sm text-gray-700">Descuento</p>
-                <p class="text-lg font-bold text-red-600">
-                  -<span id="promo-monto-descuento">0.00</span>
-                  <span id="promo-moneda-descuento" class="text-xs ml-1">USD</span>
-                </p>
-              </div>
-            </div>
-            <div class="border-t border-gray-200 mt-2 pt-2">
-              <p class="text-xs text-gray-600 mb-1">Total con Descuento</p>
-              <p class="text-lg font-bold text-purple-600">
-                <span id="promo-total-descuento">0.00</span>
-                <span id="promo-moneda-total-descuento" class="text-xs ml-1">USD</span>
-              </p>
-            </div>
+        <div class="cdk-panel__cuerpo">
+          <div id="promos-loading" class="cdk-estado hidden">
+            <div class="cdk-spinner"></div>
+            <p class="cdk-estado__texto">Buscando promociones…</p>
           </div>
 
-          <!-- Observación 2: IGV y total con IGV -->
-          <div class="flex flex-wrap gap-3">
-            <div class="flex-1 min-w-[140px] p-3 bg-green-50 rounded-lg border border-green-200">
-              <p class="text-xs text-gray-600 mb-1">IGV (18%)</p>
-              <p class="text-lg font-bold text-green-600">
-                <span id="promo-monto-igv">0.00</span>
-                <span id="promo-moneda-igv" class="text-xs ml-1">USD</span>
-              </p>
-            </div>
-            <div class="flex-1 min-w-[140px] p-3 bg-green-100 rounded-lg border border-green-200">
-              <p class="text-xs text-gray-600 mb-1">Total con IGV</p>
-              <p class="text-lg font-bold text-green-700">
-                <span id="promo-total-con-igv">0.00</span>
-                <span id="promo-moneda-total-igv" class="text-xs ml-1">USD</span>
-              </p>
-            </div>
-          </div>
-
-          <!-- Ahorro estimado -->
-          <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p class="text-xs text-gray-600 mb-1">Ahorro Total</p>
-            <p class="text-lg font-bold text-blue-600">
-              -<span id="promo-ahorro-total">0.00</span>
-              <span id="promo-moneda-ahorro" class="text-xs ml-1">USD</span>
+          <!-- Vacio de verdad: ninguna promocion para estos productos. Un fallo
+               de consulta NO pasa por aqui, se muestra con su propio error. -->
+          <div id="sin-promociones" class="cdk-estado hidden">
+            <p class="cdk-estado__texto">
+              Ningún producto del carrito tiene promociones disponibles.
             </p>
           </div>
-        </div>
 
-        <!-- FOOTER -->
-        <div class="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl space-y-2">
-          <button id="btn-aplicar-promo" type="button"
-          class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold text-sm transition-colors hover:from-purple-600 hover:to-purple-700 active:scale-95">
-            <i class="fas fa-check-circle mr-2"></i>
-            Aplicar Promoción
-          </button>
-          <button id="btn-cancelar-promo" type="button"
-          class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-white text-gray-900 font-medium text-sm transition-colors hover:bg-gray-50 active:scale-95">
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
+          <div id="lista-promociones"></div>
 
-    <!-- MODAL DEL CARRITO -->
-    <div id="carro-contenedor" class="fixed inset-0 z-40 hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-      <div class="fixed inset-0 bg-black/40 transition-opacity" aria-hidden="true"></div>
-      <div class="fixed inset-0 overflow-hidden">
-        <div class="absolute inset-0 overflow-hidden">
-          <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-6 w-full">
-            <div class="pointer-events-auto w-screen max-w-sm">
-              <div class="flex h-full flex-col overflow-y-scroll bg-white shadow-2xl rounded-l-2xl">
-                <div class="flex items-start justify-between bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-4 sm:px-6 text-white rounded-tl-2xl">
-                  <h2 class="text-base sm:text-lg font-semibold" id="slide-over-title">
-                    <i class="fas fa-shopping-cart mr-2"></i>
-                    Carrito
-                  </h2>
-                  <button type="button" id="btn-cerrar-carrito" class="relative -m-2 p-2 text-blue-100 hover:text-white transition-colors">
-                    <span class="sr-only">Cerrar panel</span>
-                    <i class="fas fa-times text-lg"></i>
-                  </button>
-                </div>
-                <div class="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
-                  <ul id="productos-listados" role="list" class="-my-3 divide-y divide-gray-200"></ul>
-                </div>
-                <div id="productos-totales" class="border-t border-gray-200 px-4 py-4 sm:px-6 bg-gray-50 rounded-bl-2xl"></div>
-              </div>
+          <!-- Los importes del backend ya vienen sin IGV; aqui solo se muestran. -->
+          <div id="promos-totales-container" class="cdk-totales hidden" style="margin-top:16px">
+            <div class="cdk-total">
+              <span class="cdk-total__etiqueta">Valor de venta</span>
+              <span class="cdk-total__valor">
+                <span id="promo-moneda-venta"></span> <span id="promo-valor-venta">0.00</span>
+              </span>
             </div>
+            <div class="cdk-total">
+              <span class="cdk-total__etiqueta">Descuento</span>
+              <span class="cdk-total__valor">
+                −<span id="promo-moneda-descuento"></span> <span id="promo-monto-descuento">0.00</span>
+              </span>
+            </div>
+            <div class="cdk-total">
+              <span class="cdk-total__etiqueta">Subtotal</span>
+              <span class="cdk-total__valor">
+                <span id="promo-moneda-total-descuento"></span> <span id="promo-total-descuento">0.00</span>
+              </span>
+            </div>
+            <div class="cdk-total">
+              <span class="cdk-total__etiqueta">IGV 18 %</span>
+              <span class="cdk-total__valor">
+                <span id="promo-moneda-igv"></span> <span id="promo-monto-igv">0.00</span>
+              </span>
+            </div>
+            <div class="cdk-total cdk-total--principal">
+              <span class="cdk-total__etiqueta">Total</span>
+              <span class="cdk-total__valor">
+                <span id="promo-moneda-total-igv"></span> <span id="promo-total-con-igv">0.00</span>
+              </span>
+            </div>
+            <div class="cdk-total cdk-total--bien">
+              <span class="cdk-total__etiqueta">Ahorro con IGV</span>
+              <span class="cdk-total__valor">
+                −<span id="promo-moneda-ahorro"></span> <span id="promo-ahorro-total">0.00</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cdk-panel__pie">
+          <div class="cdk-pareja">
+            <button id="btn-cancelar-promo" type="button" class="cdk-boton cdk-boton--suave">
+              Cancelar
+            </button>
+            <button id="btn-aplicar-promo" type="button" class="cdk-boton cdk-boton--primario">
+              Aplicar
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- PASO 4: GENERAR COTIZACIÓN -->
-    <div class="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg shadow-md p-4 border-l-4 border-orange-500">
-      <div class="flex items-center mb-3">
-        <div class="flex items-center justify-center w-6 h-6 bg-orange-500 text-white rounded-full font-bold text-xs">4</div>
-        <h2 class="ml-2 text-base sm:text-lg font-bold text-gray-900">
-          <i class="fas fa-file-invoice mr-2 text-orange-500"></i>
-          Generar Cotización
-        </h2>
+    <!-- El panel lateral del carrito se retiro: lo pintaba js/funciones/carrito.js,
+         que esta pagina no carga desde que el paso 3 se hace con
+         productosSeleccionados. Eran 29 lineas que nadie abria. Los dos sitios
+         que aun limpian #productos-listados comprueban antes que exista. -->
+
+    <!-- ===================== PASO 4 · GENERAR ===================== -->
+    <section class="cdk-seccion cdk-seccion--paso">
+      <div class="cdk-paso__cabecera">
+        <span class="cdk-paso__numero">4</span>
+        <h2 class="cdk-paso__titulo">Generar cotización</h2>
       </div>
-      <div class="space-y-3">
-        <div class="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded text-xs sm:text-sm">
-          <p class="text-yellow-800">
-            <i class="fas fa-exclamation-triangle mr-2"></i>
-            <strong>Advertencia:</strong> Mínimo un producto requerido. Para reiniciar, recargue la página.
-          </p>
-        </div>
-        <button id="creacion" disabled
-        class="w-full flex items-center justify-center space-x-2 rounded-lg bg-rose-500 px-4 py-3 text-base sm:text-lg font-bold text-white hover:bg-red-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg opacity-60 cursor-not-allowed">
-          <i class="fas fa-check-circle"></i>
-          <span>CREAR</span>
-        </button>
-      </div>
-    </div>
+
+      <!-- El boton ya se deshabilita solo sin productos, asi que el aviso no
+           repite eso: dice lo que el vendedor no puede deducir mirando. -->
+      <p class="cdk-pista" style="margin-bottom:12px">
+        Al crearla se adjuntan también las promociones aceptadas.
+        Si algo falla, el carrito se conserva para reintentar.
+      </p>
+
+      <button id="creacion" type="button" class="cdk-boton cdk-boton--primario" style="width:100%" disabled>
+        Crear cotización
+      </button>
+    </section>
 
   </main>
+
+<!-- ===== BLOQUE CORE: orden obligatorio, ANTES de los scripts de pagina ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
 
 <script src="/js/global/variables.js"></script>
 <script src="/caminos/rutas.js"></script>
 
+<script src="/js/cotizacion/campos.js"></script>
+<!-- El contrato de /v1/promocion, en un solo sitio. Debe ir antes de part4. -->
+<script src="/js/cotizacion/promociones.js"></script>
 <script src="/js/cotizacion/buscar_cliente.js"></script>
-<script src="/js/funciones/b_cliente.js"></script>
 <script src="/js/funciones/identificar_cliente.js"></script>
 
-<script src="/js/cotizacion/cambio_almacen.js"></script>
+<script src="/js/cotizacion/moneda.js"></script>
 
 <script src="/js/cotizacion/buscar_cliente_part2.js"></script>
-<script src="/js/funciones/b_producto.js"></script>
-<!-- <script src="/js/funciones/identificar_producto.js"></script> -->
 
 <script src="/js/cotizacion/buscar_cliente_part3.js"></script>
 <script src="/js/cotizacion/buscar_promo_part4.js"></script>
@@ -711,7 +439,6 @@
 <script src="/js/cotizacion/buscar_promo_part5.js"></script>
 
 <script src="/js/cotizacion/crear.js"></script>
-<script src="/js/funciones/coti_crear.js"></script>
 
 <style>
   /* Animaciones para el bottom sheet */

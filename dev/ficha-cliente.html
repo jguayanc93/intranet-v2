@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Ficha del cliente (demo)</title>
+
+    <style>
+        .demo__intro { max-width: 70ch; margin: 0 0 16px; font-size: 14px;
+                       color: var(--cdk-texto-suave); line-height: 1.6; }
+        .demo__intro strong { color: var(--cdk-texto); }
+        .demo__nota { border-left: 3px solid var(--cdk-borde); padding: 2px 0 2px 12px;
+                      margin: 12px 0 16px; font-size: 13px; color: var(--cdk-texto-suave);
+                      line-height: 1.55; max-width: 70ch; }
+    </style>
+
+    <!--
+        Simulacro de backend, instalado ANTES del core para que la pantalla
+        recorra el mismo camino que en produccion.
+
+        Los datos son inventados. Estan arriba del todo, juntos, para que se
+        puedan cambiar y recargar sin tocar nada mas.
+    -->
+    <script>
+    (function () {
+        "use strict";
+
+        /* Una fecha de hace n dias, en hora LOCAL. La pantalla lee
+           "AAAA-MM-DD" como medianoche local, asi que hay que generarla
+           igual o los dias bailan segun la hora a la que se mire. */
+        function haceDias(n) {
+            var d = new Date();
+            d.setHours(0, 0, 0, 0);
+            d.setDate(d.getDate() - n);
+            var p = function (x) { return String(x).padStart(2, "0"); };
+            return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+        }
+
+        /* ---------------------------------------------------------------
+         * LA LISTA
+         *   cartera     0 codcli · 1 nomcli · 2 facturas del mes · 3 NC
+         *   cobertura   0 codcli · 1 nomcli · 2 facturas del mes
+         * ------------------------------------------------------------- */
+        var CARTERA = {
+            0: ["C12171", "SERVICIOS INTERNET Y C.O. S.A.C.", 4, 1],
+            1: ["C10874", "PC SUMINISTROS & SISTEMAS INFORMATICOS S.A.C.", 0, 0],
+            2: ["C11902", "DISTRIBUIDORA TECNOLOGICA ANDINA S.A.C.", 2, 0]
+        };
+
+        /* Cobertura es TODO lo que facturo este mes, suyo o no. Por eso
+           C12171 sale aqui tambien: es de su cartera Y le vendio. Las dos
+           vistas se solapan a proposito. */
+        var COBERTURA = {
+            0: ["C12171", "SERVICIOS INTERNET Y C.O. S.A.C.", 4],
+            1: ["C09988", "INNOVA 2512 S.A.C.", 2],
+            2: ["C13540", "KEYNERS COMPANY S.A.C.", 1]
+        };
+
+        /* ---------------------------------------------------------------
+         * LAS FICHAS — tres situaciones distintas a proposito
+         * ------------------------------------------------------------- */
+        var FICHAS = {
+
+            /* 1 · Va bien. Tres productos pasados de su ritmo, uno apenas.
+                   El top esta ordenado por CANTIDAD: fijate en que el papel
+                   va primero con 120 unidades aunque el toner deja mas
+                   dinero. Era justo la decision que habia que tomar. */
+            C12171: {
+                mes: { total: 4820.50, moneda: "D", documentos: 3, anterior: 3100.00 },
+                reponer: [
+                    { descripcion: "BOTELLA TINTA EPSON T544 NEGRO 65ML",
+                      cantidad: 6, cada: 45, ultima: haceDias(72), compras: 5 },
+                    { descripcion: "TONER HP CF283A (83A) MFP M127F NEGRO",
+                      cantidad: 2, cada: 38, ultima: haceDias(51), compras: 7 },
+                    { descripcion: "PAPEL BOND A4 75G ATLAS (MILLAR)",
+                      cantidad: 10, cada: 30, ultima: haceDias(33), compras: 11 }
+                ],
+                top: [
+                    { descripcion: "PAPEL BOND A4 75G ATLAS (MILLAR)",
+                      cantidad: 120, importe: 1860.00, moneda: "D" },
+                    { descripcion: "BOTELLA TINTA EPSON T544 NEGRO 65ML",
+                      cantidad: 60, importe: 1710.00, moneda: "D" },
+                    { descripcion: "TONER HP CF283A (83A) MFP M127F NEGRO",
+                      cantidad: 24, importe: 1915.00, moneda: "D" }
+                ]
+            },
+
+            /* 2 · El abandonado. Cero este mes contra 2.480 el anterior, y dos
+                   productos que lleva mas de tres ritmos sin pedir. Es el
+                   cliente que esta pantalla existe para encontrar. */
+            C10874: {
+                /* otrasMonedas: tambien le compro en dolares este mes. Sumar
+                   las dos no significa nada, asi que llega la de mas peso y
+                   la pantalla avisa de que la cifra es parcial. */
+                mes: { total: 0, moneda: "S", documentos: 0,
+                       anterior: 2480.00, otrasMonedas: true },
+                /* Dentro del tope de tres ciclos: 2.6 y 2.7. Mas alla de eso
+                   el backend ya no lo manda, porque un producto que lleva
+                   veinte veces su ritmo sin pedirse no esta retrasado. */
+                reponer: [
+                    { descripcion: "PAPEL BOND A4 75G ATLAS (MILLAR)",
+                      cantidad: 20, cada: 21, ultima: haceDias(55), compras: 14 },
+                    { descripcion: "TONER HP CE285A (85A) L.J. P1102 NEGRO",
+                      cantidad: 3, cada: 28, ultima: haceDias(76), compras: 9 }
+                ],
+                top: [
+                    { descripcion: "PAPEL BOND A4 75G ATLAS (MILLAR)",
+                      cantidad: 140, importe: 2240.00, moneda: "S" },
+                    { descripcion: "TONER HP CE285A (85A) L.J. P1102 NEGRO",
+                      cantidad: 9, importe: 1120.00, moneda: "S" }
+                ]
+            },
+
+            /* 3 · Va a menos, y con poco que ofrecerle: un solo producto y
+                   apenas pasado de fecha. Sirve para ver que el bloque no
+                   grita cuando no hay por que. */
+            C11902: {
+                mes: { total: 1240.00, moneda: "S", documentos: 2, anterior: 3980.00 },
+                reponer: [
+                    { descripcion: "TONER HP W2020A (414A) L.J. M454 BLACK",
+                      cantidad: 1, cada: 60, ultima: haceDias(62), compras: 4 }
+                ],
+                top: [
+                    { descripcion: "CABLE HDMI 2.0 DE 2 METROS",
+                      cantidad: 15, importe: 225.00, moneda: "S" },
+                    { descripcion: "TONER HP W2020A (414A) L.J. M454 BLACK",
+                      cantidad: 8, importe: 980.00, moneda: "S" }
+                ]
+            },
+
+            /* Dos que facturo este mes pero con los que apenas tiene
+               historia: sirven para ver la ficha cuando llega casi vacia. */
+            C09988: { mes: { total: 640.00, moneda: "S", documentos: 2 } },
+            C13540: { mes: { total: 298.40, moneda: "D", documentos: 1 } }
+        };
+
+        /* ============================================================= */
+
+        var MODULOS = {
+            cotizacion: "Gestión de cotizaciones",
+            pedido:     "Gestión de pedidos",
+            factura:    "Control de facturas",
+            listas:     "Listados y consultas"
+        };
+
+        var real = window.fetch;
+
+        window.fetch = function (entrada, opciones) {
+            var url = String(entrada && entrada.url ? entrada.url : entrada);
+            var cuerpo = {};
+            try { cuerpo = opciones && opciones.body ? JSON.parse(opciones.body) : {}; }
+            catch (e) { cuerpo = {}; }
+
+            // El backend devuelve un JSON que CONTIENE un string JSON. Se
+            // replica para ejercitar el desempaquetado de verdad.
+            function responder(obj, estado) {
+                return Promise.resolve(new Response(
+                    JSON.stringify(JSON.stringify(obj)),
+                    { status: estado || 200,
+                      headers: { "Content-Type": "application/json" } }
+                ));
+            }
+
+            if (/\/vendedor$/.test(url)) {
+                return responder({ modulos: MODULOS, nombre: "Juan Carlos",
+                                   grupo: "VENTAS", tipo: "ESPECIALISTA" });
+            }
+
+            if (/\/lista\/clientes\/detalle$/.test(url)) {
+                var ficha = FICHAS[cuerpo.codcli];
+                /* El cliente tiene que ser suyo: asignado, o facturado por el
+                   en el ultimo anio. Si no, 403 y no devuelve nada. Aqui no
+                   deberia saltar nunca, porque todos los de las dos listas lo
+                   son; esta por si se toquetean los datos de arriba. */
+                if (!ficha) {
+                    return responder({
+                        status: "cliente ajeno", codigo: 3, data: null,
+                        msg: "este cliente no está asignado a tu cartera ni lo has facturado"
+                    }, 403);
+                }
+                return responder({ status: "ok", codigo: 0, data: ficha });
+            }
+
+            if (/\/lista\/clientes$/.test(url)) {
+                if (cuerpo.tipo === "cartera")   return responder(CARTERA);
+                if (cuerpo.tipo === "cobertura") return responder(COBERTURA);
+                // Cualquier otro valor: lista vacia y sin error, como el real.
+                return responder({});
+            }
+
+            /* Cualquier otra ruta de la API. La base siempre lleva /v1/, asi
+               que esto no atrapa la peticion del propio clientes.js de mas
+               abajo, que es un archivo del proyecto. */
+            if (url.indexOf("/v1/") !== -1) {
+                return responder({ status: "ok", codigo: 0, data: [] });
+            }
+
+            /* .call(window) y no .apply(this): llamado como `fetch(...)` a
+               secas, `this` es undefined dentro de este modulo en modo
+               estricto, y el fetch nativo lo rechaza con "Illegal
+               invocation". */
+            return real.call(window, entrada, opciones);
+        };
+    })();
+    </script>
+</head>
+
+<body data-modulo="listas" data-titulo="Clientes">
+
+<div class="cdk-pagina">
+
+    <section class="cdk-seccion" id="seccion-intro">
+        <h2 class="cdk-seccion__titulo">La ficha del cliente</h2>
+        <p class="demo__intro">
+            Esta es la pantalla real —el mismo CSS y el mismo
+            <code>js/listas/clientes.js</code> que se desplegará—, con
+            <strong>datos inventados</strong>. Toca cualquier cliente para abrir su ficha.
+            La ruta del detalle ya existe en el backend; aquí está simulada para poder
+            verla sin levantar nada.
+        </p>
+        <p class="demo__intro">
+            Dentro hay <strong>tres bloques</strong>, en este orden:
+        </p>
+        <p class="demo__nota">
+            <strong>1 · Cómo va el mes.</strong> Lo comprado este mes con su moneda, cuántos
+            documentos, y el mes anterior al lado para saber si va mejor o peor. Sin barra de
+            progreso: la tabla de cuota por cliente existe pero está vacía.<br><br>
+            <strong>2 · Le toca reponer.</strong> El dato nuevo. Cada producto con el ritmo al
+            que lo viene pidiendo y cuánto lleva pasado. Va antes que el top porque es lo
+            accionable: dice con qué llamar hoy. Solo entran los que no pasan de tres veces
+            su ritmo: más allá de eso el cliente no va retrasado, dejó de comprarlo.<br><br>
+            <strong>3 · Lo que más te compra.</strong> Los tres meses naturales anteriores,
+            ordenado por cantidad.
+        </p>
+        <p class="demo__intro">
+            Los tres de <em>Mi cartera</em> están en situaciones distintas: uno va bien, otro
+            lleva el mes sin comprarte nada —y además te compró en dos monedas, para ver cómo
+            lo avisa—, y el tercero va a menos.
+        </p>
+        <p class="demo__intro">
+            <em>Facturado este mes</em> no es «los que no son tuyos»: es <strong>todo</strong>
+            lo que facturaste, sean tuyos o no. Por eso el primero se repite en las dos
+            listas. Las dos vistas se solapan.
+        </p>
+    </section>
+
+    <!-- ============ LA LISTA ============ -->
+    <section class="cdk-seccion" id="seccion-lista">
+        <h2 class="cdk-seccion__titulo">Clientes</h2>
+        <p class="cdk-seccion__sub">Toca un cliente para ver cómo va el mes con él.</p>
+
+        <div class="cdk-acciones-fila" role="group" aria-label="Qué clientes">
+            <button type="button" id="btn-cartera" class="cdk-boton cdk-boton--primario" aria-pressed="true">
+                Mi cartera
+            </button>
+            <button type="button" id="btn-cobertura" class="cdk-boton cdk-boton--suave" aria-pressed="false">
+                Fuera de cartera
+            </button>
+        </div>
+
+        <div class="cdk-busca" style="margin-top:12px">
+            <svg class="cdk-busca__lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+            </svg>
+            <input type="search" id="filtro" class="cdk-entrada"
+                   placeholder="Filtrar por nombre" autocomplete="off">
+            <button id="btn-limpiar-filtro" type="button" class="cdk-busca__limpiar hidden" aria-label="Limpiar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" class="cdk-icono cdk-icono--sm" aria-hidden="true">
+                    <path d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div id="lista-clientes" style="margin-top:12px"></div>
+    </section>
+
+    <!-- ============ UN CLIENTE ============ -->
+    <section class="cdk-seccion hidden" id="seccion-cliente">
+        <div class="cdk-paso__cabecera">
+            <button type="button" id="btn-volver" class="cdk-navbar__atras" aria-label="Volver a la lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+            </button>
+            <h2 class="cdk-paso__titulo" id="titulo-cliente">Cliente</h2>
+        </div>
+
+        <div id="detalle-cliente"></div>
+    </section>
+
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script>
+/*
+    Se carga el clientes.js REAL y se le cambia una linea: `PENDIENTE`, que en
+    produccion vale true porque la ruta del detalle todavia no existe. Aqui si
+    existe —la simula el bloque de arriba—, asi que se pone en false.
+
+    Es la misma sustitucion que hace la suite de pruebas. Se hace asi, y no
+    copiando el codigo a esta pagina, para que lo que se ve aqui sea lo que
+    hara la pantalla de verdad y no una version que se parece.
+*/
+(function () {
+    "use strict";
+
+    function fallo(mensaje, pista) {
+        var caja = document.getElementById("lista-clientes");
+        caja.innerHTML = "";
+        caja.appendChild(CDK.el("div", { clase: "cdk-estado" }, [
+            CDK.el("p", { clase: "cdk-estado__texto", texto: mensaje }),
+            pista ? CDK.el("p", { clase: "cdk-pista", texto: pista }) : null
+        ]));
+    }
+
+    /* Se usa XMLHttpRequest y no fetch a proposito: el simulacro de arriba
+       envuelve window.fetch, y esta peticion no es a la API sino a un archivo
+       del proyecto. Pidiendolo por otra via, cargar la pantalla no depende de
+       que el simulacro este bien escrito. */
+    var pet = new XMLHttpRequest();
+    pet.open("GET", "/js/listas/clientes.js", true);
+
+    pet.onload = function () {
+        if (pet.status !== 200) {
+            return fallo("No se encontró /js/listas/clientes.js (HTTP " + pet.status + ").",
+                         "Sirve el proyecto desde la raíz: con file:// o desde un " +
+                         "subdirectorio, las rutas absolutas no resuelven.");
+        }
+        try {
+            /* Se ejecuta tal cual, sin tocar una linea. Antes habia que
+               cambiarle el interruptor `PENDIENTE` porque la ruta del detalle
+               no existia; ya existe, asi que la pantalla corre entera. */
+            new Function(pet.responseText)();
+        } catch (e) {
+            fallo("clientes.js se cargó pero falló al ejecutarse: " + e.message,
+                  "Mira la consola del navegador para ver dónde.");
+        }
+    };
+
+    pet.onerror = function () {
+        fallo("No se pudo pedir /js/listas/clientes.js.",
+              "¿Está levantado el servidor y se entra por http://127.0.0.1/ ?");
+    };
+
+    pet.send();
+})();
+</script>
+</body>
+</html>

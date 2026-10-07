@@ -1,3 +1,9 @@
+/* Moneda y tipo de cambio: ahora en js/cotizacion/moneda.js.
+   Estaban definidos por triplicado en part2, part3 y part4; como las tres
+   se cargan en la misma pagina, ganaba la ultima y editar las otras dos no
+   tenia ningun efecto. Las llamadas siguen igual: moneda.js expone los
+   mismos nombres en global. */
+
 // ========================================
 // PROMOCIONES - SEGMENTO 3 - PARTE 4
 // ========================================
@@ -40,209 +46,26 @@ const promoMonedasSpan = [
 // ========================================
 // CONFIGURACIÓN
 // ========================================
-// const tipoCambioUSDPEN = 3.80;
 
 // ========================================
 // FUNCIÓN: Obtener moneda y conversión
 // ========================================
-function obtenerMonedaSeleccionada() {
-    const selectMoneda = document.getElementById("alm");
-    return selectMoneda ? selectMoneda.value : "D";
-}
 
-function obtenerSímboloMoneda(monedaId) {
-    return monedaId === "D" ? "USD" : "PEN";
-}
 
-function convertirMoneda(monto, monedaOrigen) {
-    const monedaActual = obtenerMonedaSeleccionada();
-    
-    if (monedaOrigen === monedaActual) {
-        ////aqui hago un espacio para manejar el caso de que el monto sea NaN
-        if (isNaN(monto)) {
-            return 0;
-        }
-        return monto;
-    }
-    
-    if (monedaOrigen === "D" && monedaActual === "S") {
-        return monto * tipoCambioUSDPEN;
-    }
-    
-    if (monedaOrigen === "S" && monedaActual === "D") {
-        return monto / tipoCambioUSDPEN;
-    }
-    
-    return monto;
-}
 
-function parseJSONResponse(value) {
-    console.log("parseando el valor",typeof value,value);
-    if (typeof value === "string") {
-        try {
-            return JSON.parse(value);
-        } catch (err) {
-            console.warn("No se pudo parsear la respuesta JSON:", err);
-            return null;
-        }
-    }
-    return value;
-}
-// function parseJSONResponse2(value) {
-//     try {
-//         return JSON.parse(value);
-//     } catch (err) {
-//         console.warn("No se pudo parsear la respuesta JSON:", err);
-//         return null;
-//     }
-//     return value;
-// }
+/* Las tres funciones que habia aqui -parseJSONResponse, normalizarDetalleLinea
+   y normalizarPromoDetalle- intentaban adivinar la forma de la respuesta entre
+   seis ramas distintas, porque nadie sabia cual era. Ya hay contrato escrito
+   (docs/promociones.md), asi que leerlo es una sola operacion y vive en
+   js/cotizacion/promociones.js, junto a las tres trampas que tiene. */
 
-// Normaliza una línea de promoción a un formato interno común.
-// Esto permite manejar distintos nombres de campo que pueda devolver el backend.
-function normalizarDetalleLinea(linea, promoDefaults = {}) {
-    console.log("normalizando linea", linea, "con defaults", promoDefaults);
-    // Extrae el tipo de línea usando múltiples alias posibles.
-    const tipoRaw = (
-        linea.tipo || linea.Tipo || linea.tipoPromocion || linea.TipoPromocion || linea.accion || linea.accionPromo || linea.modo || ""
-    ).toString().toLowerCase();
-
-    // Determina si la línea es regalo por palabras clave o precio unitario igual a cero.
-    // const esRegalo = tipoRaw.includes("regalo") || tipoRaw.includes("gift") || tipoRaw.includes("gratis") || tipoRaw.includes("obsequio") || parseFloat(linea.precioUnitario ?? linea.PrecioUnitario ?? linea.precio ?? linea.Precio ?? 0) === 0;
-    const esRegalo = tipoRaw.includes("regalo") || tipoRaw.includes("gift") || tipoRaw.includes("gratis") || tipoRaw.includes("obsequio");
-
-    // Define el tipo estandarizado para la UI y cálculos.
-    const tipo = esRegalo ? "REGALO" : "DESCUENTO";
-    console.log("lo que se encontro en el tipo fue", tipo, "y el tipoRaw es", tipoRaw);
-    // Extrae la descripción con alias y fallback a la descripción de la promoción.
-    const descripcion = linea.itemdescr || linea.descripcion || linea.nombre || linea.Nombre || linea.producto || linea.articulo || linea.detalle || promoDefaults.descripcion || "";
-
-    // Extrae el código de promción con alias y fallback.
-    const codigo = linea.codigo || linea.Codigo || linea.promocion || linea.promoCodigo || promoDefaults.codigo || "";
-
-    // Extrae la cantidad con alias qty y fallback a 1.
-    const cantidad = parseInt(linea.cantidad ?? linea.qty ?? linea.Cantidad ?? 1, 10) || 1;
-
-    // Extrae el monto de descuento/valor/ahorro con varios alias posibles.
-    const monto = parseFloat(
-        linea.montoDescuento ?? linea.MontoDescuento ?? linea.valorDescuento ?? linea.ValorDescuento ?? linea.valor ?? linea.Valor ?? linea.ahorro ?? linea.Ahorro ?? 0
-    ) || 0;
-
-    // Extrae la moneda usando alias y valor por defecto D.
-    const moneda = linea.monedaDescuento || linea.MonedaDescuento || linea.moneda || linea.Moneda || linea.monedaVenta || linea.monedaVenta || "D";
-
-    // Extrae el precio unitario con alias y fallback cero.
-    const precioUnitario = parseFloat(linea.precioUnitario ?? linea.PrecioUnitario ?? linea.precio ?? linea.Precio ?? 0) || 0;
-
-    return {
-        tipo,
-        codigo,
-        descripcion,
-        cantidad,
-        monto,
-        moneda,
-        precioUnitario,
-        raw: linea
-    };
-}
-
-function normalizarPromoDetalle(response, codigoPromo) {
-    // El backend puede devolver un objeto con detalle o una colección indexada.
-    const data2= parseJSONResponse(response);
-    // Esta función intenta normalizar cualquier estructura válida a:
-    // { codigo, descripcion, lineas: [ ... ] }
-    const data = parseJSONResponse(data2);
-    if (!data) return null;
-    console.log("revisar la promo y la respuesta",codigoPromo,data2);
-    // Extracción de código y descripción general con alias.
-    const codigoGeneral = data.codigo || data.Codigo || codigoPromo;
-    const descripcionGeneral = data.descripcion || data.Descripcion || "Promoción disponible";
-
-    // Caso: el backend devuelve directamente un array de líneas de promoción.
-    if (Array.isArray(data)) {
-        const lineas = data
-            .map(item => normalizarDetalleLinea(item, { codigo: codigoGeneral, descripcion: descripcionGeneral }))
-            .filter(linea => linea.descripcion || linea.monto || linea.precioUnitario);
-
-        return {
-            codigo: codigoGeneral,
-            descripcion: descripcionGeneral || lineas[0]?.descripcion || "Promoción disponible",
-            lineas
-        };
-    }
-
-    // Caso: el objeto tiene claves numéricas como 0, 1, 2, ... con los detalles de cada línea.
-    const numericKeysLineas = Object.keys(data)
-        .filter((key) => /^[0-9]+$/.test(key))
-        .sort((a, b) => Number(a) - Number(b))
-        .map((key) => data[key])
-        .filter((item) => item && typeof item === 'object');
-
-    console.log("sera esta funcion 1",numericKeysLineas);
-    if(numericKeysLineas.length == 0){ return null; }
-    console.log("no deberia escapar de aqui");
-    //lo que pasa es un array de objetos que pasan con estructura clasica de ejem
-    //[0:{ codigo: 14603, descripcion: "promocion tal", cantidad: 1, montoDescuento:20.06,monedaDescuento:"D" }]
-    if (numericKeysLineas.length > 0) {
-        const lineas = numericKeysLineas
-            .map(item => normalizarDetalleLinea(item, { codigo: codigoGeneral, descripcion: descripcionGeneral }))
-            .filter(linea => linea.descripcion || linea.monto || linea.precioUnitario);
-
-        console.log("que se encontro al normalisar", lineas);
-        return {
-            codigo: codigoGeneral,
-            descripcion: descripcionGeneral || lineas[0]?.descripcion || "Promoción disponible",
-            lineas
-        };
-    }
-
-    // Buscar propiedades comunes que contienen arrays de líneas de promoción.
-    const lineasRaw = data.detalles || data.detalle || data.items || data.lineas || data.beneficios || data.promociones || data.detalleLinea || data.detalle_lineas;
-
-    if (Array.isArray(lineasRaw) && lineasRaw.length > 0) {
-        // Caso: un array de líneas dentro de una propiedad del objeto principal.
-        const lineas = lineasRaw
-            .map(item => normalizarDetalleLinea(item, { codigo: codigoGeneral, descripcion: descripcionGeneral }))
-            .filter(linea => linea.descripcion || linea.monto || linea.precioUnitario);
-
-        return {
-            codigo: codigoGeneral,
-            descripcion: descripcionGeneral || lineas[0]?.descripcion || "Promoción disponible",
-            lineas
-        };
-    }
-
-    // Caso: la propiedad encontrada es un objeto individual en lugar de un array.
-    if (lineasRaw && typeof lineasRaw === 'object') {
-        console.log("sera esta funcion 2");
-        const lineas = [normalizarDetalleLinea(lineasRaw, { codigo: codigoGeneral, descripcion: descripcionGeneral })]
-            .filter(linea => linea.descripcion || linea.monto || linea.precioUnitario);
-
-        return {
-            codigo: codigoGeneral,
-            descripcion: descripcionGeneral || lineas[0]?.descripcion || "Promoción disponible",
-            lineas
-        };
-    }
-
-    // Fallback: normaliza el objeto completo como una sola línea.
-    const singleLinea = normalizarDetalleLinea(data, { codigo: codigoGeneral, descripcion: descripcionGeneral });
-    console.log("sera esta funcion 3");
-    return {
-        codigo: codigoGeneral,
-        descripcion: descripcionGeneral || singleLinea.descripcion || "Promoción disponible",
-        lineas: [singleLinea]
-    };
-}
-
-// ========================================
-// FUNCIÓN: Abrir modal de promociones
 // ========================================
 function abrirModalPromociones() {
     // 1) Resetear estado inicial al abrir el modal.
     //    Borrar resultados previos y mostrar el loader.
+    // Solo los resultados: lo aceptado sigue en pie hasta que se acepte otra
+    // cosa o cambie el carrito.
     promocionesExitosas = [];
-    promocionesAplicadas = [];
     listaPromociones.innerHTML = "";
     promosLoading.classList.remove("hidden");
     sinPromociones.classList.add("hidden");
@@ -256,11 +79,22 @@ function abrirModalPromociones() {
     obtenerCodigosPromociones();
 }
 
+/**
+ * Cierra el panel. NO descarta lo que el vendedor ya aceptó.
+ *
+ * Antes borraba las tres variables, y como el botón de aplicar termina
+ * llamando aquí, lo aceptado se perdía en el mismo gesto que lo aceptaba: el
+ * detalle no mostraba ninguna promoción y, peor, al crear la cotización no se
+ * adjuntaba ninguna.
+ *
+ * Lo que sí se tira son los resultados de la consulta, que se rehace al
+ * volver a abrir. Lo aceptado solo desaparece por dos vías: que el carrito
+ * cambie (lo hace invalidarPromociones) o que se acepte otra cosa.
+ */
 function cerrarModalPromociones() {
     modalPromociones.classList.add("hidden");
     document.body.classList.remove("modal-abierto");
     promocionesExitosas = [];
-    promocionesAplicadas = [];
 }
 
 btnPromociones.addEventListener("click", abrirModalPromociones);
@@ -268,202 +102,274 @@ btnCerrarPromociones.addEventListener("click", cerrarModalPromociones);
 btnCancelarPromo.addEventListener("click", cerrarModalPromociones);
 modalBackdropPromociones.addEventListener("click", cerrarModalPromociones);
 
+/**
+ * Olvida las promociones evaluadas, porque el carrito ya no es el mismo.
+ *
+ * Una promoción se calcula contra un carrito concreto: sus umbrales miran las
+ * cantidades y los importes que había en ese momento. Si después se cambia una
+ * cantidad o entra otro producto, lo evaluado deja de corresponder — y acoplar
+ * eso a la cotización sería conceder un descuento que el carrito ya no gana, o
+ * perder uno que ahora sí alcanzaría.
+ *
+ * No se recalcula solo a propósito: volver a consultar en cada cambio serían
+ * dos llamadas por pulsación. Se olvida, se avisa, y el vendedor vuelve a abrir
+ * promociones cuando haya terminado de armar el carrito.
+ */
+CDK.coti.invalidarPromociones = function (motivo) {
+    const habia = promocionesAplicadas.length > 0 || promocionesExitosas.length > 0;
+
+    promocionesExitosas = [];
+    promocionesAplicadas = [];
+    window.promocionesAplicadas = [];
+
+    if (promosTotal) promosTotal.classList.add("hidden");
+    if (contadorPromos) contadorPromos.textContent = "";
+    if (listaPromociones) listaPromociones.innerHTML = "";
+
+    // Y que se vayan tambien de la lista del carrito.
+    if (typeof window.actualizarResumenProductos === "function") {
+        window.actualizarResumenProductos();
+    }
+
+    // Solo se avisa si de verdad habia algo que perder.
+    if (habia) {
+        CDK.toast(
+            `Se retiraron las promociones porque ${motivo || "cambió el carrito"}. ` +
+            "Vuelve a consultarlas cuando termines.",
+            "aviso"
+        );
+    }
+};
+
+/** Las promociones que el vendedor aceptó, para quien quiera mostrarlas. */
+CDK.coti.promocionesAplicadas = function () {
+    return promocionesAplicadas.slice();
+};
+
 // ========================================
 // FUNCIÓN: Obtener códigos de promociones
 // ========================================
 async function obtenerCodigosPromociones() {
+    // Sin productos no hay nada que recolectar.
+    if (!window.productosSeleccionados || Object.keys(window.productosSeleccionados).length === 0) {
+        mostrarSinPromociones();
+        return;
+    }
+
     try {
-        // Validar que tengamos productos en el carrito antes de llamar la API.
-        if (!window.productosSeleccionados || Object.keys(window.productosSeleccionados).length === 0) {
-            console.log("NO supere la validacion de que si tengo items seleccionados");
+        /* El recolector solo lee `codigo` de cada producto, asi que no se le
+           manda el objeto entero del carrito. Devuelve que promociones PODRIAN
+           aplicar; cuales entran de verdad lo decide /detalle, una por una. */
+        const respuesta = await CDK.http.post(
+            CDK.rutas.api("/promocion/recolector"),
+            CDK.promo.cuerpoRecolector(window.productosSeleccionados)
+        );
+
+        const codigosPromos = CDK.promo.codigos(respuesta);
+
+        if (codigosPromos.length === 0) {
             mostrarSinPromociones();
             return;
         }
 
-        // Preparar payload con los productos seleccionados.
-        let dataenviar = new Object();
-        dataenviar.productos = window.productosSeleccionados;
-
-        console.log("revisar los productos", window.productosSeleccionados);
-        
-        let fetchobj = new Object();
-        fetchobj.method = "POST";
-        fetchobj.headers = { "Content-Type": "application/json" };
-        fetchobj.mode = "cors";
-        fetchobj.credentials = "include";
-        fetchobj.body = JSON.stringify(dataenviar);
-
-        // Llamar API para obtener códigos de promociones.
-        let paso1 = await fetch(rutapromocionrecolector, fetchobj);
-        let textoRespuesta = await paso1.text();
-        const codigosPromos = parseJSONResponse(textoRespuesta);
-
-        // Si no hay códigos, mostrar estado de sin promociones.
-        if (!Array.isArray(codigosPromos) || codigosPromos.length === 0) {
-            mostrarSinPromociones();
-            return;
-        }
-
-        // Pasar los códigos para obtener los detalles de cada promoción.
         await obtenerDetallesPromociones(codigosPromos);
 
     } catch (err) {
-        console.error("Error al obtener códigos de promociones:", err);
-        mostrarSinPromociones();
+        if (CDK.http.esError(err) && err.status === 401) return;   // ya redirige
+
+        /* "Ningun producto del carrito tiene promocion" llega como 400, no
+           como lista vacia. Es el caso mas normal que hay, asi que tratarlo
+           como fallo del servidor seria alarmar por nada. */
+        if (CDK.promo.esSinPromociones(err)) {
+            mostrarSinPromociones();
+            return;
+        }
+
+        /* Lo demas si es un fallo. Antes todo acababa en mostrarSinPromociones(),
+           asi que un servidor caido, un 500 o una sesion vencida se veian igual
+           que "no hay promociones": el vendedor cerraba la cotizacion convencido
+           de que no habia ninguna, y se las perdia. */
+        promosLoading.classList.add("hidden");
+        sinPromociones.classList.add("hidden");
+        promosTotal.classList.add("hidden");
+        contadorPromos.textContent = "";
+
+        CDK.estados.error(listaPromociones, err, () => {
+            listaPromociones.innerHTML = "";
+            promosLoading.classList.remove("hidden");
+            obtenerCodigosPromociones();
+        });
     }
 }
 
 // ========================================
 // FUNCIÓN: Obtener detalles de cada promoción
 // ========================================
+/**
+ * El recolector solo dice que promociones PODRIAN aplicar. Quien decide es
+ * /detalle, una por una, asi que se piden todas a la vez.
+ */
 async function obtenerDetallesPromociones(codigosPromos) {
-    // Si el backend entregó códigos válidos, iniciamos la solicitud de detalles.
     promosLoading.classList.remove("hidden");
     listaPromociones.innerHTML = "";
-    
-    const codigosArray = Array.isArray(codigosPromos) ? codigosPromos : Object.values(codigosPromos);
-    const promesasDetalles = codigosArray.map(codigo => obtenerDetallePromo(codigo));
-    const resultados = await Promise.allSettled(promesasDetalles);
 
-    // Recolectar solo promociones que retornaron detalles válidos.
-    let promoExitosaCount = 0;
+    const resultados = await Promise.allSettled(
+        codigosPromos.map((idprom) => obtenerDetallePromo(idprom))
+    );
+
+    const noAplican = [];
+    let fallidas = 0;
+
     resultados.forEach((resultado) => {
-        if (resultado.status === "fulfilled" && resultado.value && resultado.value.lineas?.length > 0) {
+        if (resultado.status === "rejected" || !resultado.value) {
+            fallidas++;
+            return;
+        }
+        if (resultado.value.aplica) {
             promocionesExitosas.push(resultado.value);
             mostrarPromoEnLista(resultado.value);
-            promoExitosaCount++;
+        } else {
+            noAplican.push(resultado.value);
         }
     });
 
-    if (promoExitosaCount === 0) {
-        promosLoading.classList.add("hidden");
+    promosLoading.classList.add("hidden");
+
+    if (promocionesExitosas.length === 0) {
         listaPromociones.innerHTML = "";
         sinPromociones.classList.remove("hidden");
+        promosTotal.classList.add("hidden");
         contadorPromos.textContent = "";
+
+        // Aunque ninguna aplique, saber a cuanto se quedo es util.
+        noAplican.forEach(mostrarNoAplicaEnLista);
+        avisarFallidas(fallidas);
         return;
     }
 
-    // Mostrar cantidad real de promociones disponibles y calcular totales.
-    contadorPromos.textContent = `Se encontraron ${promoExitosaCount} promoción${promoExitosaCount !== 1 ? 'es' : ''}`;
-    promosLoading.classList.add("hidden");
+    sinPromociones.classList.add("hidden");
+
+    /* Las que no llegaron se muestran despues de las que si. Antes se
+       descartaban en silencio, y con ellas el "faltan 7 unidades" que el
+       backend ya calcula: eso es una venta a la vista, no ruido. */
+    noAplican.forEach(mostrarNoAplicaEnLista);
+    avisarFallidas(fallidas);
+
+    const n = promocionesExitosas.length;
+    const regalos = promocionesExitosas.reduce((suma, p) => suma + p.totalRegalos, 0);
+
+    let texto = n === 1 ? "1 promoción disponible" : `${n} promociones disponibles`;
+    if (regalos > 0) {
+        texto += regalos === 1 ? " · 1 obsequio" : ` · ${regalos} obsequios`;
+    }
+    contadorPromos.textContent = texto;
+
     promosTotal.classList.remove("hidden");
     calcularTotalesPromociones();
+}
+
+/* Que una consulta falle no puede confundirse con que la promocion no aplique:
+   son cosas distintas y la segunda es informacion, la primera es un problema. */
+function avisarFallidas(cuantas) {
+    if (cuantas > 0) {
+        CDK.toast(
+            cuantas === 1
+                ? "No se pudo consultar una promoción. Vuelve a abrir para reintentar."
+                : `No se pudieron consultar ${cuantas} promociones.`,
+            "aviso"
+        );
+    }
 }
 
 // ========================================
 // FUNCIÓN: Obtener detalle de una promoción
 // ========================================
-async function obtenerDetallePromo(codigoPromo) {
-    try {
-        // Enviar código de promoción y productos seleccionados para recibir su detalle.
-        const dataenviar = {
-            codigo: codigoPromo,
-            productos: window.productosSeleccionados
-        };
-        const fetchobj = {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            mode: "cors",
-            credentials: "include",
-            body: JSON.stringify(dataenviar)
-        };
+async function obtenerDetallePromo(idprom) {
+    /* Los errores se dejan subir a Promise.allSettled: una promocion que falla
+       no debe tumbar a las demas. El 401 ya lo gestiona CDK.http, y expirar()
+       es de un solo disparo, asi que varias en paralelo no provocan varias
+       redirecciones. */
+    const respuesta = await CDK.http.post(
+        CDK.rutas.api("/promocion/detalle"),
+        CDK.promo.cuerpoDetalle(idprom, window.productosSeleccionados)
+    );
 
-        const paso1 = await fetch(rutapromodetalles, fetchobj);
-        const textoRespuesta = await paso1.text();
-
-        // El backend puede devolver un objeto con claves numéricas, arrays, o un objeto detalle.
-        const detallePromo = normalizarPromoDetalle(textoRespuesta, codigoPromo);
-        console.log("y esto regreso despues de normalisar",detallePromo);
-
-        if (!detallePromo || !detallePromo.lineas || detallePromo.lineas.length === 0) {
-            return null;
-        }
-
-        return detallePromo;
-
-    } catch (err) {
-        console.warn(`No se pudo obtener detalle de promoción ${codigoPromo}:`, err);
-        return null;
-    }
+    return CDK.promo.detalle(respuesta, idprom);
 }
 
 // ========================================
 // FUNCIÓN: Mostrar promoción en lista
 // ========================================
 function mostrarPromoEnLista(promo) {
-    // Renderizar cada promoción en el modal usando el formato normalizado.
-    const monedaActual = obtenerMonedaSeleccionada();
-    const monedaSymbol = obtenerSímboloMoneda(monedaActual);
+    const moneda = CDK.coti.moneda();
 
-    const item = document.createElement("div");
-    item.className = "p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200";
+    const cabecera = CDK.el("div", { clase: "cdk-ficha" }, [
+        CDK.el("p", { clase: "cdk-ficha__titulo", texto: promo.descripcion }),
+        CDK.el("div", { clase: "cdk-ficha__datos" }, [
+            CDK.el("span", { clase: "cdk-dato" }, [
+                document.createTextNode("Promoción "),
+                CDK.el("span", { clase: "cdk-dato__valor", texto: promo.idprom })
+            ])
+        ])
+    ]);
 
-    const titulo = document.createElement("h4");
-    titulo.className = "font-semibold text-gray-900 text-sm mb-2";
-    titulo.innerHTML = `<i class="fas fa-tag text-purple-600 mr-2"></i>${promo.descripcion} <span class="text-xs text-gray-500">[${promo.codigo}]</span>`;
-
-    const resumen = document.createElement("div");
-    resumen.className = "grid grid-cols-2 gap-2 mb-3 text-xs text-gray-600";
-    const detalleCodigo = document.createElement("p");
-    detalleCodigo.innerHTML = `<span class="font-medium">Código:</span> ${promo.codigo}`;
-    const detalleCantidad = document.createElement("p");
-    const totalCantidad = promo.lineas.reduce((sum, linea) => sum + linea.cantidad, 0);
-    detalleCantidad.innerHTML = `<span class="font-medium">Items:</span> ${totalCantidad}`;
-    resumen.appendChild(detalleCodigo);
-    resumen.appendChild(detalleCantidad);
-
-    const lineaContainer = document.createElement("div");
-    lineaContainer.className = "space-y-2";
+    const lista = CDK.el("ul", { clase: "cdk-articulos" });
 
     promo.lineas.forEach((linea) => {
-        const lineaDiv = document.createElement("div");
-        lineaDiv.className = "p-3 rounded-lg border border-gray-200 bg-white";
-        const montoConvertido = convertirMoneda(linea.monto, linea.moneda);
-        const montoTexto = isNaN(montoConvertido) ? '0.00' : montoConvertido.toFixed(2);
-        const precioUnitario = isNaN(linea.precioUnitario) ? 0 : linea.precioUnitario;
+        const esRegalo = linea.tipo === CDK.promo.REGALO;
 
-        if (linea.tipo === "REGALO") {
-            lineaDiv.innerHTML = `
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="text-xs text-gray-600 mb-1">Regalo</p>
-                        <p class="font-semibold text-gray-900 truncate">${linea.descripcion}</p>
-                        <p class="text-xs text-gray-500 mt-1">Cantidad: ${linea.cantidad}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-600">Precio</p>
-                        <p class="text-sm font-bold text-green-600">${precioUnitario.toFixed(2)} ${monedaSymbol}</p>
-                    </div>
-                </div>
-            `;
-        } else {
-            lineaDiv.innerHTML = `
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <p class="text-xs text-gray-600 mb-1">Descuento</p>
-                        <p class="font-semibold text-gray-900 truncate">${linea.descripcion}</p>
-                        <p class="text-xs text-gray-500 mt-1">Cantidad: ${linea.cantidad}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-600">Monto</p>
-                        <p class="text-sm font-bold text-red-600">-${montoTexto} ${monedaSymbol}</p>
-                    </div>
-                </div>
-            `;
+        /* `cantidad` del backend son las VECES que se alcanzo el umbral, no
+           unidades de producto. Llamarlo "cantidad" aqui invitaba a leerlo
+           como piezas. */
+        const datos = [{ etiqueta: "Alcanzado", valor: linea.veces + "×" }];
+
+        // Solo en ambito total venta.
+        if (linea.acumulado !== null) {
+            datos.push({ etiqueta: "Acumulado", valor: linea.acumulado });
+        }
+        if (linea.participantes && linea.participantes.length) {
+            datos.push({ etiqueta: "Productos", valor: linea.participantes.length });
         }
 
-        lineaContainer.appendChild(lineaDiv);
+        lista.appendChild(CDK.articulo({
+            distintivo: esRegalo ? "Obsequio" : "Descuento",
+            nombre: linea.itemdescr || promo.descripcion,
+            importe: CDK.promo.textoBeneficio(linea, moneda),
+            datos: datos,
+            variante: esRegalo ? "obsequio" : "descuento"
+        }));
     });
 
-    item.appendChild(titulo);
-    item.appendChild(resumen);
-    item.appendChild(lineaContainer);
-    listaPromociones.appendChild(item);
+    listaPromociones.appendChild(CDK.el("div", { style: "margin-bottom:16px" }, [cabecera, lista]));
 }
 
-// ========================================
-// FUNCIÓN: Mostrar "Sin promociones"
-// ========================================
+/**
+ * Una promoción que existe para estos productos pero que todavía no se alcanza.
+ *
+ * El backend dice cuánto falta; enseñarlo convierte un "no aplica" en algo
+ * accionable: el vendedor puede subir la cantidad y cerrarla.
+ */
+function mostrarNoAplicaEnLista(detalle) {
+    const datos = [];
+
+    if (detalle.motivo === "no_alcanza" && detalle.faltante !== null) {
+        datos.push({
+            etiqueta: "Faltan",
+            // El valorizado se mide contra preciosinIGV, que va en dólares.
+            valor: detalle.unidad === "monto"
+                ? CDK.formato.moneda(detalle.faltante, "D")
+                : detalle.faltante + " un.",
+            tono: "alerta"
+        });
+    }
+
+    listaPromociones.appendChild(CDK.articulo({
+        distintivo: "No llega",
+        nombre: detalle.mensaje,
+        datos: datos
+    }));
+}
+
 function mostrarSinPromociones() {
     promosLoading.classList.add("hidden");
     listaPromociones.innerHTML = "";
@@ -476,40 +382,49 @@ function mostrarSinPromociones() {
 // FUNCIÓN: Calcular totales de promociones
 // ========================================
 function calcularTotalesPromociones() {
-    // Calcular valores de resumen a partir del carrito y las promociones encontradas.
     if (promocionesExitosas.length === 0) return;
 
-    const monedaActual = obtenerMonedaSeleccionada();
-    const monedaSymbol = obtenerSímboloMoneda(monedaActual);
+    const moneda = CDK.coti.moneda();
+    const simbolo = CDK.coti.codigoMoneda(moneda);
 
-    let valorVentaTotal = 0;
+    // El carrito, en dolares, por el mismo calculo que usan los pasos 2 y 3.
+    let valorVentaDolares = 0;
     Object.values(window.productosSeleccionados).forEach((producto) => {
-        const precioConvertido = convertirMoneda(producto.precioUnitario, "D");
-        const valorVenta = (precioConvertido * producto.cantidad) - 
-                          ((precioConvertido * producto.cantidad) * (producto.descuento / 100));
-        valorVentaTotal += valorVenta;
+        const linea = CDK.coti.calcularLinea({
+            precio: producto.precioUnitario,
+            cantidad: producto.cantidad,
+            descuento: producto.descuento,
+            tope: producto.descuentoMaximo
+        });
+        valorVentaDolares += linea.importe;
     });
 
-    const lineasPromociones = promocionesExitosas.flatMap(promo => promo.lineas || []);
-    const descuentoTotalPromo = lineasPromociones.reduce((sum, linea) => {
-        if (linea.tipo !== "DESCUENTO") return sum;
-        return sum + convertirMoneda(linea.monto, linea.moneda);
-    }, 0);
+    /* Solo las lineas de descuento suman dinero.
+       Las de regalo traen UNIDADES en ese mismo campo montoDescuento, con
+       monedaDescuento diciendo "D" igual: sumarlas aqui metia obsequios en el
+       total como si fueran dolares. CDK.promo ya los separa en dos campos con
+       nombre distinto para que no vuelva a pasar. */
+    let descuentoDolares = 0;
+    promocionesExitosas.forEach((promo) => {
+        descuentoDolares += promo.totalDescuento;
+    });
 
-    const totalConDescuento = valorVentaTotal - descuentoTotalPromo;
-    const montoIgv = totalConDescuento * 0.18;
-    const totalConIgv = totalConDescuento + montoIgv;
-    const ahorroConIgv = descuentoTotalPromo * 1.18;
+    /* Los montos del backend ya vienen SIN IGV: el motor divide entre 1.18 al
+       leerlos de la base. El frontend no debe volver a dividir. */
+    const valorVenta = CDK.coti.convertir(valorVentaDolares, "D");
+    const descuento = CDK.coti.convertir(descuentoDolares, "D");
+    const base = valorVenta - descuento;
+    const igv = base * 0.18;
 
-    promoValorVenta.textContent = valorVentaTotal.toFixed(2);
-    promoMontDescuento.textContent = descuentoTotalPromo.toFixed(2);
-    promoTotalDescuento.textContent = totalConDescuento.toFixed(2);
-    promoMontoIgv.textContent = montoIgv.toFixed(2);
-    promoTotalConIgv.textContent = totalConIgv.toFixed(2);
-    promoAhorroTotal.textContent = ahorroConIgv.toFixed(2);
+    promoValorVenta.textContent = valorVenta.toFixed(2);
+    promoMontDescuento.textContent = descuento.toFixed(2);
+    promoTotalDescuento.textContent = base.toFixed(2);
+    promoMontoIgv.textContent = igv.toFixed(2);
+    promoTotalConIgv.textContent = (base + igv).toFixed(2);
+    promoAhorroTotal.textContent = (descuento * 1.18).toFixed(2);
 
-    promoMonedasSpan.forEach(span => {
-        span.textContent = monedaSymbol;
+    promoMonedasSpan.forEach((span) => {
+        if (span) span.textContent = simbolo;
     });
 }
 
@@ -519,24 +434,35 @@ function calcularTotalesPromociones() {
 btnAplicarPromo.addEventListener("click", () => {
     // Al aplicar promociones, solo cerramos el modal y guardamos el estado actual.
     if (promocionesExitosas.length === 0) {
-        alert("No hay promociones para aplicar");
+        CDK.toast("No hay promociones para aplicar", "aviso");
         return;
     }
 
     // Guardar promociones aplicadas para su uso posterior.
     promocionesAplicadas = [...promocionesExitosas];
 
-    // Log para verificar en consola antes de cerrar modal.
-    console.log("Promociones aplicadas:", promocionesAplicadas);
+    /* En global porque quien las usa es el paso 4, en otro archivo: al crear la
+       cotizacion las adjunta una por una con /promocion/acoplar. Un `let` de
+       primer nivel no queda en window, y sin esto el paso 4 no las veria. */
+    window.promocionesAplicadas = promocionesAplicadas;
 
     // Notificar al usuario.
-    alert(`¡${promocionesAplicadas.length} promoción${promocionesAplicadas.length !== 1 ? 'es' : ''} aplicada${promocionesAplicadas.length !== 1 ? 's' : ''}!`);
+    CDK.toast(
+        promocionesAplicadas.length === 1
+            ? "Promoción aplicada"
+            : `${promocionesAplicadas.length} promociones aplicadas`,
+        "exito"
+    );
     
+    /* El carrito las muestra en su lista, asi que hay que repintarlo: si no,
+       el vendedor acepta y no ve que haya cambiado nada. */
+    if (typeof window.actualizarResumenProductos === "function") {
+        window.actualizarResumenProductos();
+    }
+
     // Cerrar modal y regresar al flujo principal.
     cerrarModalPromociones();
 
-    // Si se requiere, aquí podría actualizarse el carrito o el summary.
-    // updatearUI();
 });
 
 // ========================================

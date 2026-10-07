@@ -4,70 +4,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Ver cotización - CDK Sistema de Gestión de Ventas">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>CDK - Ver Cotización</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <!-- El documento para el cliente trae su propia hoja: no hereda los colores
+         de la intranet ni el tema oscuro, y manda la impresión. -->
+    <link rel="stylesheet" href="/core/cdk-documento.css">
+    <title>CDK · Ver Cotización</title>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-  
-  <!-- HEADER/NAVBAR -->
-  <nav class="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        <div class="flex items-center space-x-3">
-          <h1 class="text-xl font-bold text-indigo-600">CDK</h1>
-          <span class="text-sm text-gray-600">Ver Cotización</span>
+
+<body data-modulo="cotizacion" data-titulo="Ver Cotización">
+
+<div class="cdk-pagina" id="cdk-pantalla">
+
+    <!-- ============ ELEGIR UNA COTIZACIÓN ============ -->
+    <section class="cdk-seccion" id="seccion-elegir">
+        <h2 class="cdk-seccion__titulo">Mis cotizaciones</h2>
+
+        <!-- Abre con las de hoy, que es el caso normal; se amplía a dos días
+             solo si el vendedor no encuentra la que busca. -->
+        <div class="cdk-acciones-fila" role="group" aria-label="Periodo">
+            <button type="button" id="btn-hoy" class="cdk-boton cdk-boton--primario" aria-pressed="true">
+                Hoy
+            </button>
+            <button type="button" id="btn-dos-dias" class="cdk-boton cdk-boton--suave" aria-pressed="false">
+                2 días
+            </button>
         </div>
-        <a href="/main.html" 
-        class="flex items-center justify-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
-          <i class="fas fa-home"></i>
-          <span>Menú</span>
-        </a>
-      </div>
-    </div>
-  </nav>
 
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- PASO 1: BUSCAR COTIZACION -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 border-l-4 border-indigo-600">
-      <div class="flex items-center mb-4">
-        <div class="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full font-bold text-sm">1</div>
-        <h2 class="ml-3 text-xl font-bold text-gray-900">
-          <i class="fas fa-search mr-2 text-indigo-600"></i>
-          Buscar Cotización
-        </h2>
-      </div>
-      <form class="space-y-4">
-        <div>
-          <label for="ncoti" class="block text-sm font-medium text-gray-700 mb-2">
-            Número de Cotización
-          </label>
-          <input type="search" name="ncoti" id="ncoti" 
-          class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-900 transition-colors focus:border-indigo-500 focus:bg-white focus:outline-none placeholder:text-gray-400"
-          placeholder="Ej: 001234"
-          required>
+        <div id="lista-cotis" style="margin-top:12px"></div>
+
+        <!-- Buscar por número queda como salida para una cotización vieja, que
+             no va a estar en la lista del día. Plegado para no competir con lo
+             que se usa a diario. -->
+        <details class="cdk-plegable" style="margin-top:16px">
+            <summary class="cdk-plegable__titulo">Buscar una cotización por su número</summary>
+
+            <form id="form-buscar" class="cdk-buscador" style="margin-top:12px">
+                <div class="cdk-buscador__campo">
+                    <label class="cdk-campo__etiqueta" for="ncoti">Número de cotización</label>
+                    <!-- inputmode numérico: en el móvil abre el teclado de números
+                         directamente, que es lo que se teclea aquí. -->
+                    <input type="search" name="ncoti" id="ncoti"
+                           class="cdk-entrada"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           placeholder="Ej: 009-00971087"
+                           required>
+                    <p class="cdk-campo__ayuda">Con su serie, como aparece en la lista. Un número
+                        suelto se interpreta siempre como serie 009-, y las cotizaciones nuevas
+                        llevan 098-.</p>
+                </div>
+                <button type="submit" id="buscar-coti" class="cdk-boton cdk-boton--suave">Buscar</button>
+            </form>
+        </details>
+    </section>
+
+    <!-- ============ LA COTIZACIÓN ELEGIDA ============ -->
+    <section class="cdk-seccion hidden" id="seccion-detalle">
+        <div class="cdk-paso__cabecera">
+            <button type="button" id="btn-volver" class="cdk-navbar__atras" aria-label="Volver a la lista">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+            </button>
+            <h2 class="cdk-paso__titulo" id="titulo-coti">Cotización</h2>
         </div>
-        <button type="button" 
-        id="buscar-coti" 
-        class="w-full flex items-center justify-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-lg font-semibold text-white hover:bg-indigo-700 transition-colors">
-          <i class="fas fa-magnifying-glass"></i>
-          <span>BUSCAR</span>
-        </button>
-      </form>
-    </div>
 
-    <!-- PASO 2: DETALLES DE LA COTIZACION -->
-    <div id="contendor-final-final" class="mb-6"></div>
+        <!-- Dos vistas de lo mismo. El resumen lleva margen y coste, que son
+             datos internos; el documento es lo que ve el cliente. Separarlos
+             evita que el margen acabe en un PDF que sale de la empresa. -->
+        <div class="cdk-acciones-fila" role="group" aria-label="Vista">
+            <button type="button" id="btn-vista-resumen" class="cdk-boton cdk-boton--primario" aria-pressed="true">
+                Resumen
+            </button>
+            <button type="button" id="btn-vista-documento" class="cdk-boton cdk-boton--suave" aria-pressed="false">
+                Documento
+            </button>
+            <button type="button" id="btn-pdf" class="cdk-boton cdk-boton--suave hidden">
+                Guardar PDF
+            </button>
+        </div>
 
-    <!-- MODAL DE ACEPTACION -->
-    <div id="modal-aceptacion" class="relative z-10"></div>
+        <div id="contendor-final-final" style="margin-top:12px"></div>
+    </section>
 
-  </main>
+</div>
 
+<!-- El documento vive fuera de .cdk-pagina: al imprimir se oculta todo lo demás
+     y esto queda solo, a tamaño A4. -->
+<div class="cdk-doc__lienzo hidden" id="lienzo-documento"></div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- legado: aún lo usan otras pantallas del módulo -->
 <script src="/js/global/variables.js"></script>
 <script src="/caminos/rutas.js"></script>
+
+<script src="/js/cotizacion/campos.js"></script>
+<!-- La lista de "mis cotizaciones", compartida con Modificar y Cambiar almacén. -->
+<script src="/js/cotizacion/lista_dia.js"></script>
+<script src="/js/cotizacion/documento.js"></script>
 <script src="/js/cotizacion/ver_cotizacion.js"></script>
 </body>
 </html>

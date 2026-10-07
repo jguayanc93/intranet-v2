@@ -3,151 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Ver cotización - CDK Sistema de Gestión de Ventas">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>CDK - Ver Pedido</title>
+    <meta name="description" content="Aplicar flete a un pedido - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Flete</title>
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
-  
-  <!-- HEADER/NAVBAR -->
-  <nav class="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        <div class="flex items-center space-x-3">
-          <h1 class="text-xl font-bold text-indigo-600">CDK</h1>
-          <span class="text-sm text-gray-600">Ver Cotización</span>
-        </div>
-        <a href="/main.html" 
-        class="flex items-center justify-center space-x-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
-          <i class="fas fa-home"></i>
-          <span>Menú</span>
-        </a>
-      </div>
-    </div>
-  </nav>
 
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- SECCION 1: BUSCAR PEDIDO -->
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8 border-l-4 border-indigo-600">
-      <div class="flex items-center mb-6">
-        <div class="flex items-center justify-center w-10 h-10 bg-indigo-600 text-white rounded-full font-bold">1</div>
-        <h2 class="ml-4 text-2xl font-bold text-gray-900">
-          <i class="fas fa-magnifying-glass mr-3 text-indigo-600"></i>
-          Buscar Pedido
-        </h2>
-      </div>
-      
-      <div class="space-y-4">
-        <div>
-          <label for="npedi" class="block text-sm font-semibold text-gray-700 mb-3">
-            Número de Pedido
-          </label>
-          <div class="flex gap-3">
-            <input type="text" name="npedi" id="npedi" 
-            class="flex-1 px-4 py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-gray-900 transition-all focus:border-indigo-500 focus:bg-white focus:outline-none placeholder:text-gray-400"
-            placeholder="Ingresa el número del pedido"
-            required>
-            <button type="button" 
-            id="buscar-pedi" 
-            class="px-8 py-3 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition-all active:scale-95 flex items-center space-x-2">
-              <i class="fas fa-search"></i>
-              <span>BUSCAR</span>
+<body data-modulo="pedido" data-titulo="Flete">
+
+<div class="cdk-pagina">
+
+    <!-- ============ BUSCAR ============ -->
+    <section class="cdk-seccion" id="seccion-buscar">
+        <h2 class="cdk-seccion__titulo">Aplicar flete a un pedido</h2>
+        <p class="cdk-seccion__sub">
+            El flete de provincia es un descuento del 0,4&nbsp;% que aplica el ERP. Aquí se
+            dispara y se ve el resultado. Si el pedido no llega al mínimo, se dice cuánto falta.
+        </p>
+
+        <!-- La ruta filtra por el vendedor de la galleta, así que el pedido de
+             otro no se entrega aunque se escriba su número. -->
+        <form id="form-buscar">
+            <div class="cdk-campo">
+                <label class="cdk-campo__etiqueta" for="npedi">Número de pedido</label>
+                <input type="search" name="npedi" id="npedi"
+                       class="cdk-entrada"
+                       inputmode="numeric"
+                       autocomplete="off"
+                       placeholder="Ej: 099-00132184">
+                <p class="cdk-campo__ayuda">Con su serie, como aparece en la lista de pedidos.</p>
+            </div>
+
+            <button type="submit" id="btn-buscar" class="cdk-boton cdk-boton--primario">
+                Buscar
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        </form>
 
-    <!-- SECCION 2: APLICAR FLETE Y TOTAL (Inicialmente oculta) -->
-    <div id="seccion-flete" class="hidden bg-white rounded-xl shadow-lg p-8 mb-8 border-l-4 border-green-600">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <div class="flex items-center justify-center w-10 h-10 bg-green-600 text-white rounded-full font-bold">2</div>
-          <h2 class="ml-4 text-2xl font-bold text-gray-900">
-            <i class="fas fa-truck mr-3 text-green-600"></i>
-            Aplicar Flete
-          </h2>
-        </div>
-        
-        <div class="flex items-center space-x-6 bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 rounded-lg border-2 border-indigo-200">
-          <div>
-            <p class="text-sm font-medium text-gray-600 mb-1">Total del Pedido</p>
-            <p class="text-3xl font-bold text-indigo-600" id="monto-total">$0.00</p>
-          </div>
-        </div>
-      </div>
+        <div id="buscando" style="margin-top:12px"></div>
+    </section>
 
-      <div class="mt-6 flex gap-3">
-        <button type="button" 
-        id="aplicar-flete" 
-        class="flex-1 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-all active:scale-95 flex items-center justify-center space-x-2">
-          <i class="fas fa-check-circle"></i>
-          <span>APLICAR FLETE</span>
-        </button>
-        <button type="button" 
-        id="cancelar-busqueda" 
-        class="px-6 py-3 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition-all active:scale-95">
-          Cancelar
-        </button>
-      </div>
-    </div>
-
-    <!-- SECCION 3: LISTADO DE PRODUCTOS (Inicialmente oculta) -->
-    <div id="seccion-productos" class="hidden">
-      <div class="bg-white rounded-xl shadow-lg p-8 border-l-4 border-blue-600">
-        <div class="flex items-center mb-6">
-          <div class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full font-bold">3</div>
-          <h2 class="ml-4 text-2xl font-bold text-gray-900">
-            <i class="fas fa-list mr-3 text-blue-600"></i>
-            Productos del Pedido
-          </h2>
-          <span class="ml-auto bg-blue-100 text-blue-800 px-4 py-2 rounded-full font-semibold" id="total-items">
-            0 items
-          </span>
+    <!-- ============ EL PEDIDO ============ -->
+    <section class="cdk-seccion hidden" id="seccion-pedido">
+        <div class="cdk-paso__cabecera">
+            <button type="button" id="btn-volver" class="cdk-navbar__atras" aria-label="Buscar otro pedido">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+            </button>
+            <h2 class="cdk-paso__titulo" id="titulo-pedido">Pedido</h2>
         </div>
 
-        <!-- Contenedor de tabla/listado -->
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="bg-gray-50 border-b-2 border-gray-200">
-                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-900">Marca</th>
-                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Descripcion</th>
-                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Cantidad</th>
-                <th class="px-6 py-4 text-center text-sm font-semibold text-gray-900">Precio Unit.</th>
-                <th class="px-6 py-4 text-right text-sm font-semibold text-gray-900">Total</th>
-              </tr>
-            </thead>
-            <tbody id="tabla-productos" class="divide-y divide-gray-200">
-              <!-- Los productos se cargarán aquí desde el backend -->
-            </tbody>
-          </table>
+        <div id="resumen"></div>
+
+        <div class="cdk-acciones-fila" style="margin:16px 0">
+            <button type="button" id="btn-flete" class="cdk-boton cdk-boton--primario">
+                Aplicar flete
+            </button>
         </div>
 
-        <!-- Resumen final -->
-        <div class="mt-8 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-6 border-2 border-indigo-200">
-          <div class="flex justify-between items-center">
-            <p class="text-lg font-semibold text-gray-800">Subtotal:</p>
-            <p class="text-lg font-bold text-gray-900" id="subtotal">$0.00</p>
-          </div>
-          <div class="flex justify-between items-center mt-3 pt-3 border-t-2 border-indigo-300">
-            <p class="text-xl font-bold text-indigo-600">TOTAL:</p>
-            <p class="text-3xl font-bold text-indigo-600" id="total-final">$0.00</p>
-          </div>
-        </div>
-      </div>
-    </div>
+        <!-- El resultado de aplicar: los totales nuevos, o el motivo por el
+             que no se pudo. Va antes de los productos para que se lea sin
+             tener que desplazarse de vuelta hacia arriba. -->
+        <div id="resultado"></div>
 
-    <!-- Contenedor para mensajes de error o estado -->
-    <div id="mensaje-estado" class="fixed top-6 right-6 max-w-sm hidden"></div>
+        <div id="productos" style="margin-top:16px"></div>
+    </section>
 
-  </main>
+</div>
 
-<script src="/js/global/variables.js"></script>
-<script src="/caminos/rutas.js"></script>
-<script src="/js/pedido/ver_flete.js"></script>
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/pedido/flete.js"></script>
 </body>
 </html>

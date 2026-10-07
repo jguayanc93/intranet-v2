@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Diagnóstico</title>
+    <link rel="stylesheet" href="../core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 20px 16px 60px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .envoltura { max-width: 880px; margin: 0 auto; }
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .subtitulo { margin: 0 0 24px; font-size: 14px; color: var(--cdk-texto-suave); }
+
+        section { margin-bottom: 24px; padding: 16px; background: var(--cdk-superficie);
+                  border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio); }
+        h2 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; font-weight: 600; color: var(--cdk-texto-suave);
+             font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+             padding: 6px 8px; border-bottom: 1px solid var(--cdk-borde); }
+        td { padding: 8px; border-bottom: 1px solid var(--cdk-borde); vertical-align: top;
+             word-break: break-word; }
+        tr:last-child td { border-bottom: 0; }
+
+        .campo { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; }
+
+        .marca { display: inline-block; padding: 2px 8px; border-radius: 999px;
+                 font-size: 11px; font-weight: 600; white-space: nowrap; }
+        .marca--ok      { background: #dcfce7; color: #166534; }
+        .marca--mal     { background: #fee2e2; color: #991b1b; }
+        .marca--ojo     { background: #fef3c7; color: #92400e; }
+        .marca--neutro  { background: #e5e7eb; color: #374151; }
+
+        .envoltura-tabla { overflow-x: auto; }
+        .nota { margin: 12px 0 0; font-size: 12px; color: var(--cdk-texto-suave); line-height: 1.5; }
+        .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    </style>
+</head>
+<body data-shell="none">
+<div class="envoltura">
+
+    <h1>Diagnóstico CDK</h1>
+    <p class="subtitulo">
+        Comprueba entorno, sesión y endpoints.
+        No monta el shell ni redirige ante un 401, para poder ver el error en vez de sufrirlo.
+    </p>
+
+    <div class="acciones">
+        <button class="cdk-boton cdk-boton--primario" id="btn-probar">Probar endpoints</button>
+        <button class="cdk-boton cdk-boton--suave" id="btn-legacy">Revisar caminos/rutas.js</button>
+        <a class="cdk-boton cdk-boton--suave" href="../main.html">Ir al panel</a>
+    </div>
+
+    <section>
+        <h2>1 · Entorno</h2>
+        <div class="envoltura-tabla"><table id="tabla-entorno"></table></div>
+    </section>
+
+    <section>
+        <h2>2 · Sesión</h2>
+        <div class="envoltura-tabla"><table id="tabla-sesion"></table></div>
+        <p class="nota">
+            La cookie de sesión es <strong>HttpOnly</strong>, así que el JS no puede verla: que aquí
+            no aparezca es lo esperado. Lo que importa es el <code>Domain</code>, y eso solo se ve en
+            DevTools → Application → Cookies. El frontend vive en <code>landing.compudiskett.com.pe</code>
+            y la API en <code>pulpo.compudiskett.com.pe</code>: si la cookie no se emite con
+            <code>Domain=.compudiskett.com.pe</code>, depende de cookies de terceros y el endurecimiento
+            de los navegadores puede dejar la intranet entera sin sesión.
+        </p>
+    </section>
+
+    <section>
+        <h2>3 · Endpoints</h2>
+        <div class="envoltura-tabla"><table id="tabla-endpoints">
+            <tbody><tr><td class="nota">Pulsa «Probar endpoints».</td></tr></tbody>
+        </table></div>
+        <p class="nota">
+            Un <strong>401</strong> aquí significa que no hay sesión, no que el endpoint esté roto.
+            Un <strong>fallo de red</strong> suele ser CORS o que el host no responde.
+        </p>
+    </section>
+
+    <section>
+        <h2>4 · Rutas heredadas</h2>
+        <div class="envoltura-tabla"><table id="tabla-legacy">
+            <tbody><tr><td class="nota">Pulsa «Revisar caminos/rutas.js».</td></tr></tbody>
+        </table></div>
+        <p class="nota">
+            Lee <code>caminos/rutas.js</code> como texto y marca las constantes que apuntan a
+            <code>127.0.0.1</code>. Servidas en producción, esas rutas no llegan a ningún sitio.
+            Antes de migrarlas hay que confirmar una por una que el path existe en el host de
+            producción: un reemplazo masivo daría 404 en vez de fallo de red.
+        </p>
+    </section>
+
+</div>
+
+<script src="../core/cdk.js"></script>
+<script src="../core/cdk-rutas.js"></script>
+<script src="../core/cdk-http.js"></script>
+<script src="../core/cdk-sesion.js"></script>
+<script src="../core/cdk-catalogo.js"></script>
+<script src="../core/cdk-permisos.js"></script>
+<script src="../core/cdk-ui.js"></script>
+<script src="../core/cdk-formato.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    function marca(texto, tono) {
+        return '<span class="marca marca--' + tono + '">' + CDK.escapar(texto) + "</span>";
+    }
+
+    function filas(tabla, datos) {
+        document.getElementById(tabla).innerHTML =
+            "<tbody>" + datos.map(function (f) {
+                return "<tr><td>" + f[0] + "</td><td>" + f[1] + "</td></tr>";
+            }).join("") + "</tbody>";
+    }
+
+    /* --- 1. Entorno ------------------------------------------------ */
+    filas("tabla-entorno", [
+        ["Servido desde",   '<span class="campo">' + CDK.escapar(location.origin + location.pathname) + "</span>"],
+        ["CDK.base",        CDK.base === ""
+                                ? marca("raíz del dominio", "ok")
+                                : '<span class="campo">' + CDK.escapar(CDK.base) + "</span> " + marca("subdirectorio", "ojo")],
+        ["CDK.env",         CDK.env === "dev" ? marca("desarrollo", "neutro") : marca("producción", "ok")],
+        ["API",             '<span class="campo">' + CDK.escapar(CDK.rutas.base) + "</span>"],
+        ["Mismo host que la API",
+                            location.hostname === new URL(CDK.rutas.base).hostname
+                                ? marca("sí", "ok")
+                                : marca("no · cookie de tercera parte", "ojo")],
+        ["Núcleo cargado",  Object.keys(window.CDK).length + " piezas: " +
+                            '<span class="campo">' + Object.keys(window.CDK).sort().join(", ") + "</span>"]
+    ]);
+
+    /* --- 2. Sesión ------------------------------------------------- */
+    var centinela = (function () {
+        var p = ("; " + document.cookie).split("; cdk_sesion=");
+        return p.length === 2 ? p.pop().split(";").shift() : null;
+    })();
+
+    filas("tabla-sesion", [
+        ["Cookies legibles por JS",
+            document.cookie
+                ? '<span class="campo">' + CDK.escapar(document.cookie) + "</span>"
+                : marca("ninguna", "neutro")],
+        ["Cookie centinela <code>cdk_sesion</code>",
+            centinela === null
+                ? marca("no emitida · se asume sesión hasta el primer 401", "ojo")
+                : marca("presente (" + centinela + ")", "ok")],
+        ["Redirección al expirar",
+            '<span class="campo">' + CDK.escapar(CDK.rutas.login()) + "</span>"]
+    ]);
+
+    /* --- 3. Endpoints ---------------------------------------------- */
+    var ENDPOINTS = [
+        ["Módulos del vendedor", "/vendedor"],
+        ["Accesos · cotización",  "/cotizacion"],
+        ["Accesos · pedido",      "/pedido"],
+        ["Accesos · factura",     "/factura"],
+        ["Accesos · promoción",   "/promocion"],
+        ["Accesos · cuota",       "/cuota"],
+        ["Accesos · listados",    "/lista"],
+        ["Accesos · programador", "/programador"]
+    ];
+
+    document.getElementById("btn-probar").addEventListener("click", function () {
+        var cuerpo = document.getElementById("tabla-endpoints");
+        cuerpo.innerHTML =
+            "<thead><tr><th>Endpoint</th><th>Ruta</th><th>Resultado</th></tr></thead><tbody>" +
+            ENDPOINTS.map(function (e, i) {
+                return '<tr><td>' + CDK.escapar(e[0]) + '</td>' +
+                       '<td class="campo">' + CDK.escapar(e[1]) + '</td>' +
+                       '<td id="res-' + i + '">' + marca("probando…", "neutro") + "</td></tr>";
+            }).join("") + "</tbody>";
+
+        ENDPOINTS.forEach(function (e, i) {
+            var celda = document.getElementById("res-" + i);
+            var inicio = performance.now();
+
+            // sin401: queremos VER el 401, no que nos expulse de la pagina.
+            CDK.http.get(CDK.rutas.api(e[1]), { sin401: true, timeout: 12000 })
+                .then(function (datos) {
+                    var ms = Math.round(performance.now() - inicio);
+                    var claves = datos && typeof datos === "object" ? Object.keys(datos) : [];
+                    celda.innerHTML = marca("200 · " + ms + " ms", "ok") +
+                        (claves.length ? ' <span class="campo">' + CDK.escapar(claves.join(", ")) + "</span>" : "");
+                })
+                .catch(function (err) {
+                    var ms = Math.round(performance.now() - inicio);
+                    if (err.status === 401)     celda.innerHTML = marca("401 · sin sesión", "ojo");
+                    else if (err.status === 0)  celda.innerHTML = marca("sin respuesta · " + ms + " ms", "mal") +
+                                                    ' <span class="nota">CORS o host caído</span>';
+                    else                        celda.innerHTML = marca(err.status + " · " + ms + " ms", "mal");
+                });
+        });
+    });
+
+    /* --- 4. Rutas heredadas ---------------------------------------- */
+    document.getElementById("btn-legacy").addEventListener("click", function () {
+        var cuerpo = document.getElementById("tabla-legacy");
+        cuerpo.innerHTML = '<tbody><tr><td class="nota">Leyendo…</td></tr></tbody>';
+
+        // Se lee el archivo como texto: las constantes de rutas.js son `const` en
+        // scope global, que no son propiedades de window y no se pueden enumerar.
+        fetch(CDK.rutas.app("/caminos/rutas.js"), { cache: "no-store" })
+            .then(function (r) { return r.text(); })
+            .then(function (texto) {
+                var sospechosas = [];
+                var total = 0;
+
+                texto.split("\n").forEach(function (linea, n) {
+                    var m = /^\s*const\s+(\w+)\s*=\s*(.+?);?\s*(\/\/.*)?$/.exec(linea);
+                    if (!m || !/^ruta/i.test(m[1])) return;
+                    total++;
+                    if (/127\.0\.0\.1|localhost|(^|[^\w])desarrollo\s*\+/.test(m[2])) {
+                        sospechosas.push([n + 1, m[1], m[2]]);
+                    }
+                });
+
+                if (!sospechosas.length) {
+                    cuerpo.innerHTML = '<tbody><tr><td>' +
+                        marca("Ninguna de las " + total + " rutas apunta a localhost", "ok") + "</td></tr></tbody>";
+                    return;
+                }
+
+                cuerpo.innerHTML =
+                    "<thead><tr><th>Línea</th><th>Constante</th><th>Valor</th></tr></thead><tbody>" +
+                    '<tr><td colspan="3">' +
+                        marca(sospechosas.length + " de " + total + " rutas apuntan a localhost", "mal") +
+                    "</td></tr>" +
+                    sospechosas.map(function (s) {
+                        return "<tr><td>" + s[0] + '</td><td class="campo">' + CDK.escapar(s[1]) +
+                               '</td><td class="campo">' + CDK.escapar(s[2]) + "</td></tr>";
+                    }).join("") + "</tbody>";
+            })
+            .catch(function (err) {
+                cuerpo.innerHTML = '<tbody><tr><td>' +
+                    marca("No se pudo leer caminos/rutas.js", "mal") +
+                    ' <span class="nota">' + CDK.escapar(err.message) + "</span></td></tr></tbody>";
+            });
+    });
+})();
+</script>
+</body>
+</html>

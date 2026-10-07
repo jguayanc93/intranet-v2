@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Demo del shell</title>
+    <link rel="stylesheet" href="../core/cdk-shell.css">
+    <style>
+        .demo { max-width: 860px; margin: 0 auto; padding: 20px 16px 40px; }
+        .demo h1 { font-size: 20px; margin: 0 0 4px; }
+        .demo p.intro { margin: 0 0 20px; font-size: 14px; color: var(--cdk-texto-suave); line-height: 1.55; }
+
+        .panel { margin-bottom: 16px; padding: 16px; background: var(--cdk-superficie);
+                 border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio); }
+        .panel h2 { font-size: 14px; margin: 0 0 12px; }
+        .fila { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .mini { font-size: 12px; color: var(--cdk-texto-suave); margin: 10px 0 0; line-height: 1.5; }
+        .campo { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    </style>
+
+    <!--
+        Simulacro de backend.
+
+        Se instala ANTES del core, asi que el shell recorre exactamente el mismo
+        camino que en produccion (peticion, cache en sessionStorage, revalidacion)
+        sin necesidad de que la API este levantada.
+
+        Cambia MODULOS o USUARIO aqui abajo para probar otros escenarios.
+    -->
+    <script>
+    (function () {
+        var MODULOS = {
+            cotizacion:  "Gestión de cotizaciones",
+            pedido:      "Gestión de pedidos",
+            factura:     "Control de facturas",
+            promocion:   "Seguimiento de promociones",
+            cuota:       "Avance de cuota mensual",
+            listas:      "Listados y consultas",
+            programador: "Programación de despacho",
+            reporte:     "Reportes de venta"
+        };
+
+        var USUARIO = { nombre: "Juan Carlos", grupo: "VENTAS-JEFES DE PROD", tipo: "ESPECIALISTA" };
+
+        var real = window.fetch;
+
+        window.fetch = function (entrada, opciones) {
+            var url = String(entrada && entrada.url ? entrada.url : entrada);
+
+            function responder(cuerpo, estado) {
+                // El backend devuelve hoy un JSON que CONTIENE un string JSON.
+                // Se replica ese contrato para ejercitar el desempaquetado real.
+                return Promise.resolve(new Response(
+                    JSON.stringify(JSON.stringify(cuerpo)),
+                    { status: estado || 200, headers: { "Content-Type": "application/json" } }
+                ));
+            }
+
+            if (/\/vendedor$/.test(url)) {
+                return new Promise(function (r) {
+                    setTimeout(function () {
+                        r(responder(Object.assign({ modulos: MODULOS }, USUARIO)));
+                    }, 400);   // latencia simulada, para ver el esqueleto
+                });
+            }
+
+            if (/\/logout$/.test(url)) return responder({ ok: true });
+
+            /* .call(window) y no .apply(this): llamado como `fetch(...)` a
+               secas, `this` es undefined aqui dentro por el modo estricto, y
+               el fetch nativo lo rechaza con "Illegal invocation". */
+            return real.call(window, entrada, opciones);
+        };
+    })();
+    </script>
+</head>
+
+<body data-modulo="cotizacion" data-titulo="Demo del shell">
+
+<div class="demo">
+    <h1>Demo del shell</h1>
+    <p class="intro">
+        El navbar, el sidebar y la barra inferior de esta página los inyecta
+        <code>core/cdk-shell.js</code>; no hay nada de eso escrito en el HTML. El backend está
+        simulado, así que funciona sin la API levantada.
+        <strong>Estrecha la ventana por debajo de 768&nbsp;px</strong> para ver el sidebar
+        convertirse en barra inferior.
+    </p>
+
+    <div class="panel">
+        <h2>Avisos</h2>
+        <div class="fila">
+            <button class="cdk-boton cdk-boton--suave" onclick="CDK.toast('Cotización creada', 'exito')">Éxito</button>
+            <button class="cdk-boton cdk-boton--suave" onclick="CDK.toast('No se pudo guardar', 'error')">Error</button>
+            <button class="cdk-boton cdk-boton--suave" onclick="CDK.toast('Revisa el descuento', 'aviso')">Aviso</button>
+            <button class="cdk-boton cdk-boton--suave" onclick="CDK.toast('Se aplicaron 3 promociones', 'info')">Info</button>
+        </div>
+        <p class="mini">Un solo sistema, en lugar de los cuatro incompatibles que hay hoy.</p>
+    </div>
+
+    <div class="panel">
+        <h2>Diálogos</h2>
+        <div class="fila">
+            <button class="cdk-boton cdk-boton--suave" id="btn-confirmar">Confirmar</button>
+            <button class="cdk-boton cdk-boton--suave" id="btn-peligro">Eliminar</button>
+            <button class="cdk-boton cdk-boton--suave" id="btn-alerta">Alerta</button>
+        </div>
+        <p class="mini">
+            Se cierran con <kbd>Escape</kbd>, atrapan el foco con <kbd>Tab</kbd> y lo devuelven al
+            botón de origen al cerrarse. Ninguna de las 9 implementaciones actuales hace eso.
+        </p>
+    </div>
+
+    <div class="panel">
+        <h2>Estados de contenido</h2>
+        <div class="fila">
+            <button class="cdk-boton cdk-boton--suave" onclick="CDK.estados.cargando('zona')">Cargando</button>
+            <button class="cdk-boton cdk-boton--suave" onclick="CDK.estados.vacio('zona', 'No hay cotizaciones para esta fecha')">Vacío</button>
+            <button class="cdk-boton cdk-boton--suave" id="btn-error">Error</button>
+        </div>
+        <div id="zona" style="margin-top:8px"></div>
+        <p class="mini">Sustituyen a los <code>catch(err){console.log(err)}</code> que hoy dejan la pantalla en blanco.</p>
+    </div>
+
+    <div class="panel">
+        <h2>Formato</h2>
+        <div class="envoltura-tabla"><table id="tabla-formato" style="width:100%;border-collapse:collapse;font-size:13px"></table></div>
+    </div>
+
+    <div class="panel">
+        <h2>Visibilidad por tipo de vendedor</h2>
+        <p class="mini" style="margin-top:0">
+            Usuario simulado: <span class="campo" id="quien"></span>.
+            Los bloques siguientes se resuelven solos según ese tipo; los que no aplican
+            se eliminan del DOM, no se ocultan.
+        </p>
+        <div data-tipo="ESPECIALISTA" style="padding:10px;border-left:3px solid var(--cdk-exito);background:#f0fdf4;margin-bottom:8px">
+            Visible solo para <strong>ESPECIALISTA</strong> — aquí iría el buscador de marcas.
+        </div>
+        <div data-tipo="COBERTURA,CARTERA" style="padding:10px;border-left:3px solid var(--cdk-error);background:#fef2f2;margin-bottom:8px">
+            Visible solo para COBERTURA o CARTERA — no deberías estar viendo esto.
+        </div>
+        <div data-tipo-excepto="ESPECIALISTA" style="padding:10px;border-left:3px solid var(--cdk-error);background:#fef2f2">
+            Visible para todos MENOS ESPECIALISTA — tampoco deberías ver esto.
+        </div>
+    </div>
+</div>
+
+<script src="../core/cdk.js"></script>
+<script src="../core/cdk-rutas.js"></script>
+<script src="../core/cdk-http.js"></script>
+<script src="../core/cdk-sesion.js"></script>
+<script src="../core/cdk-catalogo.js"></script>
+<script src="../core/cdk-permisos.js"></script>
+<script src="../core/cdk-ui.js"></script>
+<script src="../core/cdk-formato.js"></script>
+<script src="../core/cdk-shell.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    document.getElementById("btn-confirmar").addEventListener("click", function () {
+        CDK.modal.confirmar({
+            titulo: "¿Crear la cotización?",
+            mensaje: "Se registrarán 12 productos por un total de $ 4,520.00.",
+            confirmar: "Crear"
+        }).then(function (si) {
+            CDK.toast(si ? "Cotización creada" : "Operación cancelada", si ? "exito" : "info");
+        });
+    });
+
+    document.getElementById("btn-peligro").addEventListener("click", function () {
+        CDK.modal.confirmar({
+            titulo: "¿Eliminar la cotización?",
+            mensaje: "Esta acción no se puede deshacer.",
+            confirmar: "Eliminar",
+            peligro: true
+        }).then(function (si) {
+            if (si) CDK.toast("Cotización eliminada", "exito");
+        });
+    });
+
+    document.getElementById("btn-alerta").addEventListener("click", function () {
+        CDK.modal.alerta({
+            titulo: "Descuento por encima del límite",
+            mensaje: "El descuento aplicado supera el máximo permitido para tu tipo de vendedor."
+        });
+    });
+
+    document.getElementById("btn-error").addEventListener("click", function () {
+        CDK.estados.error("zona", CDK.HttpError("fallo", 0, null, ""), function () {
+            CDK.estados.cargando("zona");
+        });
+    });
+
+    /* --- muestra de formato --- */
+    var ejemplos = [
+        ["moneda(1234.5, 'D')",   CDK.formato.moneda(1234.5, "D")],
+        ["moneda(1234.5, 'S')",   CDK.formato.moneda(1234.5, "S")],
+        ["numero(1234.567)",      CDK.formato.numero(1234.567)],
+        ["porcentaje(12.34)",     CDK.formato.porcentaje(12.34)],
+        ["fecha('2026-09-22')",   CDK.formato.fecha("2026-09-22")],
+        ["fecha(…, 'larga')",     CDK.formato.fecha("2026-09-22", "larga")],
+        ["truncar(…, 24)",        CDK.formato.truncar("teclado mecánico retroiluminado rgb", 24)]
+    ];
+
+    document.getElementById("tabla-formato").innerHTML = ejemplos.map(function (e) {
+        return '<tr><td class="campo" style="padding:6px 8px;border-bottom:1px solid var(--cdk-borde)">' +
+               CDK.escapar(e[0]) + '</td><td style="padding:6px 8px;border-bottom:1px solid var(--cdk-borde)"><strong>' +
+               CDK.escapar(e[1]) + "</strong></td></tr>";
+    }).join("");
+
+    /* --- quien es el usuario simulado --- */
+    function mostrarQuien() {
+        var u = CDK.sesion.usuario();
+        document.getElementById("quien").textContent = u
+            ? u.nombre + " · " + u.grupo + " · " + u.tipo
+            : "cargando…";
+    }
+    mostrarQuien();
+    setTimeout(mostrarQuien, 700);
+})();
+</script>
+</body>
+</html>

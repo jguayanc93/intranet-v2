@@ -1,124 +1,138 @@
-## 🚀 CDK - Portal de Gestión de Ventas
+# CDK · Intranet de ventas (frontend)
 
-### ⚠️ **IMPORTANTE: Usar 127.0.0.1, NO localhost**
+Portal interno para la fuerza de ventas: cotizaciones, pedidos, facturas, promociones,
+cuota, listados y programación de despacho.
 
-El API está configurado para **127.0.0.1:3000**, así que debes acceder desde **127.0.0.1**, no desde localhost.
+Esto es **solo el frontend**. El backend vive en otro proyecto y se consume por HTTP.
 
----
-
-## 📍 URLs para Acceder
-
-```
-✅ CORRECTO:
-- http://127.0.0.1/demo1/
-- http://127.0.0.1/demo1/main.html
-- http://127.0.0.1/demo1/test-api.html
-
-❌ INCORRECTO (NO funcionará CORS):
-- http://localhost/demo1/
-- http://localhost:80/demo1/
-```
+- **Sin build.** HTML estático, JavaScript clásico y CSS plano. No hay `package.json`,
+  ni npm, ni bundler. Lo que ves en el repositorio es lo que se sirve.
+- **Sesión por cookie `HttpOnly`.** El JavaScript no puede leerla; toda petición va con
+  `credentials: "include"` y el backend responde 401 cuando caduca.
+- **El backend es la única autoridad.** El frontend pinta lo que recibe y nunca decide
+  qué puede hacer alguien.
 
 ---
 
-## ✅ Checklist Rápido
+## Levantarlo en local
 
-- [ ] **API levantado**: `http://127.0.0.1:3000` ✅ ACTIVO
-- [ ] **Accediendo desde**: `http://127.0.0.1/demo1/`
-- [ ] **Archivo rutas.js** configurado con `127.0.0.1:3000`
+Hace falta un servidor HTTP: abrir los archivos con `file://` no funciona, porque las
+peticiones al backend necesitan un origen real.
 
----
+**Sírvelo desde la raíz**, no desde un subdirectorio. El proyecto usa rutas absolutas
+(`/core/…`, `/js/…`), así que bajo `/demo1/` se romperían.
 
-## 🧪 Testing Rápido
+Cualquier servidor estático vale. Con Apache o XAMPP, apunta un *virtual host* a la
+carpeta del proyecto y entra por `http://127.0.0.1/`.
 
-### Opción 1: Página de Test
-```
-http://127.0.0.1/demo1/test-api.html
-```
-- Verá estado del API
-- Botón para testear `/vendedor`
-- Logs en tiempo real
+> Usa **127.0.0.1**, no `localhost`. El backend tiene configurado ese origen en CORS y
+> para el navegador no son lo mismo.
 
-### Opción 2: DevTools Console
-```
-1. Abre http://127.0.0.1/demo1/main.html
-2. Presiona F12
-3. Ve a "Console"
-4. Verás logs como:
-   ✅ Response Status: 200 OK
-   ✅ Módulos cargados
-```
+El entorno se detecta solo por el nombre del host: en `127.0.0.1` o `localhost` se apunta
+a la API de desarrollo, y en cualquier otro a la de producción. No hay que tocar nada al
+desplegar.
 
----
+### Comprobar que todo responde
 
-## 🔧 Configuración de Rutas
+Abre **`/dev/diagnostico.html`**. Verás el entorno detectado, el estado de la cookie de
+sesión y una prueba de cada endpoint. También revisa `caminos/rutas.js` y señala las rutas
+que apuntan a `127.0.0.1` aunque se sirvan en producción.
 
-Archivo: `caminos/rutas.js`
-
-```javascript
-const produccion="http://127.0.0.1:3000/v1"
-// Todas las rutas usan:
-const rutavendedor=produccion+"/vendedor";
-const rutalogin=produccion+"/login";
-// ... etc
-```
+**`/dev/shell-demo.html`** muestra el armazón y los componentes con datos simulados, sin
+necesidad de backend.
 
 ---
 
-## 📋 Estructura Esperada del API
+## Estructura
 
-El endpoint `/vendedor` debe devolver:
+```
+core/           Núcleo compartido. Se carga en todas las páginas.
+                Ver docs/arquitectura.md
 
-```json
-{
-  "cotizacion": "Descripción",
-  "factura": "Descripción",
-  "cuota": "Descripción",
-  ...
-}
+index.html      Inicio de sesión
+main.html       Panel principal
+configuracion.html
+<modulo>.html   Un hub por módulo (cotizacion, factura, cuota, …)
+
+<modulo>/       Las pantallas de trabajo de cada módulo
+js/<modulo>/    Su JavaScript
+styles/         CSS heredado de pantallas aún sin migrar
+caminos/        Constantes de endpoints (heredado; ver docs/arquitectura.md)
+dev/            Herramientas de desarrollo. No forman parte del producto.
+dev/pruebas/    Las diez suites automáticas
+docs/           Documentación
 ```
 
----
-
-## 🎯 Archivos Principales
-
-| Archivo | URL | Descripción |
-|---------|-----|-------------|
-| **main.html** | `/main.html` | Panel de control principal |
-| **index.html** | `/index.html` | Login |
-| **test-api.html** | `/test-api.html` | Testing de API |
-| **TESTING.md** | Guía completa de debugging |
+La navegación tiene tres niveles: **panel → hub del módulo → pantalla de trabajo**.
+El hub no es un menú decorativo: pregunta al backend qué acciones tiene permitidas esa
+persona y solo pinta esas.
 
 ---
 
-## 💡 Si algo no funciona
+## Añadir una página
 
-1. **Verifica que accedas desde 127.0.0.1**
-   ```
-   Abre Developer Tools (F12)
-   Console debería mostrar:
-   URL: http://127.0.0.1:3000/v1/vendedor
-   ```
+Toda página declara qué es en el `<body>` y el armazón se monta solo. No se escribe la
+barra superior, ni el menú lateral, ni la barra inferior.
 
-2. **Verifica que el API esté levantado**
-   ```
-   En otra terminal:
-   netstat -ano | findstr 3000
-   o
-   curl http://127.0.0.1:3000/v1/vendedor
-   ```
+```html
+<body data-modulo="cotizacion" data-titulo="Crear Cotización">
+```
 
-3. **Mira los logs**
-   - Abre test-api.html
-   - Haz clic en "Test /vendedor"
-   - Observa los logs para ver exactamente qué está pasando
+El bloque de `<script>` del núcleo tiene un orden obligatorio.
+Está detallado, con la plantilla completa, en **[docs/arquitectura.md](docs/arquitectura.md)**.
 
 ---
 
-## 📞 Contacto / Debugging
+## Las pruebas
 
-Si tienes problemas:
-1. Abre `test-api.html`
-2. Copia los logs exactos que ves
-3. Revisa que el API esté respondiendo
-4. Verifica que accedas desde `127.0.0.1`
+```
+cd dev/pruebas
+npm install          una sola vez: lo único que hace falta es jsdom
+node todas.js        las diez suites, con un resumen
+```
+
+Nueve de las diez cargan las páginas reales en un DOM y las accionan. `node todas.js` sale
+con código 1 si alguna falla. Ver [`dev/pruebas/README.md`](dev/pruebas/README.md).
+
+> El `package.json` de ahí dentro es la **única** concesión a npm en todo el proyecto, y
+> está en su propia carpeta a propósito: lo que se despliega sigue sin build y sin
+> dependencias.
+
+---
+
+## Desplegar
+
+Copiar los archivos al servidor, en la raíz del dominio. No hay paso de compilación.
+
+Conviene excluir `dev/` y `docs/` del despliegue.
+
+---
+
+## Pendientes conocidos
+
+Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
+
+- ~~Rutas apuntando a `127.0.0.1` en producción.~~ **Resuelto.** Eran veintisiete entre
+  las escritas a mano y las que usaban la constante `desarrollo`. Hoy no queda ninguna:
+  las que nadie usaba se retiraron, y las que quedaban vivas eran del módulo Factura, que
+  ya pide por `CDK.rutas.api()`.
+- **La cookie de sesión es de otro host** (`landing.*` frente a `pulpo.*`). Si no se
+  emite con `Domain=.compudiskett.com.pe`, depende de cookies de terceros y el
+  endurecimiento de los navegadores puede dejar la intranet sin sesión.
+- **`styles/factura-components.css` no aplica ningún estilo.** Usa `@apply`, que requiere
+  un build de Tailwind que este proyecto no tiene, así que el navegador lo descarta
+  entero. Las pantallas de `factura/` se ven sin estilo.
+- **`parseJSONResponse` está definida dos veces con comportamientos opuestos**:
+  `js/cotizacion/buscar_promo_part4.js` devuelve `null` si el parseo falla y
+  `js/cotizacion/buscar_promo_part5.js` devuelve el valor original. Las dos se cargan en
+  `cotizacion/cotizacion_nuevo.html`, y como part5 va después, gana la suya: quien
+  comprueba `=== null` nunca lo recibe.
+- **`cotizacion/cotizacion_eliminar.html` no tiene lógica.** Sus scripts están
+  comentados a la espera de que se escriban.
+- **Los listados no paginan.** Se renderizan todos los registros de golpe.
+- `programador/` es el único módulo sin migrar, y está **en pausa a propósito**: su única
+  acción queda para más adelante, así que el hub no la enlaza. Su pantalla sigue en el
+  repositorio con su cabecera propia; lo que hay que saber antes de retomarla está en
+  [docs/programador.md](docs/programador.md).
+
+  `cotizacion/`, `lista/`, `pedido/`, `factura/`, `promocion/` y `cuota/` ya usan el núcleo.

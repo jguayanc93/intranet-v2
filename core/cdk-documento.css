@@ -1,0 +1,226 @@
+/**
+ * cdk-documento.css — La cotización como documento para el cliente.
+ *
+ * Reproduce el formato impreso de siempre, el que los vendedores ya reconocen.
+ * Se usa en dos sitios a la vez: como vista previa en pantalla y como lo que
+ * sale al imprimir, para que lo que se ve sea exactamente lo que se guarda.
+ *
+ * No usa los tokens de cdk-shell.css a propósito. Un documento que va a acabar
+ * en papel o en un PDF para un cliente no debe cambiar si mañana se retoca la
+ * paleta de la intranet, ni heredar un tema oscuro: siempre negro sobre blanco.
+ *
+ * Las medidas van en milímetros porque el destino es una hoja A4, no una
+ * pantalla.
+ */
+
+.cdk-doc {
+    --doc-borde: #000;
+    --doc-suave: #444;
+
+    box-sizing: border-box;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 12mm 10mm;
+    margin: 0 auto;
+    background: #fff;
+    color: #000;
+    /* Arial y no la fuente del sistema: es la que tiene el documento actual y
+       la que mejor se comporta al imprimir en cualquier equipo. */
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    line-height: 1.35;
+}
+
+.cdk-doc *, .cdk-doc *::before, .cdk-doc *::after { box-sizing: inherit; }
+
+/* ---------------------------------------------------------------
+ * Cabecera
+ * ------------------------------------------------------------- */
+.cdk-doc__cabecera {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10mm;
+    margin-bottom: 6mm;
+}
+
+.cdk-doc__numero {
+    padding: 1.5mm 3mm;
+    border: 1pt solid var(--doc-borde);
+    font-size: 12pt;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.cdk-doc__emisor { text-align: right; }
+
+.cdk-doc__marca {
+    margin: 0 0 1mm;
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: .2pt;
+}
+
+.cdk-doc__ruc { margin: 0 0 1mm; font-size: 9pt; font-weight: 700; color: #1a3d7c; }
+.cdk-doc__emisor-datos { margin: 0; font-size: 7.5pt; color: var(--doc-suave); }
+
+/* ---------------------------------------------------------------
+ * Datos del cliente
+ *
+ * Es una lista de descripción y no una tabla: son pares etiqueta-valor, y así
+ * un lector de pantalla los anuncia emparejados.
+ * ------------------------------------------------------------- */
+.cdk-doc__datos {
+    display: grid;
+    grid-template-columns: 22mm 1fr 18mm 1fr;
+    gap: .8mm 2mm;
+    margin: 0 0 5mm;
+    font-size: 8.5pt;
+}
+
+.cdk-doc__datos dt { color: var(--doc-suave); }
+.cdk-doc__datos dt::after { content: " :"; }
+.cdk-doc__datos dd { margin: 0; font-weight: 600; }
+
+/* Una fila que ocupa el ancho completo (dirección, por ejemplo) */
+.cdk-doc__datos dd.cdk-doc__ancho { grid-column: 2 / -1; }
+
+.cdk-doc__saludo { margin: 0 0 4mm; font-size: 8.5pt; }
+.cdk-doc__saludo p { margin: 0 0 1mm; }
+
+/* ---------------------------------------------------------------
+ * Tabla de artículos
+ * ------------------------------------------------------------- */
+.cdk-doc__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+}
+
+.cdk-doc__tabla thead th {
+    padding: 1mm 1.5mm;
+    border-top: .8pt solid var(--doc-borde);
+    border-bottom: .8pt solid var(--doc-borde);
+    font-weight: 700;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.cdk-doc__tabla tbody td {
+    padding: .8mm 1.5mm;
+    vertical-align: top;
+}
+
+/* Los números a la derecha y con cifras de ancho fijo: así las columnas de
+   importes se leen alineadas aunque cambien los dígitos. */
+.cdk-doc__tabla .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.cdk-doc__tabla .centro { text-align: center; }
+
+/* La descripción es lo único que puede partirse; el resto no debe romperse. */
+.cdk-doc__tabla .desc { width: 100%; }
+
+.cdk-doc__tabla tbody tr:last-child td { border-bottom: .8pt solid var(--doc-borde); }
+
+/* ---------------------------------------------------------------
+ * Totales
+ * ------------------------------------------------------------- */
+.cdk-doc__cierre { margin-top: 6mm; }
+
+.cdk-doc__moneda {
+    display: inline-block;
+    padding: 1.5mm 3mm;
+    margin-bottom: -0.8pt;        /* para que los bordes se toquen */
+    border: .8pt solid var(--doc-borde);
+    font-size: 9pt;
+    font-weight: 700;
+}
+
+.cdk-doc__totales {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2mm 8mm;
+    padding: 2mm 3mm;
+    border: .8pt solid var(--doc-borde);
+    font-size: 9pt;
+}
+
+.cdk-doc__total { display: flex; align-items: baseline; gap: 2mm; }
+.cdk-doc__total dt { font-weight: 700; }
+.cdk-doc__total dd { margin: 0; font-variant-numeric: tabular-nums; }
+.cdk-doc__total--fin { margin-left: auto; }
+.cdk-doc__total--fin dd { font-weight: 700; }
+
+.cdk-doc__pie {
+    margin-top: 6mm;
+    font-size: 7.5pt;
+    color: var(--doc-suave);
+}
+
+/* ---------------------------------------------------------------
+ * En pantalla: se presenta como una hoja sobre la mesa
+ * ------------------------------------------------------------- */
+.cdk-doc--previa {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .18);
+    /* Una A4 no cabe en un móvil. Se reduce en bloque en vez de reacomodar el
+       contenido: el vendedor tiene que ver EXACTAMENTE lo que va a enviar, y
+       un diseño que se reordena en pantalla engaña. Se puede ampliar con el
+       gesto de siempre. */
+    transform-origin: top left;
+}
+
+.cdk-doc__lienzo {
+    overflow-x: auto;
+    padding: 12px;
+    background: #e9ecef;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ---------------------------------------------------------------
+ * Al imprimir
+ * ------------------------------------------------------------- */
+@media print {
+    /* Fuera todo lo que no es el documento: el armazón de la intranet, los
+       botones, los paneles. Se oculta por ascendencia para no tener que
+       enumerar cada pieza. */
+    body > *:not(.cdk-doc__lienzo),
+    .cdk-navbar, .cdk-sidebar, .cdk-bottomnav, .cdk-toasts, .cdk-hoja, .cdk-panel {
+        display: none !important;
+    }
+
+    /* El armazón reserva sitio para la barra y el menú; al imprimir sobran. */
+    body[data-modulo] {
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    .cdk-doc__lienzo {
+        display: block !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    .cdk-doc {
+        width: auto;
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        transform: none !important;
+    }
+
+    /* Que no se parta una fila entre dos hojas, y que la cabecera de la tabla
+       se repita arriba de cada una. */
+    .cdk-doc__tabla { page-break-inside: auto; }
+    .cdk-doc__tabla thead { display: table-header-group; }
+    .cdk-doc__tabla tr { page-break-inside: avoid; }
+    .cdk-doc__cierre { page-break-inside: avoid; }
+
+    @page { size: A4 portrait; margin: 12mm 10mm; }
+}

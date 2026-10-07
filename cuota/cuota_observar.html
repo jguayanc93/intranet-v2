@@ -3,546 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="/styles/factura-components.css">
-    <title>Monitor de Cuota - Ventas</title>
+    <meta name="description" content="Avance de cuota - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Mi cuota</title>
 </head>
-<body class="bg-gray-50">
 
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Monitor de Cuota Mensual</h1>
-                    <p class="text-sm text-gray-500 mt-1">Visualiza tu meta de ventas y progreso actual</p>
-                </div>
-                <a href="/main.html" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-base font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
-                    ← Volver
-                </a>
-            </div>
-        </div>
-    </header>
+<body data-modulo="cuota" data-titulo="Mi Cuota">
 
-    <!-- Main Content -->
-    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex flex-col items-center gap-4 mb-6">
-            <a href="/main.html" class="w-full max-w-xs text-center rounded-full bg-indigo-600 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors">← Volver al menú</a>
-        </div>
+<div class="cdk-pagina">
 
-        <div id="insertador-tipo" class="mb-6"></div>
-        <div id="contenedor-marcas" class="mb-6"></div>
+    <!-- ============ EL AVANCE DEL MES ============ -->
+    <!-- Segmento 1. Es el que importa y el único que se conserva: los otros
+         dos se retiraron y en su sitio van los cuatro bloques de abajo. -->
+    <section class="cdk-seccion" id="seccion-avance">
+        <h2 class="cdk-seccion__titulo">Mi cuota de este mes</h2>
 
-        <section id="cuota-mensual" class="bg-white rounded-3xl shadow-lg p-5 sm:p-6 mb-6 hidden">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-                <div>
-                    <p class="text-sm uppercase tracking-[0.25em] text-indigo-600">Segmento 1</p>
-                    <h2 class="text-2xl font-bold text-slate-900">Cuota Mensual</h2>
-                </div>
-                <div class="rounded-full bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700">Resumen del mes</div>
-            </div>
+        <div id="avance"></div>
+    </section>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Meta mensual</p>
-                    <p id="meta-mensual" class="mt-3 text-3xl font-bold text-slate-900">-</p>
-                </article>
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Avance actual</p>
-                    <p id="avance-mensual" class="mt-3 text-3xl font-bold text-slate-900">-</p>
-                </article>
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Cumplimiento</p>
-                    <p id="cumplimiento-mensual" class="mt-3 text-3xl font-bold text-slate-900">-</p>
-                </article>
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Estado</p>
-                    <p id="mensaje-mensual" class="mt-3 text-lg font-semibold text-slate-900">Cargando...</p>
-                </article>
-            </div>
+    <!-- ============ CÓMO VAS DE RITMO ============ -->
+    <section class="cdk-seccion hidden" id="seccion-ritmo">
+        <h2 class="cdk-seccion__titulo">Cómo vas de ritmo</h2>
+        <div id="ritmo"></div>
+    </section>
 
-            <div class="space-y-3">
-                <div class="flex items-center justify-between text-sm text-slate-500">
-                    <span>Progreso hacia la cuota mensual</span>
-                    <span id="porcentaje-display" class="font-semibold text-slate-900">0%</span>
-                </div>
-                <div class="h-4 overflow-hidden rounded-full bg-slate-200">
-                    <div id="barra-progreso" class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500" style="width: 0%"></div>
-                </div>
-                <div class="flex items-center justify-between text-xs text-slate-500">
-                    <span id="meta-display">Meta: $0</span>
-                    <span id="falta-cantidad">Falta: $0</span>
-                </div>
-            </div>
-        </section>
+    <!-- ============ LAS NOTAS DE CRÉDITO ============ -->
+    <section class="cdk-seccion hidden" id="seccion-notas">
+        <h2 class="cdk-seccion__titulo">Lo que te restan las notas de crédito</h2>
+        <div id="notas"></div>
+    </section>
 
-        <section id="cuota-especifica" class="bg-white rounded-3xl shadow-lg p-5 sm:p-6 mb-6 hidden">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-                <div>
-                    <p class="text-sm uppercase tracking-[0.25em] text-emerald-600">Segmento 2</p>
-                    <h2 class="text-2xl font-bold text-slate-900">Cuota Específica por Línea</h2>
-                </div>
-                <div id="linea-code" class="rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">Línea: -</div>
-            </div>
+    <!-- ============ A QUIÉN LLAMAR ============ -->
+    <section class="cdk-seccion hidden" id="seccion-reposicion">
+        <h2 class="cdk-seccion__titulo">A quién llamar</h2>
+        <p class="cdk-seccion__sub">
+            Clientes tuyos con compras vencidas, por lo que suelen reponer. Es una lista de
+            candidatos para priorizar, no una venta hecha.
+        </p>
+        <div id="reposicion"></div>
+    </section>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Avance específico</p>
-                    <p id="avance-especifico" class="mt-3 text-2xl font-bold text-slate-900">-</p>
-                </article>
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Porcentaje objetivo</p>
-                    <p id="objetivo-especifico" class="mt-3 text-2xl font-bold text-slate-900">-</p>
-                </article>
-                <article class="rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-500">Cuota requerida</p>
-                    <p id="cuota-especifica-valor" class="mt-3 text-2xl font-bold text-slate-900">-</p>
-                </article>
-            </div>
+</div>
 
-            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-slate-500">Cumplimiento específico</p>
-                        <p id="cumplimiento-especifico" class="mt-2 text-3xl font-bold text-slate-900">-</p>
-                    </div>
-                    <div class="text-sm text-slate-600">Sigue el ritmo de la línea y ajusta tu actividad para alcanzar el objetivo.</div>
-                </div>
-            </div>
-        </section>
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
 
-        <section id="segmento-3" class="bg-white rounded-3xl shadow-lg p-5 sm:p-6 mb-6 hidden">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
-                <div>
-                    <p class="text-sm uppercase tracking-[0.25em] text-amber-600">Segmento 3</p>
-                    <h2 class="text-2xl font-bold text-slate-900">Items especiales requeridos</h2>
-                </div>
-                <div class="rounded-full bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700">
-                    Listado de productos especiales vendidos
-                </div>
-            </div>
-
-            <div id="segmento-3-vacio" class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
-                No hay datos disponibles para este segmento.
-            </div>
-
-            <div id="segmento-3-lista" class="hidden">
-                <div class="overflow-hidden rounded-2xl border border-slate-200">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Código</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Descripción</th>
-                                <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Unidades</th>
-                            </tr>
-                        </thead>
-                        <tbody id="segmento-3-body" class="divide-y divide-slate-200 bg-white"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <div id="detallado" class="hidden"></div>
-    </main>
-
-    <!-- Modal de error -->
-    <div id="modal-aceptacion" class="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true"></div>
-
-    <script src="/caminos/rutas.js"></script>
-    <script src="/js/global/toast-notifications.js"></script>
-    
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            activar_segmento3(segmento3Activo);
-            if (document.getElementById("detallado")) {
-                responder_revision_registro();
-            }
-        });
-
-        function responder_revision_registro() {
-            let peticion = new Request(rutacuotamostrar, { 
-                method: "GET", 
-                mode: "cors", 
-                credentials: "include" 
-            });
-
-            fetch(peticion)
-                .then(resultado => {
-                    if (!resultado.ok) {
-                        throw new Error("Falla en la muestra de cuotas");
-                    }
-                    return resultado.json();
-                })
-                .then(resultado => {
-                    console.log("Respuesta recibida:", resultado);
-                    
-                    if (Object.keys(resultado).includes("simple")) {
-                        mostrar_cuota_simple(resultado["simple"]);
-                    } else if (Object.keys(resultado).includes("multiple")) {
-                        recorrer_bucles_marcas(resultado["multiple"]);
-                    } else if (Object.keys(resultado).includes("superior")) {
-                        console.log("Aún falta esta parte");
-                    }
-                })
-                .catch(err => {
-                    console.log("Error:", err);
-                    mostrar_modal_error(err.message);
-                });
-        }
-
-        function formatMoney(value) {
-            const amount = Number(value) || 0;
-            return amount.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
-        }
-
-        function formatPercent(value) {
-            const percent = Number(value) || 0;
-            return percent.toFixed(2) + "%";
-        }
-
-        // let segmento3Activo = window.segmento3Activo ?? false;
-        let segmento3Activo = window.segmento3Activo ?? true;
-
-        function activar_segmento3(activo = false) {
-            segmento3Activo = Boolean(activo || window.segmento3Activo);
-            const section = document.getElementById("segmento-3");
-            const listContainer = document.getElementById("segmento-3-lista");
-            const emptyState = document.getElementById("segmento-3-vacio");
-            const body = document.getElementById("segmento-3-body");
-
-            if (!section || !listContainer || !emptyState || !body) {
-                return;
-            }
-
-            section.classList.toggle("hidden", !segmento3Activo);
-
-            if (!segmento3Activo) {
-                listContainer.classList.add("hidden");
-                emptyState.classList.remove("hidden");
-                body.innerHTML = "";
-            }
-        }
-
-        function normalizar_items_segmento3(items) {
-            console.log("si estoi siendo disparado",items)
-            if (Array.isArray(items)) {
-                return items;
-            }
-
-            if (!items || typeof items !== "object") {
-                return [];
-            }
-
-            if ("codigo" in items || "descripcion" in items || "unidades" in items) {
-                return [items];
-            }
-
-            return Object.values(items);
-        }
-
-        function renderizar_segmento3(items) {
-            const listContainer = document.getElementById("segmento-3-lista");
-            const emptyState = document.getElementById("segmento-3-vacio");
-            const body = document.getElementById("segmento-3-body");
-
-            if (!listContainer || !emptyState || !body) {
-                return;
-            }
-
-            const datos = normalizar_items_segmento3(items);
-            console.log("normalisado segmento",datos)
-            body.innerHTML = "";
-
-            if (!datos.length) {
-                listContainer.classList.add("hidden");
-                emptyState.classList.remove("hidden");
-                return;
-            }
-
-            emptyState.classList.add("hidden");
-            listContainer.classList.remove("hidden");
-
-            datos.forEach((item) => {
-                const fila = document.createElement("tr");
-                fila.innerHTML = `
-                    <td class="px-4 py-3 text-sm font-medium text-slate-900">${item[0]}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${item[2]}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${item[3]}</td>
-                `;
-                body.appendChild(fila);
-            });
-        }
-
-        function cargar_segmento3_items() {
-            // ///activar luego
-            if (!segmento3Activo) {
-                activar_segmento3(false);
-                return;
-            }
-
-            // const rutaSegmento3 = rutacuotamostraritems || null;
-            const rutaSegmento3 = window.rutaSegmento3 || rutacuotamostraritems;
-            if (!rutaSegmento3) {
-                console.warn("La ruta del segmento 3 aún no está configurada.");
-                renderizar_segmento3([]);
-                return;
-            }
-
-            const cuerpo = {};
-            const peticion = new Request(rutacuotamostraritems, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(cuerpo),
-                mode: "cors",
-                credentials: "include"
-            });
-
-            fetch(peticion)
-                .then((resultado) => {
-                    if (!resultado.ok) {
-                        throw new Error("Fallo al cargar los items del segmento 3");
-                    }
-                    return resultado.json();
-                })
-                .then((resultado) => {
-                    // console.log("regresado del segmento3",resultado)
-                    const items = resultado?.items || resultado || [];
-                    renderizar_segmento3(items["simple"]);
-                })
-                .catch((err) => {
-                    console.log("Error segmento 3:", err);
-                    renderizar_segmento3([]);
-                });
-        }
-
-        function actualizar_barra_progreso(datos) {
-            const meta = parseFloat(datos["meta"]) || 0;
-            const avance = parseFloat(datos["avance"]) || 0;
-            const porcentaje = Math.min((avance / meta * 100), 100);
-            
-            // Actualizar barra visual
-            document.getElementById("barra-progreso").style.width = porcentaje + "%";
-            document.getElementById("porcentaje-display").textContent = Math.round(porcentaje) + "%";
-            
-            // Calcular falta
-            const falta = Math.max(meta - avance, 0);
-            document.getElementById("falta-cantidad").textContent = falta.toFixed(2);
-            document.getElementById("meta-display").textContent = "Meta: $" + meta.toFixed(2);
-
-            // Cambiar color de la barra según progreso
-            const barra = document.getElementById("barra-progreso");
-            if (porcentaje >= 100) {
-                barra.className = "bg-gradient-to-r from-green-500 to-emerald-600 h-full rounded-full transition-all duration-500 ease-out";
-            } else if (porcentaje >= 75) {
-                barra.className = "bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-500 ease-out";
-            } else if (porcentaje >= 50) {
-                barra.className = "bg-gradient-to-r from-yellow-500 to-orange-600 h-full rounded-full transition-all duration-500 ease-out";
-            } else {
-                barra.className = "bg-gradient-to-r from-red-500 to-pink-600 h-full rounded-full transition-all duration-500 ease-out";
-            }
-        }
-
-        function recorrer_bucles_marcas(vendedor) {
-            console.log("Vendedor con múltiples marcas:", vendedor);
-            
-            let estilo_tipo = document.getElementById("insertador-tipo");
-            let contenedor_marcas = document.getElementById("contenedor-marcas");
-            estilo_tipo.innerHTML = "";
-            contenedor_marcas.innerHTML = "";
-
-            // Información del Vendedor
-            let seccion_info = document.createElement("div");
-            seccion_info.className = "bg-white rounded-lg shadow-md p-6 mb-6";
-            
-            let titulo_vendedor = document.createElement("h2");
-            titulo_vendedor.className = "text-2xl font-bold text-gray-900 mb-2";
-            titulo_vendedor.textContent = "Vendedor: " + vendedor["nombre"];
-            
-            let tipo_vendedor = document.createElement("p");
-            tipo_vendedor.className = "text-gray-600";
-            tipo_vendedor.innerHTML = "<span class='font-semibold'>Tipo:</span> " + vendedor["tipo"];
-            
-            seccion_info.appendChild(titulo_vendedor);
-            seccion_info.appendChild(tipo_vendedor);
-            estilo_tipo.appendChild(seccion_info);
-
-            // Selector de Marcas
-            let contenedor_marcas_selector = document.createElement("div");
-            contenedor_marcas_selector.className = "bg-white rounded-lg shadow-md p-6 mb-6";
-            
-            let titulo_marcas = document.createElement("h3");
-            titulo_marcas.className = "text-lg font-semibold text-gray-900 mb-4";
-            titulo_marcas.textContent = "Selecciona una Marca para Ver Detalles";
-            contenedor_marcas_selector.appendChild(titulo_marcas);
-
-            let grid_marcas = document.createElement("div");
-            grid_marcas.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
-
-            for (const marc in vendedor["marcas"]) {
-                let tarjeta_marca = document.createElement("button");
-                tarjeta_marca.className = "bg-gradient-to-br from-indigo-50 to-blue-50 hover:from-indigo-100 hover:to-blue-100 border-2 border-indigo-200 hover:border-indigo-400 rounded-lg p-4 text-left transition-all hover:shadow-lg hover:scale-105";
-                
-                let nombre_marca = document.createElement("h4");
-                nombre_marca.className = "font-bold text-gray-900 text-lg mb-1";
-                nombre_marca.textContent = vendedor["marcas"][marc][1];
-                
-                let abrev_marca = document.createElement("p");
-                abrev_marca.className = "text-sm text-gray-600";
-                abrev_marca.textContent = "Código: " + vendedor["marcas"][marc][0];
-                
-                tarjeta_marca.appendChild(nombre_marca);
-                tarjeta_marca.appendChild(abrev_marca);
-                
-                tarjeta_marca.addEventListener("click", () => 
-                    revisar_cuota_marca_existe(marc, vendedor["marcas"][marc][0], vendedor["marcas"][marc][1])
-                );
-                
-                grid_marcas.appendChild(tarjeta_marca);
-            }
-
-            contenedor_marcas_selector.appendChild(grid_marcas);
-            contenedor_marcas.appendChild(contenedor_marcas_selector);
-        }
-
-        function revisar_cuota_marca_existe(codigo, abreviatura, nombre) {
-            const cuerpo = {
-                'codigo': codigo,
-                'recortado': abreviatura
-            };
-            const bodystring = JSON.stringify(cuerpo);
-            
-            let peticion = new Request(rutacuotarevisarregistromarca2, { 
-                method: "POST", 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: bodystring, 
-                mode: "cors", 
-                credentials: "include" 
-            });
-
-            fetch(peticion)
-                .then(resultado => {
-                    if (!resultado.ok) {
-                        throw new Error("Fallo al revisar si la marca ya tiene una cuota asignada");
-                    }
-                    return resultado.json();
-                })
-                .then(resultado => {
-                    habilitar_cuota_marca_mostrar(codigo, abreviatura, nombre);
-                })
-                .catch(err => {
-                    console.log("Error:", err);
-                    mostrar_modal_error("No hay datos disponibles para esta marca");
-                });
-        }
-
-        function habilitar_cuota_marca_mostrar(codigo, abreviatura, nombre) {
-            const cuerpo = {
-                'codigo': codigo,
-                'recortado': abreviatura
-            };
-            const bodystring = JSON.stringify(cuerpo);
-            
-            let peticion = new Request(rutacuotamostrarmarca, { 
-                method: "POST", 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: bodystring, 
-                mode: "cors", 
-                credentials: "include" 
-            });
-
-            fetch(peticion)
-                .then(resultado => {
-                    if (!resultado.ok) {
-                        throw new Error("Fallo en mostrar las cuotas de la marca seleccionada");
-                    }
-                    return resultado.json();
-                })
-                .then(resultado => {
-                    console.log("Datos de marca traídos:", resultado);
-                    mostrar_cuota_simple(Object.assign({}, resultado["estimado"], { codfam: abreviatura }), nombre);
-                })
-                .catch(err => {
-                    console.log("Error:", err);
-                    mostrar_modal_error("Error al cargar los datos de la marca");
-                });
-        }
-
-        function mostrar_cuota_simple(objrespon, nombreMarca) {
-            const cuotaMensualSection = document.getElementById("cuota-mensual");
-            const cuotaEspecificaSection = document.getElementById("cuota-especifica");
-
-            cuotaMensualSection.classList.remove("hidden");
-            cuotaEspecificaSection.classList.remove("hidden");
-
-            document.getElementById("meta-mensual").textContent = formatMoney(objrespon["meta"]);
-            document.getElementById("avance-mensual").textContent = formatMoney(objrespon["avance"]);
-            document.getElementById("cumplimiento-mensual").textContent = objrespon["porcentaje"];
-            document.getElementById("mensaje-mensual").textContent = objrespon["mensaje"] || "Sin mensaje disponible";
-
-            document.getElementById("linea-code").textContent = "Línea: " + (objrespon["codfam"] || nombreMarca || "-");
-            document.getElementById("avance-especifico").textContent = formatMoney(objrespon["objspec_avance"]);
-            document.getElementById("objetivo-especifico").textContent = formatPercent(objrespon["objesp"]);
-            document.getElementById("cuota-especifica-valor").textContent = formatMoney(objrespon["objspec_cuota"]);
-            document.getElementById("cumplimiento-especifico").textContent = formatPercent(objrespon["objspec_porcentaje"]);
-
-            actualizar_barra_progreso({
-                meta: objrespon["meta"],
-                avance: objrespon["avance"]
-            });
-
-            activar_segmento3(segmento3Activo);
-            cargar_segmento3_items();
-        }
-
-        function mostrar_modal_error(mensaje) {
-            let capa1 = document.createElement('div');
-            capa1.className = "fixed inset-0 bg-gray-500/75 transition-opacity";
-            capa1.setAttribute("aria-hidden", "true");
-
-            let capa2 = document.createElement('div');
-            capa2.className = "fixed inset-0 z-10 w-screen overflow-y-auto";
-            
-            let capa3 = document.createElement('div');
-            capa3.className = "flex min-h-full items-center justify-center p-4 text-center sm:p-0";
-            
-            let capa4 = document.createElement('div');
-            capa4.className = "relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:w-full sm:max-w-lg";
-            
-            let capa5 = document.createElement('div');
-            capa5.className = "bg-white px-6 py-8 sm:p-8";
-            
-            let titulo = document.createElement('h3');
-            titulo.className = "text-lg font-semibold text-gray-900 mb-2";
-            titulo.textContent = "Notificación";
-            
-            let contenido = document.createElement('p');
-            contenido.className = "text-gray-600";
-            contenido.textContent = mensaje;
-            
-            let parte2 = document.createElement('div');
-            parte2.className = "bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse sm:px-8 mt-6 rounded-b-lg";
-            
-            let boton = document.createElement('button');
-            boton.className = "inline-flex w-full justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-700 transition-colors sm:w-auto";
-            boton.setAttribute("type", "button");
-            boton.textContent = "Aceptar";
-            boton.addEventListener('click', () => {
-                document.getElementById("modal-aceptacion").innerHTML = "";
-                document.getElementById("modal-aceptacion").classList.add('hidden');
-            });
-
-            parte2.appendChild(boton);
-            capa5.appendChild(titulo);
-            capa5.appendChild(contenido);
-            capa5.appendChild(parte2);
-            capa4.appendChild(capa5);
-            capa3.appendChild(capa4);
-            capa2.appendChild(capa3);
-            capa1.appendChild(capa2);
-            
-            document.getElementById("modal-aceptacion").appendChild(capa1);
-            document.getElementById("modal-aceptacion").classList.remove('hidden');
-        }
-    </script>
+<script src="/js/cuota/avance.js"></script>
 </body>
 </html>

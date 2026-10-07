@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Paso 3 · variantes</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 24px 16px 80px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco { max-width: 1100px; margin: 0 auto; }
+
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 20px; font-size: 14px; color: var(--cdk-texto-suave);
+                 line-height: 1.55; max-width: 66ch; }
+
+        .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+        .controles label { font-size: 13px; color: var(--cdk-texto-suave); }
+
+        .pestanas { display: flex; gap: 6px; flex-wrap: wrap; }
+        .pestana {
+            min-height: var(--cdk-tactil);
+            padding: 8px 14px;
+            font: inherit; font-size: 13px;
+            background: var(--cdk-superficie);
+            color: var(--cdk-texto-suave);
+            border: 1px solid var(--cdk-borde);
+            border-radius: var(--cdk-radio);
+            cursor: pointer;
+        }
+        .pestana[aria-selected="true"] {
+            background: var(--cdk-primario);
+            border-color: var(--cdk-primario);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .nota { margin: 0 0 20px; font-size: 13px; color: var(--cdk-texto-suave);
+                line-height: 1.55; max-width: 66ch; min-height: 54px; }
+
+        .escenario { display: grid; gap: 24px; grid-template-columns: 1fr; align-items: start; }
+        @media (min-width: 900px) { .escenario { grid-template-columns: 420px 1fr; } }
+
+        /* Ancho de movil real, que es donde aprieta */
+        .movil { width: 100%; max-width: 420px; }
+
+        .caso__titulo { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+        .registro { font-size: 12px; line-height: 1.7; color: var(--cdk-texto-suave);
+                    background: var(--cdk-superficie); border: 1px solid var(--cdk-borde);
+                    border-radius: var(--cdk-radio); padding: 12px; margin: 0;
+                    max-height: 340px; overflow-y: auto; white-space: pre-wrap; }
+
+        /* --- Cabecera del paso con el resumen a la derecha --- */
+        .paso-cab { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .paso-cab__resumen { margin-left: auto; font-size: 13px; font-weight: 600;
+                             color: var(--cdk-texto-suave); font-variant-numeric: tabular-nums; }
+
+        /* --- Variante C: plegable --- */
+        .mas { width: 100%; min-height: var(--cdk-tactil); font: inherit; font-size: 13px;
+               background: none; border: 0; color: var(--cdk-primario); cursor: pointer;
+               border-top: 1px solid var(--cdk-borde); }
+        .mas:hover { background: var(--cdk-primario-suave); }
+    </style>
+</head>
+
+<body>
+<div class="marco">
+
+    <h1>Paso 3 · Carrito</h1>
+    <p class="intro">
+        Hoy el paso 3 dice <em>«3 productos»</em> y tres botones: para saber qué está
+        vendiendo hay que abrir un panel. La pregunta es cuánto de eso merece estar a la
+        vista. Prueba con el carrito corto y con el largo — ahí es donde se separan.
+    </p>
+
+    <div class="controles">
+        <div class="pestanas" role="tablist" id="pestanas">
+            <button class="pestana" role="tab" data-var="A" aria-selected="true">A · Carrito a la vista</button>
+            <button class="pestana" role="tab" data-var="B" aria-selected="false">B · Resumen con totales</button>
+            <button class="pestana" role="tab" data-var="C" aria-selected="false">C · Lista plegable</button>
+        </div>
+
+        <label for="tam">Carrito</label>
+        <select id="tam" class="cdk-entrada" style="width:auto">
+            <option value="3">3 productos</option>
+            <option value="8">8 productos</option>
+            <option value="1">1 producto</option>
+        </select>
+
+        <label for="alm">Moneda</label>
+        <select id="alm" class="cdk-entrada" style="width:auto">
+            <option value="D">Dólares</option>
+            <option value="S">Soles</option>
+        </select>
+
+        <label><input type="checkbox" id="conpromo" checked> con promociones</label>
+    </div>
+
+    <p class="nota" id="nota"></p>
+
+    <div class="escenario">
+        <div class="movil" id="lienzo"></div>
+
+        <aside>
+            <p class="caso__titulo">Qué va pasando</p>
+            <pre class="registro" id="registro">Toca algo para ver qué haría.</pre>
+        </aside>
+    </div>
+
+</div>
+
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/js/cotizacion/campos.js"></script>
+<script src="/js/cotizacion/promociones.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    var el = CDK.el;
+
+    /* Carrito de ejemplo. Los precios llegan del backend en dolares, igual que
+       en la pantalla real; el selector de arriba los convierte para mostrarlos. */
+    var CATALOGO = [
+        { codigo: "0505-012610", descripcion: "TONER TN-450 NEGRO ORIGINAL",        cantidad: 2, descuento: 4, precioUnitario: 89.90,  descuentoMaximo: 6 },
+        { codigo: "0505-012611", descripcion: "TONER TN-660 NEGRO ALTO RENDIMIENTO", cantidad: 1, descuento: 0, precioUnitario: 145.00, descuentoMaximo: 4 },
+        { codigo: "0110-004422", descripcion: "MOUSE INALAMBRICO M170 NEGRO",        cantidad: 3, descuento: 0, precioUnitario: 39.00,  descuentoMaximo: 8 },
+        { codigo: "0505-013001", descripcion: "BOTELLA DE TINTA T664 CYAN",          cantidad: 6, descuento: 5, precioUnitario: 28.50,  descuentoMaximo: 12 },
+        { codigo: "0110-004500", descripcion: "TECLADO K120 USB ESPANOL",            cantidad: 2, descuento: 0, precioUnitario: 45.00,  descuentoMaximo: 8 },
+        { codigo: "0210-009911", descripcion: "MEMORIA USB 64GB DATATRAVELER",       cantidad: 10, descuento: 8, precioUnitario: 18.90, descuentoMaximo: 15 },
+        { codigo: "0115-010338", descripcion: "MONITOR TCL 24G54 MINILED 24 FHD",    cantidad: 1, descuento: 0, precioUnitario: 188.00, descuentoMaximo: 3 },
+        { codigo: "0301-020793", descripcion: "CARTUCHO HP 664 NEGRO ORIGINAL",      cantidad: 4, descuento: 2, precioUnitario: 52.40,  descuentoMaximo: 10 }
+    ];
+
+    /* Dos promociones ya aceptadas, con la forma que devuelve CDK.promo.detalle:
+       una de descuento y una de obsequio, para ver los dos colores. */
+    var PROMOS = [
+        { idprom: "15112", descripcion: "TCL PROMO REBATE MNT SEPT2026", tipo: "descuento",
+          totalDescuento: 15.00, totalRegalos: 0,
+          lineas: [{ itemdescr: "TONER TN-450 NEGRO", tipo: "descuento", veces: 3,
+                     montoDolares: 15.00, unidadesRegalo: 0, participantes: null, acumulado: null }] },
+        { idprom: "14656", descripcion: "ANTEC COMBO FUENTES", tipo: "regalo",
+          totalDescuento: 0, totalRegalos: 2,
+          lineas: [{ itemdescr: "PSU ANTEC CSK 550W", tipo: "regalo", veces: 2,
+                     montoDolares: 0, unidadesRegalo: 2, participantes: null, acumulado: null }] }
+    ];
+
+    var NOTAS = {
+        A: "Las lineas se ven en la pagina, con sus totales y las promociones adjuntas. Tocar una la edita, asi que los paneles de Detallado y Modificar dejan de hacer falta: la lista ES el detalle y tocarla ES modificar. Prueba con 8 productos para ver cuanto se alarga, que es su unico punto debil.",
+        B: "Se mantiene compacto y los tres botones, pero el resumen deja de decir solo cuantos productos hay: enseña subtotal, IGV, total y las promociones adjuntas. Cambio pequeño y de riesgo bajo, pero el vendedor sigue sin ver QUE esta vendiendo sin abrir un panel.",
+        C: "Termino medio: las tres primeras lineas a la vista con los totales siempre visibles, y un enlace despliega el resto. No se alarga con carritos grandes, pero es un estado mas que mantener y no simplifica nada: los dos paneles se quedan igual."
+    };
+
+    var variante = "A";
+    var desplegado = false;
+
+    // ---------------------------------------------------------------- utiles
+
+    function carrito() {
+        var n = parseInt(document.getElementById("tam").value, 10) || 3;
+        return CATALOGO.slice(0, n);
+    }
+
+    function promos() {
+        return document.getElementById("conpromo").checked ? PROMOS : [];
+    }
+
+    function moneda() { return CDK.coti.moneda(); }
+
+    function enMoneda(dolares) {
+        return CDK.formato.moneda(CDK.coti.convertir(dolares, "D"), moneda());
+    }
+
+    function calcular(p) {
+        return CDK.coti.calcularLinea({
+            precio: p.precioUnitario, cantidad: p.cantidad,
+            descuento: p.descuento, tope: p.descuentoMaximo
+        });
+    }
+
+    /** Totales en dolares, como el backend. */
+    function totales() {
+        var sinIgv = 0;
+        carrito().forEach(function (p) { sinIgv += calcular(p).importe; });
+
+        var descuento = 0;
+        promos().forEach(function (pr) { descuento += pr.totalDescuento; });
+
+        var base = sinIgv - descuento;
+        return { sinIgv: sinIgv, descuento: descuento, base: base,
+                 igv: base * 0.18, total: base * 1.18 };
+    }
+
+    function anotar(texto) {
+        var reg = document.getElementById("registro");
+        var hora = new Date().toLocaleTimeString("es-PE", { hour12: false });
+        reg.textContent = hora + "  " + texto + "\n" + reg.textContent;
+    }
+
+    // --------------------------------------------------------------- piezas
+
+    function cabecera(conResumen) {
+        var partes = [
+            el("span", { clase: "cdk-paso__numero", texto: "3" }),
+            el("h2", { clase: "cdk-paso__titulo", texto: "Carrito" })
+        ];
+
+        if (conResumen) {
+            var t = totales();
+            partes.push(el("span", {
+                clase: "paso-cab__resumen",
+                texto: carrito().length + " · " + enMoneda(t.total)
+            }));
+        }
+
+        return el("div", { clase: "paso-cab" }, partes);
+    }
+
+    /** Una linea del carrito. Pulsable = editar. */
+    function filaProducto(p, pulsable) {
+        var c = calcular(p);
+
+        var detalle = c.cantidad + " × " + enMoneda(c.precioUnitario);
+        if (c.descuentoAplicado > 0) {
+            detalle += "  ·  desc. " + c.descuentoAplicado.toFixed(2) + "%";
+        }
+
+        return CDK.articulo({
+            nombre: p.descripcion,
+            detalle: detalle,
+            importe: enMoneda(c.importe),
+            alPulsar: pulsable ? function () {
+                anotar("editar «" + p.descripcion + "» → abre el panel de editar");
+            } : null
+        });
+    }
+
+    /** Una promocion adjunta. */
+    function filaPromo(pr) {
+        return pr.lineas.map(function (linea) {
+            var esRegalo = linea.tipo === CDK.promo.REGALO;
+            return CDK.articulo({
+                distintivo: esRegalo ? "Obsequio" : "Descuento",
+                nombre: linea.itemdescr,
+                detalle: pr.descripcion,
+                importe: CDK.promo.textoBeneficio(linea, moneda()),
+                variante: esRegalo ? "obsequio" : "descuento"
+            });
+        });
+    }
+
+    function bloqueTotales(completo) {
+        var t = totales();
+        var filas = [];
+
+        if (completo && t.descuento > 0) {
+            filas.push(el("div", { clase: "cdk-total" }, [
+                el("span", { clase: "cdk-total__etiqueta", texto: "Productos" }),
+                el("span", { clase: "cdk-total__valor", texto: enMoneda(t.sinIgv) })
+            ]));
+            filas.push(el("div", { clase: "cdk-total cdk-total--bien" }, [
+                el("span", { clase: "cdk-total__etiqueta", texto: "Promociones" }),
+                el("span", { clase: "cdk-total__valor", texto: "−" + enMoneda(t.descuento) })
+            ]));
+        }
+
+        filas.push(el("div", { clase: "cdk-total" }, [
+            el("span", { clase: "cdk-total__etiqueta", texto: "Sin IGV" }),
+            el("span", { clase: "cdk-total__valor", texto: enMoneda(t.base) })
+        ]));
+        filas.push(el("div", { clase: "cdk-total" }, [
+            el("span", { clase: "cdk-total__etiqueta", texto: "IGV 18 %" }),
+            el("span", { clase: "cdk-total__valor", texto: enMoneda(t.igv) })
+        ]));
+        filas.push(el("div", { clase: "cdk-total cdk-total--principal" }, [
+            el("span", { clase: "cdk-total__etiqueta", texto: "Total" }),
+            el("span", { clase: "cdk-total__valor", texto: enMoneda(t.total) })
+        ]));
+
+        return el("div", { clase: "cdk-totales", style: "margin-top:12px" }, filas);
+    }
+
+    function boton(texto, principal, alPulsar) {
+        var b = el("button", {
+            type: "button",
+            clase: "cdk-boton " + (principal ? "cdk-boton--primario" : "cdk-boton--suave"),
+            texto: texto
+        });
+        b.addEventListener("click", alPulsar);
+        return b;
+    }
+
+    // ----------------------------------------------------- A · a la vista
+
+    function variantaA(lienzo) {
+        var lista = el("ul", { clase: "cdk-articulos" });
+
+        carrito().forEach(function (p) {
+            lista.appendChild(filaProducto(p, true));
+        });
+
+        // Las promociones, en la misma lista: forman parte de lo que se cotiza.
+        promos().forEach(function (pr) {
+            filaPromo(pr).forEach(function (nodo) { lista.appendChild(nodo); });
+        });
+
+        lienzo.appendChild(el("section", { clase: "cdk-seccion cdk-seccion--paso" }, [
+            cabecera(true),
+            lista,
+            bloqueTotales(true),
+            el("div", { clase: "cdk-acciones-fila" }, [
+                boton("Buscar promociones", false, function () {
+                    anotar("abre el panel de promociones");
+                })
+            ])
+        ]));
+    }
+
+    // ------------------------------------------------- B · resumen compacto
+
+    function variantaB(lienzo) {
+        var t = totales();
+        var datos = [
+            el("p", { clase: "cdk-ficha__titulo",
+                      texto: carrito().length + (carrito().length === 1 ? " producto" : " productos") })
+        ];
+
+        if (promos().length) {
+            datos.push(el("p", { clase: "cdk-pista",
+                texto: promos().length === 1 ? "1 promoción adjunta"
+                                             : promos().length + " promociones adjuntas" }));
+        }
+
+        lienzo.appendChild(el("section", { clase: "cdk-seccion cdk-seccion--paso" }, [
+            cabecera(false),
+            el("div", { clase: "cdk-ficha" }, datos),
+            bloqueTotales(true),
+            el("div", { clase: "cdk-acciones-fila" }, [
+                boton("Detallado", false, function () { anotar("abre el panel de detallado"); }),
+                boton("Modificar", false, function () { anotar("abre el panel de modificar"); }),
+                boton("Promociones", false, function () { anotar("abre el panel de promociones"); })
+            ])
+        ]));
+    }
+
+    // ---------------------------------------------------- C · lista plegable
+
+    function variantaC(lienzo) {
+        var items = carrito();
+        var visibles = desplegado ? items : items.slice(0, 3);
+        var ocultos = items.length - visibles.length;
+
+        var lista = el("ul", { clase: "cdk-articulos" });
+        visibles.forEach(function (p) { lista.appendChild(filaProducto(p, false)); });
+
+        var caja = el("div", {}, [lista]);
+
+        if (ocultos > 0 || desplegado) {
+            var b = el("button", { type: "button", clase: "mas",
+                texto: desplegado ? "▴ ver menos" : "▾ ver " + ocultos + " más" });
+            b.addEventListener("click", function () {
+                desplegado = !desplegado;
+                montar();
+            });
+            caja.appendChild(b);
+        }
+
+        lienzo.appendChild(el("section", { clase: "cdk-seccion cdk-seccion--paso" }, [
+            cabecera(true),
+            caja,
+            bloqueTotales(false),
+            el("div", { clase: "cdk-acciones-fila" }, [
+                boton("Detallado", false, function () { anotar("abre el panel de detallado"); }),
+                boton("Modificar", false, function () { anotar("abre el panel de modificar"); }),
+                boton("Promociones", false, function () { anotar("abre el panel de promociones"); })
+            ])
+        ]));
+    }
+
+    // ---------------------------------------------------------------- montaje
+
+    function montar() {
+        var lienzo = document.getElementById("lienzo");
+        lienzo.innerHTML = "";
+        document.getElementById("nota").textContent = NOTAS[variante];
+
+        if (variante === "A") variantaA(lienzo);
+        else if (variante === "B") variantaB(lienzo);
+        else variantaC(lienzo);
+    }
+
+    document.getElementById("pestanas").addEventListener("click", function (ev) {
+        var b = ev.target.closest("[data-var]");
+        if (!b) return;
+
+        variante = b.getAttribute("data-var");
+        desplegado = false;
+        Array.prototype.forEach.call(this.querySelectorAll("[data-var]"), function (x) {
+            x.setAttribute("aria-selected", String(x === b));
+        });
+        montar();
+    });
+
+    ["tam", "alm", "conpromo"].forEach(function (id) {
+        document.getElementById(id).addEventListener("change", function () {
+            desplegado = false;
+            montar();
+        });
+    });
+
+    montar();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cambiar almacén de un pedido - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Almacén del pedido</title>
+</head>
+
+<body data-modulo="pedido" data-titulo="Cambiar Almacén">
+
+<div class="cdk-pagina">
+
+    <section class="cdk-seccion">
+        <h2 class="cdk-seccion__titulo">Cambiar almacén de un pedido</h2>
+        <p class="cdk-seccion__sub">
+            Solo sobre pedidos aprobados: uno ya atendido o anulado no se mueve. El cambio
+            afecta a la disponibilidad de los productos.
+        </p>
+
+        <form id="form-almacen">
+            <div class="cdk-campo">
+                <label class="cdk-campo__etiqueta" for="npedi">Número de pedido</label>
+                <input type="search" name="npedi" id="npedi"
+                       class="cdk-entrada"
+                       inputmode="numeric"
+                       autocomplete="off"
+                       placeholder="Ej: 099-00132184">
+                <p class="cdk-campo__ayuda">Con su serie, como aparece en la lista de pedidos.</p>
+            </div>
+
+            <div class="cdk-campo">
+                <label class="cdk-campo__etiqueta" for="alm">Nuevo almacén</label>
+                <!-- Las opciones salen de cdk-catalogo.js, igual que en la
+                     pantalla de cotización: así las dos ofrecen lo mismo y el
+                     nombre del almacén vive en un solo sitio. -->
+                <select id="alm" name="alm" class="cdk-entrada"></select>
+            </div>
+
+            <button type="submit" id="btn-cambiar" class="cdk-boton cdk-boton--primario">
+                Cambiar almacén
+            </button>
+        </form>
+    </section>
+
+    <div id="resultado"></div>
+
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/pedido/almacen.js"></script>
+</body>
+</html>

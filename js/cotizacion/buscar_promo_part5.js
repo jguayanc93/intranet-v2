@@ -14,61 +14,26 @@ function actualizarBotonCreacion() {
     const boton = document.getElementById("creacion");
     if (!boton) return;
 
-    const tieneProductos = obtenerCantidadProductosCarrito() > 0;
-    boton.disabled = !tieneProductos;
-
-    boton.classList.toggle("bg-green-500", tieneProductos);
-    boton.classList.toggle("hover:bg-emerald-600", tieneProductos);
-    boton.classList.toggle("bg-rose-500", !tieneProductos);
-    boton.classList.toggle("hover:bg-red-600", !tieneProductos);
-    boton.classList.toggle("cursor-not-allowed", !tieneProductos);
-    boton.classList.toggle("opacity-60", !tieneProductos);
-    boton.classList.toggle("opacity-100", tieneProductos);
+    /* Antes alternaba ocho clases de Tailwind -verde contra rojo, opacidad,
+       cursor- para decir lo mismo que `disabled` ya dice. El estilo del boton
+       deshabilitado lo pone el CSS del armazon, en un solo sitio. */
+    boton.disabled = obtenerCantidadProductosCarrito() === 0;
 }
 
-function parseJSONResponse(value) {
-    if (typeof value === "string") {
-        try {
-            return JSON.parse(value);
-        } catch (err) {
-            return value;
-        }
-    }
-    return value;
-}
+/* parseJSONResponse se retiro: solo lo usaba la creacion, que ahora pasa por
+   CDK.http y desempaqueta en un unico sitio. Estaba ademas duplicada con una
+   version de semantica opuesta en part4, y ganaba esta por orden de carga. */
 
 function mostrarModalResultadoCreacion(tipo, titulo, mensaje) {
-    const existente = document.getElementById("modal-resultado-creacion");
-    if (existente) existente.remove();
-
-    const overlay = document.createElement("div");
-    overlay.id = "modal-resultado-creacion";
-    overlay.className = "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4";
-
-    const cuadro = document.createElement("div");
-    cuadro.className = "w-full max-w-md rounded-2xl bg-white p-6 shadow-xl";
-
-    const tituloElem = document.createElement("h2");
-    tituloElem.className = "text-lg font-bold mb-2" + (tipo === "error" ? " text-rose-600" : " text-emerald-600");
-    tituloElem.textContent = titulo;
-
-    const mensajeElem = document.createElement("p");
-    mensajeElem.className = "text-sm text-gray-700 mb-4";
-    mensajeElem.textContent = mensaje;
-
-    const botonCerrar = document.createElement("button");
-    botonCerrar.type = "button";
-    botonCerrar.className = "w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700";
-    botonCerrar.textContent = "Cerrar";
-    botonCerrar.addEventListener("click", () => {
-        overlay.remove();
+    /* Era un modal montado a mano, con sus propias clases y sin Escape ni
+       trampa de foco: quien navegaba con teclado quedaba atrapado detras.
+       CDK.modal ya resuelve las dos cosas y devuelve el foco al cerrar. */
+    CDK.modal.alerta({
+        titulo: titulo,
+        mensaje: mensaje,
+        confirmar: "Cerrar",
+        peligro: tipo === "error"
     });
-
-    cuadro.appendChild(tituloElem);
-    cuadro.appendChild(mensajeElem);
-    cuadro.appendChild(botonCerrar);
-    overlay.appendChild(cuadro);
-    document.body.appendChild(overlay);
 }
 
 function limpiarEstadoDespuesDeCreacion() {
@@ -80,17 +45,13 @@ function limpiarEstadoDespuesDeCreacion() {
 
     almc_id = "D";
 
-    if (typeof agrupacion === "object" && agrupacion !== null) {
-        for (let prod in agrupacion) {
-            if (Object.prototype.hasOwnProperty.call(agrupacion, prod)) {
-                delete agrupacion[prod];
-            }
-        }
-    }
-
     if (typeof promos_insertadas === "object" && promos_insertadas !== null) {
         promos_insertadas = {};
     }
+
+    /* Sin esto, la siguiente cotizacion heredaria las promociones de la
+       anterior y se las acoplaria a un documento que no les toca. */
+    window.promocionesAplicadas = [];
 
     if (typeof reiniciarSegmento3 === "function") {
         reiniciarSegmento3();
@@ -111,11 +72,7 @@ function limpiarEstadoDespuesDeCreacion() {
     const clienteSeleccionado = document.getElementById("cliente-seleccionado");
     if (clienteSeleccionado) clienteSeleccionado.classList.add("hidden");
 
-    const seleccionarProductos = document.getElementById("seleccionar-productos");
-    if (seleccionarProductos) seleccionarProductos.innerHTML = "";
 
-    const productosListados = document.getElementById("productos-listados");
-    if (productosListados) productosListados.innerHTML = "";
 
     const recorrerProductos = document.getElementById("recorrer-productos");
     if (recorrerProductos) recorrerProductos.innerHTML = "";
@@ -125,65 +82,171 @@ function limpiarEstadoDespuesDeCreacion() {
     }
 }
 
+/**
+ * Vacía SOLO el carrito: productos, promociones y lo que se ve del paso 3.
+ *
+ * Distinto de limpiarEstadoDespuesDeCreacion(), que además borra el cliente y
+ * la moneda porque allí la cotización ya se creó.
+ *
+ * Lo usa el paso 1 al cambiar de cliente: el precio de cada producto depende de
+ * la letra del cliente (cliente_data[5], que va a /producto/buscar), así que un
+ * carrito armado para otro cliente lleva importes que ya no corresponden.
+ */
+/* `agrupacion` ya no se barre aqui: ese global solo lo llenaban tblprd() y
+   tblprd2(), de js/funciones/identificar_producto.js, que esta pagina no carga.
+   Limpiar algo que nadie llena sugiere que importa, y no importa. */
+window.vaciarCarritoCotizacion = function () {
+    if (typeof promos_insertadas === "object" && promos_insertadas !== null) {
+        promos_insertadas = {};
+    }
+
+    /* Sin esto, la siguiente cotizacion heredaria las promociones de la
+       anterior y se las acoplaria a un documento que no les toca. */
+    window.promocionesAplicadas = [];
+
+    if (typeof reiniciarSegmento3 === "function") reiniciarSegmento3();
+    else if (window.productosSeleccionados) window.productosSeleccionados = {};
+
+    if (window.idsProductosAgregados) window.idsProductosAgregados = [];
+
+    var paso3 = document.getElementById("paso3");
+    if (paso3) paso3.classList.add("hidden");
+
+    /* Quedan solo los que existen: #productos-listados se fue con el panel
+       lateral del carrito, y #seleccionar-productos nunca estuvo en esta
+       pagina. */
+    ["recorrer-productos"].forEach(function (id) {
+        var nodo = document.getElementById(id);
+        if (nodo) nodo.innerHTML = "";
+    });
+
+    if (typeof actualizarBotonCreacion === "function") actualizarBotonCreacion();
+};
+
+/** Cuántos productos hay en el carrito. */
+window.contarProductosCarrito = obtenerCantidadProductosCarrito;
+
 window.crearCotizacion = async function () {
     const boton = document.getElementById("creacion");
     if (!boton || boton.disabled) return;
 
-    const botonContenido = boton.innerHTML;
+    const botonContenido = boton.textContent;
     boton.disabled = true;
-    boton.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>ENVIANDO...</span>';
+    boton.textContent = "Creando…";
 
     try {
-        const productos = window.productosSeleccionados ? window.productosSeleccionados : {};
-        const dataenviar = {
+        /* `promos` ya no se envia: el backend confirmo que /pegar nunca lo leyo.
+           Las promociones se acoplan despues, con el numero que devuelve. */
+        const respuesta = await CDK.http.post(CDK.rutas.api("/cotizacion/pegar"), {
             cliente: cliente_data,
-            productos: productos,
-            moneda: almc_id,
-            promos: promos_insertadas || {}
-        };
+            productos: window.productosSeleccionados || {},
+            // Solo se registra en la cabecera. El backend quito la conversion
+            // que hacia antes, asi que los importes van siempre en dolares.
+            moneda: almc_id
+        });
 
-        const fetchobj = {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            mode: "cors",
-            credentials: "include",
-            body: JSON.stringify(dataenviar)
-        };
-
-        const paso1 = await fetch(rutacotizacionnewcrear, fetchobj);
-        const textoRespuesta = await paso1.text();
-        console.log("Respuesta del backend:", textoRespuesta);
-        const data2 = parseJSONResponse(textoRespuesta);
-        const data = parseJSONResponse(data2);
-        console.log("respuesta parseada",typeof data ,data);
-
-        const esValida = paso1.ok && (
-            (typeof data === "object" && data !== null && (
-                data.success === true || data.valid === true || data.estado?.toString().toLowerCase().includes("valida") || data.resultado?.toString().toLowerCase().includes("valida") || data.numero || data.id
-            )) ||
-            (typeof data === "string" && data.toLowerCase().includes("valida"))
-        );
-
-        const mensajeBase = typeof data === "object" && data !== null
-            ? data.mensaje || data.message || data.error || JSON.stringify(data)
-            : String(data);
+        /* Antes habia que adivinar el exito entre siete campos distintos
+           -success, valid, estado, resultado, numero, id, o un texto con
+           "valida" dentro- porque la respuesta no estaba definida. Ahora lo
+           dice `status`. */
+        const esValida = respuesta && respuesta.status === "ok";
+        const documento = respuesta && respuesta.documento;
 
         if (esValida) {
-            mostrarModalResultadoCreacion("success", "Cotización generada", mensajeBase || "La cotización se generó correctamente.");
+            // El numero llega con serie (098-00000037), que es como lo exige
+            // /promocion/acoplar y como hay que ensenarselo al vendedor.
+            const texto = documento
+                ? `Cotización ${documento} generada correctamente.`
+                : "La cotización se generó correctamente.";
+
+            await acoplarPromociones(documento);
+
+            mostrarModalResultadoCreacion("success", "Cotización generada", texto);
+
+            /* Vaciar solo cuando la cotización existe de verdad.
+               Esto estaba en el `finally`, asi que un servidor caido o un error
+               del backend borraban igual el cliente, el carrito y los pasos 2 y
+               3: el vendedor perdia todo lo que acababa de armar y tenia que
+               rehacerlo desde cero, justo cuando menos ganas tenia. */
+            limpiarEstadoDespuesDeCreacion();
         } else {
-            mostrarModalResultadoCreacion("error", "Cotización inválida", mensajeBase || "La cotización fue procesada pero el backend devolvió un resultado inválido.");
+            mostrarModalResultadoCreacion(
+                "error",
+                "No se pudo crear",
+                (respuesta && respuesta.msg) || "El backend no confirmó la creación."
+            );
         }
     } catch (err) {
-        console.error("Error creando cotización:", err);
-        mostrarModalResultadoCreacion("error", "Error de conexión", "No se pudo completar la solicitud. Intente nuevamente.");
+        if (CDK.http.esError(err) && err.status === 401) return;   // ya redirige
+
+        /* El catalogo de errores del backend trae un `msg` legible; vale mas
+           que un "intente nuevamente" generico, que no dice si el problema es
+           del vendedor o del servidor. */
+        const detalle = (err && err.datos && err.datos.msg) || null;
+
+        mostrarModalResultadoCreacion(
+            "error",
+            detalle ? "No se pudo crear" : "Error de conexión",
+            detalle || "No se pudo completar la solicitud. El carrito sigue intacto; vuelve a intentarlo."
+        );
     } finally {
-        limpiarEstadoDespuesDeCreacion();
-        boton.innerHTML = botonContenido;
+        // El boton siempre se restaura: si no, un fallo lo dejaba en "ENVIANDO..."
+        boton.textContent = botonContenido;
         if (typeof actualizarBotonCreacion === "function") {
             actualizarBotonCreacion();
         }
     }
 };
+
+/**
+ * Adjunta a la cotización recién creada las promociones que el vendedor aceptó.
+ *
+ * Hasta ahora esto no existía: el paso 3 recolectaba, evaluaba y mostraba las
+ * promociones, el vendedor las "aplicaba"… y ahí se quedaban, en memoria. El
+ * campo `promos` que /pegar recibía no lo leía nadie, así que **ninguna
+ * promoción llegó nunca a una cotización** por esta pantalla.
+ *
+ * El backend confirmó el camino: una llamada a /promocion/acoplar por cada
+ * promoción, con el número de documento CON SERIE que devuelve /pegar. Un
+ * número suelto lo rechaza como "documento ambiguo", porque conviven la serie
+ * 009- y la 098- que crea /pegar.
+ *
+ * Van en serie y no en paralelo a propósito: /acoplar escribe y recalcula la
+ * cabecera dentro de una transacción. Dos a la vez sobre el mismo documento es
+ * pedirle al ERP que resuelva una carrera.
+ */
+async function acoplarPromociones(documento) {
+    const promos = window.promocionesAplicadas || [];
+    if (!documento || !promos.length) return;
+
+    const fallidas = [];
+
+    for (const promo of promos) {
+        try {
+            const r = await CDK.http.post(CDK.rutas.api("/promocion/acoplar"), {
+                ndocu: documento,
+                nprom: String(promo.idprom)
+            });
+            if (!r || r.status !== "ok") fallidas.push(promo);
+        } catch (err) {
+            if (CDK.http.esError(err) && err.status === 401) throw err;
+            fallidas.push(promo);
+        }
+    }
+
+    /* La cotización ya existe, así que esto no es un fallo de creación: es una
+       promoción que no entró. Se dice cuál, porque se puede adjuntar luego
+       desde el módulo de promociones sin rehacer nada. */
+    if (fallidas.length) {
+        CDK.toast(
+            fallidas.length === 1
+                ? `La cotización se creó, pero la promoción ${fallidas[0].idprom} no se pudo adjuntar.`
+                : `La cotización se creó, pero ${fallidas.length} promociones no se pudieron adjuntar.`,
+            "aviso",
+            0
+        );
+    }
+}
 
 window.actualizarBotonCreacion = actualizarBotonCreacion;
 actualizarBotonCreacion();

@@ -1,16 +1,33 @@
+/* Moneda y tipo de cambio: ahora en js/cotizacion/moneda.js.
+   Estaban definidos por triplicado en part2, part3 y part4; como las tres
+   se cargan en la misma pagina, ganaba la ultima y editar las otras dos no
+   tenia ningun efecto. Las llamadas siguen igual: moneda.js expone los
+   mismos nombres en global. */
+
 // ========================================
-// ESTADO GLOBAL
+// ESTADO DEL PASO 2
 // ========================================
-let productoSeleccionadoParaConfirmar = null;
 let timeoutBusquedaProducto = null;
+let busquedaProductoEnVuelo = null;   // AbortController de la busqueda en curso
+
+/* Resultados de la ultima busqueda, en crudo. Se guardan porque la lista se
+   repinta sola: al abrir una fila, al agregar y al cambiar de moneda. */
+let productosEncontrados = [];
+let terminoBusqueda = "";
+
+/* La fila abierta y lo que lleva tecleado. Vive aqui y no dentro de la fila
+   para que un repintado no borre la cantidad a medio escribir. */
+let edicion = { codigo: null, cantidad: 1, descuento: 0 };
+
+/* Cuantos van en esta pasada. El panel ya no se cierra al agregar, asi que
+   sin esto no habria ninguna señal de que el producto entro. */
+let agregadosEnSesion = 0;
 
 // ========================================
 // ELEMENTOS DEL DOM - PASO 2
 // ========================================
 const paso3 = document.getElementById("paso3");
 const btnBuscarProducto = document.getElementById("btn-buscar-producto");
-const btnBuscarVoz = document.getElementById("btn-buscar-voz");
-const estadoVoz = document.getElementById("estado-voz");
 const modalBusquedaProducto = document.getElementById("modal-busqueda-producto");
 const tipoBusquedaProducto = document.getElementById("tipo-busqueda-producto");
 const inputBusquedaProducto = document.getElementById("input-busqueda-producto");
@@ -22,123 +39,16 @@ const modalBackdropProducto = document.getElementById("modal-backdrop-producto")
 const indicadorBusquedaProducto = document.getElementById("indicador-busqueda-producto");
 const busquedaProductoLoading = document.getElementById("busqueda-producto-loading");
 const sinResultadosProducto = document.getElementById("sin-resultados-producto");
-
-// ELEMENTOS DEL DOM - MODAL CONFIRMACIÓN
-const modalConfirmacionProducto = document.getElementById("modal-confirmacion-producto");
-const confProductoDescripcion = document.getElementById("conf-producto-descripcion");
-const confProductoStock1 = document.getElementById("conf-producto-stock1");
-const confProductoStock2 = document.getElementById("conf-producto-stock2");
-const confDescuentoMaximo = document.getElementById("conf-descuento-maximo");
-const confPrecioUnitario = document.getElementById("conf-precio-unitario");
-const confMonedaPrecio = document.getElementById("conf-moneda-precio");
-const confValorVenta = document.getElementById("conf-valor-venta");
-const confMonedaVenta = document.getElementById("conf-moneda-venta");
-const confCantidad = document.getElementById("conf-cantidad");
-const confDescuento = document.getElementById("conf-descuento");
-const errorCantidad = document.getElementById("error-cantidad");
-const errorDescuento = document.getElementById("error-descuento");
-const btnConfirmarProducto = document.getElementById("btn-confirmar-producto");
-const btnCancelarConfirmacionProducto = document.getElementById("btn-cancelar-confirmacion-producto");
-const modalBackdropConfirmacion = document.getElementById("modal-backdrop-confirmacion");
+const conteoAgregados = document.getElementById("conteo-agregados");
 
 // ========================================
-// FUNCIÓN DE CONVERSIÓN DE MONEDA
+// CAMBIO DE MONEDA
 // ========================================
-const tipoCambioUSDPEN = 3.408; // Tasa de cambio fija (ajustable según necesidad)
-
-function obtenerMonedaSeleccionada() {
-    const selectMoneda = document.getElementById("alm");
-    return selectMoneda ? selectMoneda.value : "D";
-}
-
-function obtenerSímboloMoneda(monedaId) {
-    return monedaId === "D" ? "USD" : "PEN";
-}
-
-function convertirMoneda(monto, monedaOrigen) {
-    const monedaActual = obtenerMonedaSeleccionada();
-    
-    // Si la moneda origen es la misma que la actual, no convertir
-    if (monedaOrigen === monedaActual) {
-        return monto;
-    }
-    
-    // Si viene en USD y necesita convertir a PEN
-    if (monedaOrigen === "D" && monedaActual === "S") {
-        return monto * tipoCambioUSDPEN;
-    }
-    
-    // Si viene en PEN y necesita convertir a USD
-    if (monedaOrigen === "S" && monedaActual === "D") {
-        return monto / tipoCambioUSDPEN;
-    }
-    
-    return monto;
-}
-
-// ========================================
-// CALCULAR VALOR DE VENTA
-// ========================================
-function calcularValorVenta() {
-    if (!productoSeleccionadoParaConfirmar) return;
-    
-    const precioUnitario = productoSeleccionadoParaConfirmar.precioUnitario;
-    const cantidad = parseInt(confCantidad.value) || 0;
-    const descuento = parseFloat(confDescuento.value) || 0;
-    
-    // Calcular valor sin descuento
-    const valorSinDescuento = precioUnitario * cantidad;
-    
-    // Calcular descuento aplicado
-    const montoDescuento = valorSinDescuento * (descuento / 100);
-    
-    // Calcular valor final
-    const valorFinal = valorSinDescuento - montoDescuento;
-    
-    // Mostrar valor de venta formateado a 2 decimales
-    confValorVenta.textContent = valorFinal.toFixed(2);
-    // Guardando el valor del monto total con descuento para usarlo despues
-    productoSeleccionadoParaConfirmar["total"] = Number(valorFinal.toFixed(2));
-}
-
-// ========================================
-// ACTUALIZAR ESTADO DEL BOTÓN CONFIRMAR
-// ========================================
-function actualizarEstadoBotón() {
-    if (!productoSeleccionadoParaConfirmar) return;
-    
-    const descuento = parseFloat(confDescuento.value) || 0;
-    const descuentoMax = productoSeleccionadoParaConfirmar.descuentoMaximo;
-    const cantidad = parseInt(confCantidad.value) || 0;
-    
-    // Desabilitar si: descuento > máximo O cantidad < 1 O cantidad > 500
-    const debeDesabilitar = descuento > descuentoMax || cantidad < 1 || cantidad > 500;
-    
-    btnConfirmarProducto.disabled = debeDesabilitar;
-}
-
-// ========================================
-// RECALCULAR PRECIOS CUANDO SE CAMBIA MONEDA
-// ========================================
+/* La llama moneda.js. Repinta la lista para que los precios de cada fila y el
+   importe de la que este abierta queden en la moneda elegida; `edicion`
+   conserva lo que el vendedor llevaba tecleado. */
 function recalcularPreciosConMoneda() {
-    // Solo recalcular si hay un producto seleccionado y el modal está visible
-    if (!productoSeleccionadoParaConfirmar || modalConfirmacionProducto.classList.contains("hidden")) {
-        return;
-    }
-    
-    const monedaActual = obtenerMonedaSeleccionada();
-    const monedaActualSimbolo = obtenerSímboloMoneda(monedaActual);
-    
-    // Convertir precio unitario a la moneda actual
-    const precioConvertido = convertirMoneda(productoSeleccionadoParaConfirmar.precioUnitario, "D");
-    
-    // Actualizar símbolos y precio unitario
-    confPrecioUnitario.textContent = precioConvertido.toFixed(2);
-    confMonedaPrecio.textContent = monedaActualSimbolo;
-    confMonedaVenta.textContent = monedaActualSimbolo;
-    
-    // Recalcular valor de venta
-    calcularValorVenta();
+    if (productosEncontrados.length) pintarResultados();
 }
 
 // ========================================
@@ -148,7 +58,7 @@ btnBuscarProducto.addEventListener("click", () => {
 
 function abrirModalBusquedaProducto() {
     modalBusquedaProducto.classList.remove("hidden");
-    document.body.classList.add("modal-abierto");
+    document.body.classList.add("cdk-sin-scroll");
     inputBusquedaProducto.focus();
     limpiarBusquedaProducto();
 }
@@ -157,11 +67,30 @@ function abrirModalBusquedaProducto() {
 // CERRAR MODAL DE BÚSQUEDA DE PRODUCTOS
 // ========================================
 function cerrarModalBusquedaProducto() {
+    // Se mira antes de limpiar, que es lo que decide si hay que bajar al paso 3.
+    const hubo = agregadosEnSesion > 0;
+
     modalBusquedaProducto.classList.add("hidden");
-    document.body.classList.remove("modal-abierto");
+    document.body.classList.remove("cdk-sin-scroll");
     recorrerProductos.innerHTML = "";
     inputBusquedaProducto.value = "";
     btnLimpiarBusquedaProducto.classList.add("hidden");
+
+    productosEncontrados = [];
+    terminoBusqueda = "";
+    cerrarFila();
+    agregadosEnSesion = 0;
+    actualizarConteo();
+
+    /* Cerrar el buscador es haber terminado de elegir, asi que se lleva al
+       vendedor a lo que acaba de armar. Antes esto pasaba en cada producto,
+       una vez por linea. */
+    if (hubo) {
+        paso3.classList.remove("hidden");
+        setTimeout(() => {
+            paso3.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 150);
+    }
 }
 
 btnCerrarBusquedaProducto.addEventListener("click", cerrarModalBusquedaProducto);
@@ -171,14 +100,30 @@ modalBackdropProducto.addEventListener("click", cerrarModalBusquedaProducto);
 // ========================================
 // CAMBIO DE TIPO DE BÚSQUEDA
 // ========================================
+/* Habia dos manejadores para este mismo evento: el primero borraba el texto y
+   el segundo intentaba rebuscarlo, asi que leia siempre una cadena vacia y la
+   rebusqueda no llegaba a ejecutarse nunca. Ahora es uno solo y conserva lo
+   escrito: cambiar de descripcion a part number no deberia obligar a teclear
+   de nuevo. */
 tipoBusquedaProducto.addEventListener("change", () => {
-    inputBusquedaProducto.value = "";
-    inputBusquedaProducto.focus();
+    const texto = inputBusquedaProducto.value.trim();
+
+    cancelarBusquedaProducto();
     recorrerProductos.innerHTML = "";
+    productosEncontrados = [];
+    cerrarFila();
     sinResultadosProducto.classList.add("hidden");
-    busquedaProductoLoading.classList.add("hidden");
     indicadorBusquedaProducto.classList.add("hidden");
-    btnLimpiarBusquedaProducto.classList.add("hidden");
+
+    if (texto.length < 3) {
+        busquedaProductoLoading.classList.add("hidden");
+        indicadorBusquedaProducto.classList.toggle("hidden", texto.length === 0);
+        inputBusquedaProducto.focus();
+        return;
+    }
+
+    busquedaProductoLoading.classList.remove("hidden");
+    buscar_producto_nuevo(texto);
 });
 
 // ========================================
@@ -186,39 +131,39 @@ tipoBusquedaProducto.addEventListener("change", () => {
 // ========================================
 inputBusquedaProducto.addEventListener("input", (ev) => {
     const busqueda = ev.target.value.trim();
-    
-    // Mostrar/ocultar botón limpiar
-    if (busqueda.length > 0) {
-        btnLimpiarBusquedaProducto.classList.remove("hidden");
-    } else {
-        btnLimpiarBusquedaProducto.classList.add("hidden");
-    }
 
-    // Limpiar timeout anterior
-    clearTimeout(timeoutBusquedaProducto);
+    btnLimpiarBusquedaProducto.classList.toggle("hidden", busqueda.length === 0);
+
+    cancelarBusquedaProducto();
     recorrerProductos.innerHTML = "";
+    productosEncontrados = [];
+    cerrarFila();
     sinResultadosProducto.classList.add("hidden");
     busquedaProductoLoading.classList.add("hidden");
 
-    // Si es menor a 3 caracteres
     if (busqueda.length < 3) {
-        if (busqueda.length > 0) {
-            indicadorBusquedaProducto.classList.remove("hidden");
-        } else {
-            indicadorBusquedaProducto.classList.add("hidden");
-        }
+        indicadorBusquedaProducto.classList.toggle("hidden", busqueda.length === 0);
         return;
     }
 
-    // Ocultar indicador y mostrar loading
     indicadorBusquedaProducto.classList.add("hidden");
     busquedaProductoLoading.classList.remove("hidden");
 
-    // Buscar después de 400ms (debounce)
     timeoutBusquedaProducto = setTimeout(() => {
         buscar_producto_nuevo(busqueda);
     }, 400);
 });
+
+/* Cancela lo que este en vuelo. Sin esto, dos busquedas seguidas podian
+   cruzarse: si la respuesta de "t6" llegaba despues que la de "t664", la
+   lista acababa mostrando resultados que no correspondian a lo escrito. */
+function cancelarBusquedaProducto() {
+    clearTimeout(timeoutBusquedaProducto);
+    if (busquedaProductoEnVuelo) {
+        busquedaProductoEnVuelo.abort();
+        busquedaProductoEnVuelo = null;
+    }
+}
 
 // ========================================
 // BOTÓN LIMPIAR BÚSQUEDA DE PRODUCTOS
@@ -229,6 +174,10 @@ btnLimpiarBusquedaProducto.addEventListener("click", (ev) => {
 });
 
 function limpiarBusquedaProducto() {
+    cancelarBusquedaProducto();
+    productosEncontrados = [];
+    terminoBusqueda = "";
+    cerrarFila();
     inputBusquedaProducto.value = "";
     btnLimpiarBusquedaProducto.classList.add("hidden");
     recorrerProductos.innerHTML = "";
@@ -241,413 +190,361 @@ function limpiarBusquedaProducto() {
 // ========================================
 // BUSCAR PRODUCTOS (nueva función)
 // ========================================
-async function buscar_producto_nuevo(descprod) {
-    let dataenviar = new Object();
-    dataenviar.letra = cliente_data[5];
-    dataenviar.sugerencia = descprod;
-    dataenviar.tipbusq = tipoBusquedaProducto.value;
-    let fetchobj = new Object();
-    fetchobj.method = "POST";
-    fetchobj.headers = { "Content-Type": "application/json" };
-    fetchobj.mode = "cors";
-    fetchobj.credentials = "include";
-    fetchobj.body = JSON.stringify(dataenviar);
-
-    try {
-        let paso1 = await fetch(rutaproductobuscar, fetchobj);
-        let paso2 = await paso1.json();
-        let paso3 = await JSON.parse(paso2);
-        
-        mostrarSugerenciasProductos(paso3);
-    } catch (err) {
-        console.log(err);
+function buscar_producto_nuevo(descprod) {
+    /* La letra del cliente decide QUE PRECIO devuelve el backend. Sin ella la
+       busqueda traeria precios que no corresponden a este cliente, asi que es
+       preferible parar y decirlo. */
+    const letra = Array.isArray(cliente_data) ? cliente_data[5] : null;
+    if (!letra) {
         busquedaProductoLoading.classList.add("hidden");
-        sinResultadosProducto.classList.remove("hidden");
+        CDK.toast("Vuelve a elegir el cliente: faltan sus datos de precio", "error", 0);
+        return;
     }
+
+    const control = new AbortController();
+    busquedaProductoEnVuelo = control;
+
+    CDK.http.post(CDK.rutas.api("/producto/buscar"), {
+        letra: letra,
+        sugerencia: descprod,
+        tipbusq: tipoBusquedaProducto.value
+    }, { senal: control.signal })
+        .then((respuesta) => {
+            if (control.signal.aborted) return;
+            busquedaProductoEnVuelo = null;
+            mostrarSugerenciasProductos(respuesta, descprod);
+        })
+        .catch((err) => {
+            /* Se comprueba ESTE controlador: una busqueda cancelada al seguir
+               tecleando no es un error que mostrar, pero un fallo al pintar si.
+               Antes el catch enseñaba "sin resultados" para todo, asi que un
+               servidor caido parecia un producto inexistente. */
+            if (control.signal.aborted) return;
+            busquedaProductoEnVuelo = null;
+
+            busquedaProductoLoading.classList.add("hidden");
+            if (CDK.http.esError(err) && err.status === 401) return;   // ya redirige
+
+            CDK.estados.error(recorrerProductos, err, () => {
+                recorrerProductos.innerHTML = "";
+                busquedaProductoLoading.classList.remove("hidden");
+                buscar_producto_nuevo(descprod);
+            });
+        });
 }
 
 // ========================================
 // MOSTRAR SUGERENCIAS DE PRODUCTOS
 // ========================================
-function mostrarSugerenciasProductos(productos) {
-    console.log("Productos encontrados:", productos);
+function mostrarSugerenciasProductos(productos, termino) {
     busquedaProductoLoading.classList.add("hidden");
-    recorrerProductos.innerHTML = "";
 
-    if (!productos || Object.keys(productos).length === 0) {
+    productosEncontrados = Object.keys(productos || {}).map((k) => productos[k]);
+    terminoBusqueda = termino || "";
+    cerrarFila();
+
+    if (!productosEncontrados.length) {
+        recorrerProductos.innerHTML = "";
         sinResultadosProducto.classList.remove("hidden");
         return;
     }
 
-    Object.values(productos).forEach((producto) => {
-        // producto[0] = ID
-        // producto[1] = Descripción
-        // producto[2] = Stock Principal
-        // producto[3] = Stock Secundario
-        // producto[4] = Descuento máximo (si viene en los datos)
-        
-        const contenedor = document.createElement("div");
-        contenedor.className = "p-3 border border-gray-200 rounded-lg cursor-pointer transition-colors hover:bg-green-50 active:bg-green-100";
-        
-        const nombre = document.createElement("p");
-        nombre.className = "font-medium text-gray-900 text-sm";
-        nombre.textContent = producto[1]; // descripción
-        
-        const stockContainer = document.createElement("div");
-        stockContainer.className = "grid grid-cols-2 gap-2 mt-2 text-xs";
-        
-        const stock1 = document.createElement("p");
-        stock1.className = "text-gray-600";
-        stock1.innerHTML = `<span class="font-semibold text-blue-600">${producto[2]}</span> Princ.`;
-        
-        const stock2 = document.createElement("p");
-        stock2.className = "text-gray-600";
-        stock2.innerHTML = `<span class="font-semibold text-blue-600">${producto[3]}</span> MYM.`;
-        /////revisar parte de inclusion de alm piura
-        const stock3 = document.createElement("p");
-        stock3.className = "text-gray-600";
-        stock3.innerHTML = `<span class="font-semibold text-blue-600">${producto[6]}</span> Piura.`;
-        
-        stockContainer.appendChild(stock1);
-        stockContainer.appendChild(stock2);
-        stockContainer.appendChild(stock3);
-        
-        contenedor.appendChild(nombre);
-        contenedor.appendChild(stockContainer);
-        
-        contenedor.addEventListener("click", () => {
-            seleccionarProducto(producto);
-        });
-        
-        recorrerProductos.appendChild(contenedor);
-    });
+    sinResultadosProducto.classList.add("hidden");
+    pintarResultados();
 }
 
-// ========================================
-// SELECCIONAR PRODUCTO
-// ========================================
-function seleccionarProducto(producto) {
-    productoSeleccionadoParaConfirmar = {
-        id: producto[0],
-        descripcion: producto[1],
-        stock1: producto[2],
-        stock2: producto[3],
-        descuentoMaximo: producto[4] || 0, // descuento máximo del backend
-        precioUnitario: parseFloat(producto[5]) || 0 // precio unitario del backend (posición 5)
-    };
-    
-    // Cerrar modal de búsqueda
-    cerrarModalBusquedaProducto();
-    
-    // Mostrar modal de confirmación
-    mostrarModalConfirmacionProducto();
+function abrirFila(codigo) {
+    edicion = { codigo: codigo, cantidad: 1, descuento: 0 };
 }
 
-// ========================================
-// MODAL DE CONFIRMACIÓN DE PRODUCTO
-// ========================================
-function mostrarModalConfirmacionProducto() {
-    const prod = productoSeleccionadoParaConfirmar;
-    const monedaActual = obtenerMonedaSeleccionada();
-    const monedaActualSimbolo = obtenerSímboloMoneda(monedaActual);
-    
-    // Convertir precio unitario a la moneda actual (el precio viene en USD)
-    const precioConvertido = convertirMoneda(prod.precioUnitario, "D"); // Asumimos que viene en USD
-    
-    // Llenar datos del producto
-    confProductoDescripcion.textContent = prod.descripcion;
-    confProductoStock1.textContent = prod.stock1;
-    confProductoStock2.textContent = prod.stock2;
-    confDescuentoMaximo.textContent = `${prod.descuentoMaximo.toFixed(2)}%`;
-    confPrecioUnitario.textContent = precioConvertido.toFixed(2);
-    confMonedaPrecio.textContent = monedaActualSimbolo;
-    confMonedaVenta.textContent = monedaActualSimbolo;
-    
-    // Reset de campos
-    confCantidad.value = "1";
-    confDescuento.value = "0.00";
-    errorCantidad.classList.add("hidden");
-    errorDescuento.classList.add("hidden");
-    
-    // Calcular valor de venta inicial
-    calcularValorVenta();
-    
-    // Actualizar estado del botón
-    actualizarEstadoBotón();
-    
-    // Mostrar modal
-    modalConfirmacionProducto.classList.remove("hidden");
-    document.body.classList.add("modal-abierto");
-    confCantidad.focus();
+function cerrarFila() {
+    edicion = { codigo: null, cantidad: 1, descuento: 0 };
 }
 
-// ========================================
-// CERRAR MODAL DE CONFIRMACIÓN
-// ========================================
-function cerrarModalConfirmacionProducto() {
-    modalConfirmacionProducto.classList.add("hidden");
-    document.body.classList.remove("modal-abierto");
-    productoSeleccionadoParaConfirmar = null;
-}
+/**
+ * Pinta la lista de resultados.
+ *
+ * La fila elegida se abre en su sitio en lugar de llevar a otro dialogo. Asi
+ * la busqueda se queda en pantalla y se pueden meter varios productos de la
+ * misma consulta sin volver a teclearla, que era lo que costaba antes: cada
+ * producto obligaba a reabrir el buscador y reescribir el termino.
+ */
+function pintarResultados() {
+    recorrerProductos.innerHTML = "";
 
-btnCancelarConfirmacionProducto.addEventListener("click", cerrarModalConfirmacionProducto);
-modalBackdropConfirmacion.addEventListener("click", cerrarModalConfirmacionProducto);
+    const porPartNumber = tipoBusquedaProducto.value === "2";
+    const lista = CDK.el("ul", { clase: "cdk-articulos" });
 
-// ========================================
-// VALIDACIÓN DE CANTIDAD
-// ========================================
-confCantidad.addEventListener("input", (ev) => {
-    const valor = parseInt(ev.target.value);
-    
-    // Validar que sea un número entero
-    if (isNaN(valor) || !Number.isInteger(parseFloat(ev.target.value))) {
-        errorCantidad.textContent = "La cantidad debe ser un número entero";
-        errorCantidad.classList.remove("hidden");
-        return;
-    }
-    
-    // Validar rango 1-500
-    if (valor < 1) {
-        errorCantidad.textContent = "La cantidad mínima es 1";
-        errorCantidad.classList.remove("hidden");
-        ev.target.value = "1";
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    if (valor > 500) {
-        errorCantidad.textContent = "La cantidad máxima es 500";
-        errorCantidad.classList.remove("hidden");
-        ev.target.value = "500";
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    errorCantidad.classList.add("hidden");
-    // Recalcular valor de venta y actualizar estado del botón
-    calcularValorVenta();
-    actualizarEstadoBotón();
-});
+    productosEncontrados.forEach((fila) => {
+        const p = CDK.coti.producto(fila);
+        const abierta = edicion.codigo === p.codigo;
+        const yaEsta = typeof CDK.coti.enCarrito === "function" && CDK.coti.enCarrito(p.codigo);
 
-// ========================================
-// VALIDACIÓN DE DESCUENTO
-// ========================================
-confDescuento.addEventListener("blur", (ev) => {
-    let valor = ev.target.value.trim();
-    
-    // Si está vacío, asumir 0
-    if (valor === "") {
-        confDescuento.value = "0.00";
-        errorDescuento.classList.add("hidden");
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    const numeroValor = parseFloat(valor);
-    const descuentoMax = productoSeleccionadoParaConfirmar.descuentoMaximo;
-    
-    // Validar que sea un número válido
-    if (isNaN(numeroValor)) {
-        errorDescuento.textContent = "Ingrese un número válido";
-        errorDescuento.classList.remove("hidden");
-        confDescuento.value = "0.00";
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    // Validar rango
-    if (numeroValor < 0) {
-        errorDescuento.textContent = "El descuento no puede ser negativo";
-        errorDescuento.classList.remove("hidden");
-        confDescuento.value = "0.00";
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    if (numeroValor > descuentoMax) {
-        errorDescuento.innerHTML = `El descuento máximo permitido es <strong>${descuentoMax.toFixed(2)}%</strong>`;
-        errorDescuento.classList.remove("hidden");
-        confDescuento.value = descuentoMax.toFixed(2);
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    // Si todo es válido, formatear a 2 decimales
-    confDescuento.value = numeroValor.toFixed(2);
-    errorDescuento.classList.add("hidden");
-    calcularValorVenta();
-    actualizarEstadoBotón();
-});
+        /* Los tres almacenes SIEMPRE, aunque esten en cero: "M&M 0" y "no se
+           muestra M&M" no significan lo mismo, y ocultarlo dejaba al vendedor
+           sin saber si hay cero o si el dato no llego.
+           Los vacios van atenuados para que se vea de un vistazo donde si hay. */
+        const datos = [
+            { etiqueta: "Principal", valor: p.stockPrincipal, tono: p.stockPrincipal ? "" : "nulo" },
+            { etiqueta: "M&M",       valor: p.stockMym,       tono: p.stockMym       ? "" : "nulo" },
+            { etiqueta: "Piura",     valor: p.stockPiura,     tono: p.stockPiura     ? "" : "nulo" }
+        ];
 
-// Validar mientras escribe para feedback inmediato
-confDescuento.addEventListener("input", (ev) => {
-    let valor = ev.target.value;
-    const descuentoMax = productoSeleccionadoParaConfirmar ? productoSeleccionadoParaConfirmar.descuentoMaximo : 100;
-    
-    // Solo validar el formato mientras escribe
-    if (valor === "" || valor === "-") {
-        calcularValorVenta();
-        actualizarEstadoBotón();
-        return;
-    }
-    
-    const numeroValor = parseFloat(valor);
-    
-    // Mostrar advertencia si excede el máximo (pero permitir escribir)
-    if (!isNaN(numeroValor) && numeroValor > descuentoMax) {
-        errorDescuento.innerHTML = `⚠️ Excede máximo de ${descuentoMax.toFixed(2)}%`;
-        errorDescuento.classList.remove("hidden");
-    } else {
-        errorDescuento.classList.add("hidden");
-    }
-    
-    // Recalcular valor de venta en tiempo real
-    if (!isNaN(numeroValor)) {
-        calcularValorVenta();
-        actualizarEstadoBotón();
-    }
-});
-
-// ========================================
-// CONFIRMAR PRODUCTO
-// ========================================
-btnConfirmarProducto.addEventListener("click", () => {
-    // Limpiar errores previos
-    errorCantidad.classList.add("hidden");
-    errorDescuento.classList.add("hidden");
-    
-    const cantidadStr = confCantidad.value.trim();
-    const descuentoStr = confDescuento.value.trim();
-    const prod = productoSeleccionadoParaConfirmar;
-    
-    let tieneError = false;
-    
-    // Validar cantidad
-    const cantidad = parseInt(cantidadStr);
-    if (isNaN(cantidadStr) || cantidadStr === "") {
-        errorCantidad.textContent = "Ingrese una cantidad";
-        errorCantidad.classList.remove("hidden");
-        tieneError = true;
-    } else if (cantidad < 1) {
-        errorCantidad.textContent = "La cantidad mínima es 1";
-        errorCantidad.classList.remove("hidden");
-        tieneError = true;
-    } else if (cantidad > 500) {
-        errorCantidad.textContent = "La cantidad máxima es 500";
-        errorCantidad.classList.remove("hidden");
-        tieneError = true;
-    } else if (!Number.isInteger(cantidad)) {
-        errorCantidad.textContent = "La cantidad debe ser un número entero";
-        errorCantidad.classList.remove("hidden");
-        tieneError = true;
-    }
-    
-    // Validar descuento
-    let descuento = 0;
-    if (descuentoStr !== "") {
-        descuento = parseFloat(descuentoStr);
-        if (isNaN(descuento)) {
-            errorDescuento.textContent = "Ingrese un número válido";
-            errorDescuento.classList.remove("hidden");
-            tieneError = true;
-        } else if (descuento < 0) {
-            errorDescuento.textContent = "El descuento no puede ser negativo";
-            errorDescuento.classList.remove("hidden");
-            tieneError = true;
-        } else if (descuento > prod.descuentoMaximo) {
-            errorDescuento.innerHTML = `El descuento máximo permitido es <strong>${prod.descuentoMaximo.toFixed(2)}%</strong>`;
-            errorDescuento.classList.remove("hidden");
-            tieneError = true;
+        if (yaEsta) {
+            datos.push({ etiqueta: "", valor: "En el carrito", tono: "bien" });
+        } else if (p.stockTotal === 0) {
+            // Se puede cotizar igual, pero que nadie diga que no lo sabia.
+            datos.push({ etiqueta: "", valor: "Sin stock", tono: "alerta" });
         }
+
+        /* Ni el codigo interno ni el tope de descuento van en la lista: el
+           codigo no ayuda a elegir, y el tope se ve al abrir la fila, que es
+           donde de verdad se usa. Aqui solo lo que sirve para decidir: que
+           producto es, cuanto cuesta y si hay existencias. */
+        const articulo = CDK.articulo({
+            nombre: terminoBusqueda && !porPartNumber
+                ? CDK.resaltar(p.descripcion, terminoBusqueda)
+                : p.descripcion,
+            importe: CDK.formato.moneda(CDK.coti.convertir(p.precioUnitario, "D"), CDK.coti.moneda()),
+            datos: datos,
+            alerta: p.stockTotal === 0,
+            // Lo que ya esta en el carrito no se reabre: se edita en el paso 3.
+            alPulsar: yaEsta ? null : () => {
+                if (abierta) cerrarFila();
+                else abrirFila(p.codigo);
+                pintarResultados();
+            }
+        });
+
+        const grupo = CDK.el("li", {
+            clase: "cdk-grupo" + (abierta ? " cdk-grupo--abierto" : "")
+        }, [articulo]);
+
+        if (abierta) grupo.appendChild(configuradorProducto(p));
+
+        lista.appendChild(grupo);
+    });
+
+    recorrerProductos.appendChild(lista);
+
+    // Si la fila abierta quedo fuera de vista, se acerca lo justo.
+    const enPantalla = recorrerProductos.querySelector(".cdk-grupo--abierto");
+    if (enPantalla) enPantalla.scrollIntoView({ block: "nearest" });
+}
+
+// ========================================
+// CONFIGURAR LA FILA ABIERTA
+// ========================================
+/**
+ * Cantidad, descuento e importe del producto elegido.
+ *
+ * Es lo que antes ocupaba un segundo dialogo encima del buscador, y que ademas
+ * repetia los mismos campos que el modal de editar del paso 3. El calculo
+ * sigue siendo CDK.coti.calcularLinea, el punto unico que usan tambien el
+ * paso 3 y el resumen.
+ */
+function configuradorProducto(p) {
+    const avisoStock = CDK.el("p", { clase: "cdk-ficha__aviso hidden" });
+    const errorDescuento = CDK.el("p", { clase: "cdk-campo__error hidden" });
+    const valorUnitario = CDK.el("span", { clase: "cdk-total__valor" });
+    const valorImporte = CDK.el("span", { clase: "cdk-total__valor" });
+
+    const btnAgregar = CDK.el("button", {
+        type: "button",
+        clase: "cdk-boton cdk-boton--primario",
+        texto: "Agregar al carrito",
+        style: "width:100%"
+    });
+
+    const campoDescuento = CDK.el("input", {
+        type: "number",
+        id: "conf-descuento",
+        clase: "cdk-entrada",
+        inputmode: "decimal",
+        min: "0",
+        step: "0.01",
+        value: Number(edicion.descuento).toFixed(2)
+    });
+
+    /* El limite de 500 unidades viene del codigo original; no lo impone el
+       backend. */
+    const contador = CDK.contador({
+        valor: edicion.cantidad,
+        min: 1,
+        max: 500,
+        etiqueta: "Cantidad",
+        alCambiar: (n) => { edicion.cantidad = n; refrescar(); }
+    });
+
+    function calcular() {
+        return CDK.coti.calcularLinea({
+            precio: p.precioUnitario,
+            cantidad: edicion.cantidad,
+            descuento: edicion.descuento,
+            tope: p.descuentoMaximo
+        });
     }
-    
-    // Si hay errores, no continuar
-    if (tieneError) {
-        return;
+
+    function refrescar() {
+        const linea = calcular();
+        const moneda = CDK.coti.moneda();
+
+        // calcularLinea devuelve dolares, que es como los guarda el carrito.
+        // La conversion es solo para ensenarlo en la moneda elegida.
+        valorUnitario.textContent =
+            CDK.formato.moneda(CDK.coti.convertir(linea.precioUnitario, "D"), moneda);
+        valorImporte.textContent =
+            CDK.formato.moneda(CDK.coti.convertir(linea.importe, "D"), moneda);
+
+        /* El tope lo decide calcularLinea, no una comparacion escrita aqui:
+           repetirla es como se llego a tener cuatro topes distintos conviviendo. */
+        errorDescuento.classList.toggle("hidden", !linea.acotado);
+        if (linea.acotado) {
+            errorDescuento.textContent =
+                `El máximo para este producto es ${p.descuentoMaximo.toFixed(2)} %.`;
+        }
+        btnAgregar.disabled = linea.acotado;
+
+        avisarStock();
     }
-    
-    // Todo válido - agregar al carrito
-    agregarProductoAlCarrito(prod, cantidad, descuento);
-    
-    // Cerrar modal
-    cerrarModalConfirmacionProducto();
-    
-    // Mostrar Paso 3 y scroll
-    const paso3 = document.getElementById("paso3");
-    paso3.classList.remove("hidden");
-    setTimeout(() => {
-        paso3.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 300);
-});
+
+    /* Avisa cuando se pide mas de lo que hay, sin bloquear: se acordo que una
+       cotizacion puede incluir producto sin stock, porque a veces se cotiza lo
+       que esta por llegar. Pero el vendedor tiene que verlo ANTES de prometer
+       una entrega, no despues. */
+    function avisarStock() {
+        if (p.stockTotal === 0) {
+            avisoStock.textContent = "Este producto no tiene stock en ningún almacén.";
+            avisoStock.classList.remove("hidden");
+            return;
+        }
+        if (edicion.cantidad > p.stockTotal) {
+            avisoStock.textContent =
+                `Estás pidiendo ${edicion.cantidad} y solo hay ${p.stockTotal} entre los tres almacenes.`;
+            avisoStock.classList.remove("hidden");
+            return;
+        }
+        avisoStock.classList.add("hidden");
+    }
+
+    campoDescuento.addEventListener("input", () => {
+        const n = parseFloat(campoDescuento.value);
+        edicion.descuento = isFinite(n) && n > 0 ? n : 0;
+        refrescar();
+    });
+
+    // Al salir del campo queda en dos decimales, como lo guarda el carrito.
+    campoDescuento.addEventListener("blur", () => {
+        campoDescuento.value = Number(edicion.descuento).toFixed(2);
+    });
+
+    btnAgregar.addEventListener("click", () => agregarProducto(p));
+
+    const bloque = CDK.el("div", { clase: "cdk-config" }, [
+        avisoStock,
+        CDK.el("div", { clase: "cdk-pareja" }, [
+            CDK.el("div", { clase: "cdk-campo" }, [
+                CDK.el("label", { clase: "cdk-campo__etiqueta", texto: "Cantidad" }),
+                contador
+            ]),
+            CDK.el("div", { clase: "cdk-campo" }, [
+                CDK.el("label", { clase: "cdk-campo__etiqueta", for: "conf-descuento" }, [
+                    document.createTextNode("Descuento "),
+                    CDK.el("span", {
+                        clase: "cdk-campo__pista",
+                        texto: `máx. ${p.descuentoMaximo.toFixed(2)} %`
+                    })
+                ]),
+                campoDescuento,
+                errorDescuento
+            ])
+        ]),
+        CDK.el("div", { clase: "cdk-totales", style: "margin:12px 0" }, [
+            CDK.el("div", { clase: "cdk-total" }, [
+                CDK.el("span", { clase: "cdk-total__etiqueta", texto: "Precio unitario" }),
+                valorUnitario
+            ]),
+            CDK.el("div", { clase: "cdk-total cdk-total--principal" }, [
+                CDK.el("span", { clase: "cdk-total__etiqueta", texto: "Importe" }),
+                valorImporte
+            ])
+        ]),
+        btnAgregar
+    ]);
+
+    refrescar();
+    return bloque;
+}
 
 // ========================================
 // AGREGAR AL CARRITO
 // ========================================
-function agregarProductoAlCarrito(producto, cantidad, descuento) {
-    // Crear un objeto con los datos del producto para el carrito
-    const datoProducto = {
-        id: producto.id,
-        descripcion: producto.descripcion,
-        cantidad: cantidad,
-        descuento: descuento,
-        stock1: producto.stock1,
-        stock2: producto.stock2
-    };
-    
-    // Guardar datos en variable global para que tblprd2 pueda acceder
-    window.productoConfirmado = datoProducto;
-    
-    // Llamar a tblprd2 si existe (función que agrega al carrito)
-    if (typeof tblprd2 !== "undefined") {
-        // tblprd2 espera (codi, cantidad)
-        // El descuento debe manejarse aparte
-        tblprd2(producto.id, cantidad);
-    } else if (typeof agregarCarrito !== "undefined") {
-        // Alternativa si hay otra función de carrito
-        agregarCarrito(datoProducto);
+function agregarProducto(p) {
+    const linea = CDK.coti.calcularLinea({
+        precio: p.precioUnitario,
+        cantidad: edicion.cantidad,
+        descuento: edicion.descuento,
+        tope: p.descuentoMaximo
+    });
+
+    // El boton ya esta deshabilitado en ese caso; esto es el cinturon.
+    if (linea.acotado) return;
+
+    // El carrito vive en el paso 3, que registra el enganche al cargar.
+    if (typeof CDK.coti.agregarAlCarrito !== "function") {
+        CDK.toast("No se pudo agregar el producto. Recarga la página.", "error", 0);
+        return;
     }
+
+    const producto = {
+        id: p.codigo,
+        descripcion: p.descripcion,
+        stock1: p.stockPrincipal,
+        stock2: p.stockMym,
+        // El de Piura se perdia aqui: la lista lo mostraba pero al elegir el
+        // producto se descartaba, asi que el carrito nunca lo supo.
+        stock3: p.stockPiura,
+        stockTotal: p.stockTotal,
+        descuentoMaximo: p.descuentoMaximo,
+        precioUnitario: p.precioUnitario,
+        total: linea.importe
+    };
+
+    if (CDK.coti.agregarAlCarrito(producto, edicion.cantidad, linea.descuentoAplicado) === false) {
+        CDK.toast("Ese producto ya estaba en el carrito. Edítalo desde la lista.", "aviso");
+        return;
+    }
+
+    agregadosEnSesion++;
+    actualizarConteo();
+
+    // Se descubre por detras del panel, para que ya este ahi al cerrarlo.
+    paso3.classList.remove("hidden");
+
+    cerrarFila();
+    pintarResultados();   // la busqueda sigue en pantalla
 }
 
+/* Unica señal de que el producto entro, ahora que el panel no se cierra. */
+function actualizarConteo() {
+    if (!conteoAgregados) return;
+
+    conteoAgregados.classList.toggle("hidden", agregadosEnSesion === 0);
+    conteoAgregados.textContent = agregadosEnSesion === 1
+        ? "1 producto agregado"
+        : `${agregadosEnSesion} productos agregados`;
+}
+
+// Escape cierra el buscador, como el resto de dialogos de la intranet.
+document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    if (!modalBusquedaProducto.classList.contains("hidden")) cerrarModalBusquedaProducto();
+});
+
 // ========================================
-// BOTÓN BÚSQUEDA POR VOZ (UI only)
+// BÚSQUEDA POR VOZ
 // ========================================
-let escuchandoVoz = false;
-
-btnBuscarVoz.addEventListener("mousedown", () => {
-    escuchandoVoz = true;
-    estadoVoz.textContent = "Escuchando...";
-    estadoVoz.classList.add("opacity-100");
-});
-
-btnBuscarVoz.addEventListener("mouseup", () => {
-    escuchandoVoz = false;
-    estadoVoz.textContent = "Comenzar a escuchar";
-    estadoVoz.classList.remove("opacity-100");
-});
-
-btnBuscarVoz.addEventListener("mouseleave", () => {
-    if (escuchandoVoz) {
-        escuchandoVoz = false;
-        estadoVoz.textContent = "Comenzar a escuchar";
-        estadoVoz.classList.remove("opacity-100");
-    }
-});
-
-// Para mobile: touch events
-btnBuscarVoz.addEventListener("touchstart", () => {
-    escuchandoVoz = true;
-    estadoVoz.textContent = "Escuchando...";
-    estadoVoz.classList.add("opacity-100");
-});
-
-btnBuscarVoz.addEventListener("touchend", () => {
-    escuchandoVoz = false;
-    estadoVoz.textContent = "Comenzar a escuchar";
-    estadoVoz.classList.remove("opacity-100");
-});
+/* La busqueda por voz se retiro junto con su boton: los listeners solo
+   cambiaban el texto a "Escuchando..." y no habia reconocimiento detras.
+   El codigo que lo implementa esta en js/audio/, que no carga ninguna
+   pagina desde que se borro promos.html. */

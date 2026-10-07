@@ -1,0 +1,1667 @@
+/* =====================================================================
+   cdk-shell.css — Armazon de la intranet CDK.
+
+   CSS PLANO a proposito, sin Tailwind y sin @apply.
+
+   1. El CDN @tailwindcss/browser genera las reglas en runtime escaneando el
+      DOM, asi que el chrome que inyecta cdk-shell.js se veria sin estilo
+      durante varios frames. El armazon tiene que sobrevivir sin Tailwind;
+      Tailwind solo decora el interior de cada pagina.
+   2. @apply necesita un build. styles/factura-components.css lo usa y por eso
+      hoy no pinta absolutamente nada en las 8 paginas que lo cargan.
+
+   Va en el <head>. Si se carga al final hay salto de layout.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   Tokens
+   --------------------------------------------------------------------- */
+:root {
+    --cdk-primario:        #4f46e5;
+    --cdk-primario-fuerte: #4338ca;
+    --cdk-primario-suave:  #eef2ff;
+
+    --cdk-exito:   #059669;
+    --cdk-error:   #dc2626;
+    --cdk-aviso:   #d97706;
+    --cdk-info:    #2563eb;
+
+    --cdk-fondo:        #f9fafb;
+    --cdk-superficie:   #ffffff;
+    --cdk-borde:        #e5e7eb;
+
+    /* Texto: #4b5563 da 7.5:1 sobre blanco. El proyecto usa hoy text-gray-400
+       (#9ca3af), que da 2.85:1 y no llega al minimo AA de 4.5:1. */
+    --cdk-texto:       #111827;
+    --cdk-texto-suave: #4b5563;
+
+    --cdk-navbar-alto:  56px;
+    --cdk-bottom-alto:  64px;
+    --cdk-sidebar-ancho: 256px;
+
+    --cdk-radio:  10px;
+    --cdk-sombra: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .04);
+    --cdk-sombra-alta: 0 10px 25px rgba(0, 0, 0, .12);
+
+    /* Area tactil minima recomendada. */
+    --cdk-tactil: 44px;
+}
+
+/* ---------------------------------------------------------------------
+   Modelo de caja
+
+   Imprescindible: sin esto, cualquier elemento con `height:100%` mas padding
+   y borde mide 100% + padding + borde, se desborda de su celda del grid y se
+   solapa con la fila siguiente. Lo traia styles/main-fixed.css, que ya no se
+   carga, asi que vive aqui.
+   --------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------------
+   Reserva de espacio — la clave para que no haya salto de layout.
+
+   Depende de [data-modulo], un atributo presente ya en el parseo, no de que
+   el JS haya corrido. Todo el chrome es position:fixed, o sea que esta fuera
+   del flujo y no puede desplazar nada.
+   --------------------------------------------------------------------- */
+body[data-modulo],
+body[data-shell="inicio"] {
+    margin: 0;
+    padding-top: var(--cdk-navbar-alto);
+    padding-bottom: calc(var(--cdk-bottom-alto) + env(safe-area-inset-bottom, 0px));
+    background: var(--cdk-fondo);
+    color: var(--cdk-texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (min-width: 768px) {
+    body[data-modulo],
+    body[data-shell="inicio"] {
+        padding-left: var(--cdk-sidebar-ancho);
+        padding-bottom: 0;
+    }
+}
+
+body.cdk-sin-scroll { overflow: hidden; }
+
+/* La define tambien Tailwind, pero varias pantallas alternan `.hidden` desde
+   JS y no todas cargan Tailwind. Teniendola aqui, el armazon no depende de el. */
+.hidden { display: none !important; }
+
+.cdk-icono {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+}
+.cdk-icono--sm { width: 18px; height: 18px; }
+
+/* ---------------------------------------------------------------------
+   Navbar
+   --------------------------------------------------------------------- */
+.cdk-navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 40;
+    height: var(--cdk-navbar-alto);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 12px;
+    background: var(--cdk-superficie);
+    border-bottom: 1px solid var(--cdk-borde);
+    box-shadow: var(--cdk-sombra);
+}
+
+.cdk-navbar__izq,
+.cdk-navbar__der { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.cdk-navbar__atras {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cdk-tactil);
+    height: var(--cdk-tactil);
+    margin-left: -10px;
+    border-radius: var(--cdk-radio);
+    color: var(--cdk-texto-suave);
+    text-decoration: none;
+}
+.cdk-navbar__atras:hover { background: var(--cdk-fondo); color: var(--cdk-texto); }
+
+.cdk-navbar__marca { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cdk-navbar__logo  { width: 28px; height: 28px; object-fit: contain; flex: 0 0 auto; }
+
+.cdk-navbar__titulo {
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------------------
+   Menu de usuario
+   --------------------------------------------------------------------- */
+.cdk-usuario { position: relative; }
+
+.cdk-usuario__boton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--cdk-tactil);
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--cdk-radio);
+    background: transparent;
+    color: var(--cdk-texto);
+    font: inherit;
+    cursor: pointer;
+}
+.cdk-usuario__boton:hover { background: var(--cdk-fondo); }
+
+.cdk-usuario__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--cdk-primario);
+    color: #fff;
+}
+
+.cdk-usuario__nombre {
+    font-size: 14px;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+@media (max-width: 480px) { .cdk-usuario__nombre { display: none; } }
+
+.cdk-usuario__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 210px;
+    padding: 6px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    box-shadow: var(--cdk-sombra-alta);
+    z-index: 50;
+}
+.cdk-usuario__menu[hidden] { display: none; }
+
+.cdk-usuario__detalle {
+    margin: 0;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--cdk-borde);
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+}
+.cdk-usuario__detalle:empty { display: none; }
+
+.cdk-usuario__salir {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--cdk-tactil);
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--cdk-error);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.cdk-usuario__salir:hover { background: #fef2f2; }
+
+/* ---------------------------------------------------------------------
+   Sidebar (solo desktop)
+   --------------------------------------------------------------------- */
+.cdk-sidebar { display: none; }
+
+@media (min-width: 768px) {
+    .cdk-sidebar {
+        position: fixed;
+        top: var(--cdk-navbar-alto);
+        bottom: 0;
+        left: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        width: var(--cdk-sidebar-ancho);
+        padding: 16px 12px;
+        overflow-y: auto;
+        background: var(--cdk-superficie);
+        border-right: 1px solid var(--cdk-borde);
+    }
+}
+
+.cdk-sidebar__epigrafe {
+    margin: 0 0 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--cdk-texto-suave);
+}
+
+.cdk-sidebar__lista { list-style: none; margin: 0; padding: 0; }
+
+.cdk-sidebar__enlace {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: var(--cdk-tactil);
+    padding: 0 10px;
+    margin-bottom: 2px;
+    border-radius: 8px;
+    color: var(--cdk-texto-suave);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+.cdk-sidebar__enlace:hover { background: var(--cdk-fondo); color: var(--cdk-texto); }
+
+.cdk-sidebar__enlace.es-activo {
+    background: var(--cdk-primario-suave);
+    color: var(--cdk-primario-fuerte);
+    font-weight: 600;
+}
+
+/* Enlaces que no son modulos (Configuracion y lo que venga despues):
+   separados al pie, para que no compitan con la lista de trabajo. */
+.cdk-sidebar__pie {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--cdk-borde);
+}
+
+/* ---------------------------------------------------------------------
+   Bottom nav (solo movil)
+   --------------------------------------------------------------------- */
+.cdk-bottomnav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 40;
+    background: var(--cdk-superficie);
+    border-top: 1px solid var(--cdk-borde);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (min-width: 768px) { .cdk-bottomnav { display: none; } }
+
+.cdk-bottomnav__lista {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.cdk-bottomnav__lista > li { flex: 1 1 0; min-width: 0; }
+
+.cdk-bottomnav__enlace {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    height: var(--cdk-bottom-alto);
+    padding: 0 2px;
+    border: 0;
+    background: transparent;
+    color: var(--cdk-texto-suave);
+    text-decoration: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+.cdk-bottomnav__texto {
+    font-size: 11px;
+    font-weight: 500;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cdk-bottomnav__enlace.es-activo { color: var(--cdk-primario); }
+.cdk-bottomnav__enlace.es-activo .cdk-bottomnav__texto { font-weight: 600; }
+
+/* ---------------------------------------------------------------------
+   Hoja "Mas"
+   --------------------------------------------------------------------- */
+.cdk-hoja { position: fixed; inset: 0; z-index: 60; }
+
+.cdk-hoja__fondo { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); }
+
+.cdk-hoja__panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    background: var(--cdk-superficie);
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--cdk-sombra-alta);
+    animation: cdk-subir .22s ease-out;
+}
+
+.cdk-hoja__asa {
+    width: 40px; height: 4px;
+    margin: 4px auto 12px;
+    border-radius: 2px;
+    background: var(--cdk-borde);
+}
+
+.cdk-hoja__titulo { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.cdk-hoja__titulo--sep {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--cdk-borde);
+}
+
+.cdk-hoja__lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.cdk-hoja__enlace {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--cdk-tactil);
+    padding: 10px 12px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    color: var(--cdk-texto);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+.cdk-hoja__enlace.es-activo {
+    border-color: var(--cdk-primario);
+    background: var(--cdk-primario-suave);
+    color: var(--cdk-primario-fuerte);
+}
+
+/* En pantallas grandes una hoja pegada abajo queda lejos del punto de
+   atención; centrada se lee como un diálogo normal. En móvil se queda
+   abajo, al alcance del pulgar. */
+@media (min-width: 768px) {
+    #cdk-acciones-menu .cdk-hoja__panel {
+        top: 50%;
+        bottom: auto;
+        left: 50%;
+        right: auto;
+        width: min(420px, calc(100vw - 32px));
+        transform: translate(-50%, -50%);
+        border-radius: 14px;
+        animation: none;
+    }
+    #cdk-acciones-menu .cdk-hoja__asa { display: none; }
+}
+
+/* Lista de acciones dentro de la hoja */
+.cdk-opciones { list-style: none; margin: 0; padding: 0; }
+
+.cdk-opcion {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    min-height: var(--cdk-tactil);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    color: var(--cdk-texto);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.cdk-opcion:hover { border-color: var(--cdk-primario); background: var(--cdk-primario-suave); }
+.cdk-opcion:last-child { margin-bottom: 0; }
+
+.cdk-opcion__texto { font-size: 14px; font-weight: 600; }
+.cdk-opcion__detalle { font-size: 12px; color: var(--cdk-texto-suave); }
+
+/* ---------------------------------------------------------------------
+   Botones
+   --------------------------------------------------------------------- */
+.cdk-boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--cdk-tactil);
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: var(--cdk-radio);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.cdk-boton:disabled { opacity: .55; cursor: not-allowed; }
+
+.cdk-boton--primario { background: var(--cdk-primario); color: #fff; }
+.cdk-boton--primario:hover:not(:disabled) { background: var(--cdk-primario-fuerte); }
+
+.cdk-boton--suave {
+    background: var(--cdk-superficie);
+    border-color: var(--cdk-borde);
+    color: var(--cdk-texto);
+}
+.cdk-boton--suave:hover:not(:disabled) { background: var(--cdk-fondo); }
+
+.cdk-boton--peligro { background: var(--cdk-error); color: #fff; }
+.cdk-boton--peligro:hover:not(:disabled) { background: #b91c1c; }
+
+/* ---------------------------------------------------------------------
+   Cabecera de pagina
+   --------------------------------------------------------------------- */
+/* 16px de margen lateral en movil; mas holgura a medida que hay sitio. */
+.cdk-pagina { max-width: 1240px; margin: 0 auto; padding: 20px 16px 40px; }
+
+@media (min-width: 640px)  { .cdk-pagina { padding: 24px 24px 48px; } }
+@media (min-width: 1024px) { .cdk-pagina { padding: 28px 32px 56px; } }
+
+.cdk-cabecera { margin-bottom: 20px; }
+.cdk-cabecera__titulo { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
+.cdk-cabecera__sub    { margin: 0; font-size: 14px; color: var(--cdk-texto-suave); }
+
+@media (min-width: 640px) {
+    .cdk-cabecera { margin-bottom: 24px; }
+    .cdk-cabecera__titulo { font-size: 24px; }
+}
+
+/* ---------------------------------------------------------------------
+   Tarjetas — sirven para los modulos del panel y para las acciones
+   de cada hub. Un solo componente en vez de los cuatro tipos de card
+   que hay hoy (.module-card, .card-item, .item-card, .card-elevated).
+   --------------------------------------------------------------------- */
+.cdk-tarjetas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 14px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+@media (min-width: 640px)  { .cdk-tarjetas { gap: 18px; } }
+@media (min-width: 1024px) { .cdk-tarjetas { gap: 20px; } }
+
+/* Que cada tarjeta ocupe toda su celda, para que las de una misma fila
+   queden a la misma altura aunque el texto sea mas corto. */
+.cdk-tarjetas > li { display: flex; min-width: 0; }
+
+.cdk-tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    min-height: var(--cdk-tactil);
+    padding: 18px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    box-shadow: var(--cdk-sombra);
+    color: var(--cdk-texto);
+    text-decoration: none;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+}
+
+.cdk-tarjeta:hover {
+    border-color: var(--cdk-primario);
+    box-shadow: var(--cdk-sombra-alta);
+    transform: translateY(-2px);
+}
+
+.cdk-tarjeta__icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    background: var(--cdk-primario-suave);
+    color: var(--cdk-primario);
+}
+
+.cdk-tarjeta__titulo { font-size: 15px; font-weight: 600; }
+
+.cdk-tarjeta__texto {
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--cdk-texto-suave);
+}
+
+.cdk-tarjeta__pie {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cdk-primario);
+}
+
+/* Accesos que el backend concede pero que no se operan desde esta intranet. */
+.cdk-tarjeta--inerte { opacity: .6; cursor: default; }
+.cdk-tarjeta--inerte:hover { border-color: var(--cdk-borde); box-shadow: var(--cdk-sombra); transform: none; }
+.cdk-tarjeta--inerte .cdk-tarjeta__icono { background: #f3f4f6; color: #9ca3af; }
+.cdk-tarjeta--inerte .cdk-tarjeta__pie   { color: var(--cdk-texto-suave); font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+    .cdk-tarjeta, .cdk-tarjeta:hover { transition: none; transform: none; }
+}
+
+/* ---------------------------------------------------------------------
+   Lienzo con fondo personalizable
+
+   El contenedor de las tarjetas puede llevar la imagen que suba el usuario.
+   El velo blanco por encima no es decorativo: sin el, un titulo oscuro sobre
+   una foto oscura queda ilegible, y cuanto velo hace falta depende de la
+   imagen concreta, asi que lo gradua cada persona desde Configuracion.
+   --------------------------------------------------------------------- */
+/* El lienzo va de borde a borde para que la imagen se aprecie en pantallas
+   anchas; el contenido de dentro lo sigue centrando .cdk-pagina. Encerrarlo
+   en el contenedor de 1240px dejaba el fondo reducido a una franja en el
+   centro de un monitor grande. */
+.cdk-lienzo.cdk-con-fondo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 300px;
+    background-image: var(--cdk-fondo-img);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-bottom: 1px solid var(--cdk-borde);
+}
+
+/* Cuanto mas sitio hay, mas alto: si no, en un monitor ancho la imagen queda
+   aplastada en una banda de 200px. */
+@media (min-width: 768px)  { .cdk-lienzo.cdk-con-fondo { min-height: 380px; } }
+@media (min-width: 1280px) { .cdk-lienzo.cdk-con-fondo { min-height: 460px; } }
+@media (min-width: 1700px) { .cdk-lienzo.cdk-con-fondo { min-height: 540px; } }
+
+/* Imprescindible.
+   El lienzo con fondo es flex, y .cdk-pagina lleva `margin: 0 auto`. En
+   flexbox, un margen auto en el eje cruzado ANULA el stretch por defecto:
+   el item deja de ocupar el ancho disponible y pasa a medir lo que su
+   contenido. El grid se queda entonces sin ancho y colapsa a una sola
+   columna, aunque haya sitio de sobra. Fijar el ancho lo devuelve al
+   comportamiento normal, y max-width + margin auto lo siguen centrando. */
+.cdk-lienzo.cdk-con-fondo > .cdk-pagina { width: 100%; }
+
+.cdk-lienzo.cdk-con-fondo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, var(--cdk-fondo-velo, .45));
+    pointer-events: none;
+}
+
+/* Sin esto el contenido queda por debajo del velo. */
+.cdk-lienzo.cdk-con-fondo > * { position: relative; z-index: 1; }
+
+/* Halo blanco bajo el texto de la cabecera.
+   El velo ajustable no basta por si solo: si alguien lo baja a 0 sobre una
+   foto oscura, el titulo se vuelve ilegible. Esto lo sostiene sin quitarle
+   el control del velo ni oscurecer la imagen. */
+.cdk-lienzo.cdk-con-fondo .cdk-cabecera__titulo,
+.cdk-lienzo.cdk-con-fondo .cdk-cabecera__sub {
+    text-shadow:
+        0 1px 2px rgba(255, 255, 255, .95),
+        0 0 14px rgba(255, 255, 255, .8);
+}
+
+/* ---------------------------------------------------------------------
+   Lista de artículos
+
+   Líneas de producto de un documento. Lo comparten cotización, pedido,
+   factura y promociones: todas muestran lo mismo (código, descripción,
+   cantidad, precio, descuento, importe) y hasta ahora cada una lo
+   construía a mano con su propio createElement.
+
+   En móvil se apila; desde 640px la descripción y el importe van en una
+   fila y los datos numéricos debajo.
+   --------------------------------------------------------------------- */
+.cdk-articulos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    overflow: hidden;
+}
+
+.cdk-articulo {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--cdk-borde);
+}
+.cdk-articulo:last-child { border-bottom: 0; }
+
+/* Fila entera pulsable (resultados de búsqueda). El objetivo es toda la
+   fila, no un enlace pequeño dentro: en móvil se acierta mucho mejor. */
+.cdk-articulos > li:last-child > .cdk-articulo--pulsable { border-bottom: 0; }
+
+.cdk-articulo--pulsable {
+    width: 100%;
+    border: 0;
+    border-bottom: 1px solid var(--cdk-borde);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.cdk-articulo--pulsable:hover { background: var(--cdk-primario-suave); }
+.cdk-articulo--pulsable:active { background: #e0e7ff; }
+
+/* Columna izquierda: identifica la fila de un vistazo.
+   En un producto lleva la marca; en una línea de promoción, de qué tipo es.
+   Ancho mínimo común para que todas las filas queden alineadas. */
+.cdk-articulo__distintivo {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    min-width: 82px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    color: #374151;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-align: center;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cdk-articulo__cuerpo { flex: 1; min-width: 0; }
+
+.cdk-articulo__cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.cdk-articulo__nombre {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    min-width: 0;
+}
+
+.cdk-articulo__importe {
+    flex: 0 0 auto;
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.cdk-articulo__detalle {
+    margin-top: 3px;
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+}
+
+/* ---------------------------------------------------------------------
+   Fila de ficha: una etiqueta y su valor
+
+   Para fichas donde el valor es TEXTO LARGO -una direccion de entrega, el
+   nombre de un transportista-. No vale `.cdk-articulo__importe`, que es lo
+   que parecia: ese esta hecho para importes y lleva `white-space: nowrap`
+   y `flex: 0 0 auto`, asi que ni envuelve ni se encoge y una direccion de
+   cincuenta caracteres se sale de la tarjeta. En un movil se nota a la
+   primera; en el escritorio no, porque sobra ancho.
+
+   La etiqueta va arriba y pequeña, el valor debajo a todo el ancho. Asi el
+   valor ocupa las lineas que necesite y la etiqueta sigue sirviendo para
+   encontrar la fila de un vistazo.
+   --------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------
+   Barra de progreso
+
+   Para Cuota, que es la pantalla que existe para enseñar un avance. El
+   color cambia con el tramo y no por adorno: de un vistazo se sabe si se
+   va bien sin leer el número.
+
+   El relleno nunca pasa del 100 % de ancho aunque el avance sí: una barra
+   que se sale de su pista no dice «vas sobrado», dice «algo está roto».
+   Pasarse se cuenta con el color y con la cifra, que para eso está.
+   --------------------------------------------------------------------- */
+.cdk-progreso__pista {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--cdk-borde);
+    overflow: hidden;
+}
+
+.cdk-progreso__relleno {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--cdk-primario);
+    transition: width .4s ease;
+}
+
+.cdk-progreso__relleno--bien   { background: var(--cdk-exito); }
+.cdk-progreso__relleno--alerta { background: var(--cdk-aviso); }
+
+.cdk-progreso__pie {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+}
+
+.cdk-ficha-fila {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.cdk-ficha-fila__etiqueta {
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+}
+
+.cdk-ficha-fila__valor {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    /* Un codigo largo sin espacios tampoco debe desbordar. */
+    overflow-wrap: anywhere;
+}
+
+/* Sin valor: ni negrita ni negro, que un guion no es un dato. */
+.cdk-ficha-fila__valor--vacio {
+    font-weight: 400;
+    color: var(--cdk-texto-suave);
+}
+
+.cdk-ficha-fila__detalle {
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+    overflow-wrap: anywhere;
+}
+
+/* Coincidencia con lo buscado. Sin fondo llamativo: en una lista donde casi
+   todo coincide, lo que ayuda es el contraste del peso, no el color. */
+.cdk-marca {
+    background: #fef08a;
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+    font-weight: 700;
+}
+
+/* Los datos numéricos. En movil caben dos por linea sin apretarse. */
+.cdk-articulo__datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 10px;
+}
+
+.cdk-dato { font-size: 12px; color: var(--cdk-texto-suave); }
+
+.cdk-dato__valor {
+    color: var(--cdk-texto);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.cdk-dato--bien .cdk-dato__valor  { color: var(--cdk-exito); }
+.cdk-dato--alerta .cdk-dato__valor { color: var(--cdk-error); }
+
+/* Dato presente pero vacío: se muestra para que se sepa que se consultó, sin
+   competir con los que sí tienen valor. Atenuado, no oculto: "0" y "no se
+   muestra" no significan lo mismo. */
+.cdk-dato--nulo,
+.cdk-dato--nulo .cdk-dato__valor { color: #9ca3af; font-weight: 400; }
+
+/* Línea que se vende por debajo de coste. Marca lateral en vez de otro color
+   de fondo: los fondos ya distinguen descuento y obsequio, y se puede estar
+   vendiendo bajo coste en cualquiera de los casos. */
+.cdk-articulo--alerta { box-shadow: inset 3px 0 0 var(--cdk-error); }
+
+/* Aviso sobre un bloque de contenido */
+.cdk-aviso {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--cdk-borde);
+    border-left: 4px solid var(--cdk-aviso);
+    border-radius: var(--cdk-radio);
+    background: #fffbeb;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.cdk-aviso--error { border-left-color: var(--cdk-error); background: #fef2f2; }
+.cdk-aviso__texto { margin: 0; }
+.cdk-aviso__texto strong { font-weight: 700; }
+
+.cdk-articulo__acciones {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* Acción dentro de una fila. Mantiene los 44px de área táctil aunque el
+   texto sea corto, que es donde fallan los botones pequeños en móvil. */
+.cdk-enlace-accion {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cdk-tactil);
+    padding: 0 10px;
+    margin: -10px 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--cdk-primario);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.cdk-enlace-accion:hover { background: var(--cdk-primario-suave); }
+.cdk-enlace-accion--peligro { color: var(--cdk-error); }
+.cdk-enlace-accion--peligro:hover { background: #fef2f2; }
+
+/* Variantes de línea.
+
+   Una cotización mezcla productos con líneas de promoción: descuentos (importe
+   negativo) y obsequios (importe cero). Pintarlos igual que un producto hace
+   que un descuento parezca un artículo que cuesta en negativo. */
+/* Descuento: ámbar. Resta dinero, así que conviene que salte a la vista. */
+.cdk-articulo--descuento { background: #fef6e0; }
+.cdk-articulo--descuento .cdk-articulo__importe { color: #b45309; }
+.cdk-articulo--descuento .cdk-articulo__distintivo { background: #fcd34d; color: #78350f; }
+
+/* Obsequio: azul. Ni verde (se lee como "correcto" y compite con los importes)
+   ni gris (se lee como desactivado, y un obsequio es algo que el vendedor
+   quiere destacar). */
+.cdk-articulo--obsequio { background: #eff6ff; }
+.cdk-articulo--obsequio .cdk-articulo__distintivo { background: #bfdbfe; color: #1e3a8a; }
+.cdk-articulo--obsequio .cdk-articulo__importe { color: #1d4ed8; font-weight: 600; }
+
+/* (variantes de prueba retiradas: se eligio la D)*/
+
+/* Dato ya elegido en un paso: cliente, almacén, lo que sea. Confirma la
+   selección y ofrece cambiarla sin ocupar media pantalla. */
+.cdk-elegido {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+}
+
+.cdk-elegido__datos { flex: 1; min-width: 0; }
+
+/* Dos líneas como máximo: hay razones sociales de 85 caracteres y, sin tope,
+   empujan el resto del paso hacia abajo en un móvil. */
+.cdk-elegido__nombre {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cdk-elegido__detalle {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+    font-variant-numeric: tabular-nums;
+}
+.cdk-elegido__detalle:empty { display: none; }
+
+/* ---------------------------------------------------------------------
+   Indicador de crédito
+
+   El círculo dice de un vistazo si el cliente tiene línea de crédito
+   disponible: S disponible, N no disponible.
+
+   Tonos suaves a propósito: aparece en todas las cotizaciones, y un verde
+   o un rojo saturados en pantalla permanente cansan y le roban peso a los
+   avisos que sí son excepcionales. Aun así llegan a 4.5:1 de contraste.
+
+   El estado "sin dato" existe porque el backend todavía no envía este
+   campo; en cuanto lo haga, deja de verse.
+   --------------------------------------------------------------------- */
+.cdk-credito {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.cdk-credito--si {
+    background: #d1fae5;
+    color: #047857;
+    box-shadow: inset 0 0 0 1px #6ee7b7;
+}
+
+.cdk-credito--no {
+    background: #fee2e2;
+    color: #b91c1c;
+    box-shadow: inset 0 0 0 1px #fca5a5;
+}
+
+.cdk-credito--nd {
+    background: #f3f4f6;
+    color: #4b5563;
+    box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+/* Ficha de un elemento dentro de un panel: qué es y sus datos, antes de
+   decidir sobre él. */
+.cdk-ficha {
+    padding: 12px 14px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-fondo);
+}
+
+.cdk-ficha__titulo { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.35; }
+
+.cdk-ficha__datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 8px;
+}
+
+.cdk-ficha__aviso {
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+/* Pie con el desglose de importes */
+.cdk-totales {
+    margin-top: 14px;
+    padding: 6px 16px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+}
+
+.cdk-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 9px 0;
+    font-size: 14px;
+}
+
+.cdk-total + .cdk-total { border-top: 1px solid var(--cdk-borde); }
+
+.cdk-total__etiqueta { color: var(--cdk-texto-suave); }
+.cdk-total__valor { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.cdk-total--principal { padding: 12px 0; }
+.cdk-total--principal .cdk-total__etiqueta { color: var(--cdk-texto); font-weight: 700; }
+.cdk-total--principal .cdk-total__valor { font-size: 19px; font-weight: 700; }
+
+.cdk-total--bien .cdk-total__valor   { color: var(--cdk-exito); }
+.cdk-total--alerta .cdk-total__valor { color: var(--cdk-error); }
+
+/* ---------------------------------------------------------------------
+   Panel deslizante
+
+   Hoja por abajo en móvil (al alcance del pulgar) y diálogo centrado en
+   pantallas grandes, donde una hoja pegada al borde inferior queda lejos
+   de la vista.
+
+   Existe porque crear cotización tiene SIETE modales, cada uno con su
+   propio markup y sus propias medidas. Son el mismo componente.
+   --------------------------------------------------------------------- */
+.cdk-panel { position: fixed; inset: 0; z-index: 60; }
+.cdk-panel.hidden { display: none; }
+
+.cdk-panel__fondo { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); }
+
+.cdk-panel__caja {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 88vh;
+    background: var(--cdk-superficie);
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--cdk-sombra-alta);
+    animation: cdk-subir .22s ease-out;
+}
+
+@media (min-width: 768px) {
+    .cdk-panel__caja {
+        top: 50%;
+        bottom: auto;
+        left: 50%;
+        right: auto;
+        width: min(560px, calc(100vw - 32px));
+        max-height: 80vh;
+        transform: translate(-50%, -50%);
+        border-radius: 14px;
+        animation: cdk-entrar .18s ease-out;
+    }
+}
+
+.cdk-panel__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--cdk-borde);
+}
+
+.cdk-panel__titulo { margin: 0; font-size: 16px; font-weight: 600; }
+
+.cdk-panel__cerrar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--cdk-tactil);
+    height: var(--cdk-tactil);
+    margin: -10px -10px -10px 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--cdk-texto-suave);
+    cursor: pointer;
+}
+.cdk-panel__cerrar:hover { background: var(--cdk-fondo); color: var(--cdk-texto); }
+
+.cdk-panel__cuerpo {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.cdk-panel__pie {
+    flex: 0 0 auto;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--cdk-borde);
+    background: var(--cdk-fondo);
+}
+
+/* Recuento sobre el boton de cerrar, centrado con el */
+.cdk-panel__pie .cdk-pista { margin: 0 0 8px; text-align: center; }
+
+/* Campo de búsqueda con icono y botón de limpiar */
+.cdk-busca { position: relative; }
+
+.cdk-busca .cdk-entrada { padding-left: 38px; padding-right: 40px; }
+
+.cdk-busca__lupa {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px; height: 18px;
+    color: var(--cdk-texto-suave);
+    pointer-events: none;
+}
+
+.cdk-busca__limpiar {
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px; height: 40px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--cdk-texto-suave);
+    cursor: pointer;
+}
+.cdk-busca__limpiar:hover { color: var(--cdk-texto); }
+.cdk-busca__limpiar.hidden { display: none; }
+
+/* Pista bajo el campo mientras no hay suficiente para buscar */
+.cdk-pista {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--cdk-texto-suave);
+}
+
+/* ---------------------------------------------------------------------
+   Pasos numerados
+
+   Crear cotización son cuatro pasos encadenados. El número indica dónde
+   está uno dentro del proceso; atenuado cuando el paso aún no aplica.
+   --------------------------------------------------------------------- */
+.cdk-seccion--paso { border-left: 3px solid var(--cdk-primario); }
+
+.cdk-paso__cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+
+.cdk-paso__numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--cdk-primario);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cdk-paso__titulo { margin: 0; font-size: 15px; font-weight: 600; }
+
+/* Resumen al otro extremo de la cabecera del paso: cuantos y cuanto, sin
+   abrir nada. El margen automatico lo empuja a la derecha. */
+.cdk-paso__resumen {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cdk-texto-suave);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------
+   Formularios de ajustes
+   --------------------------------------------------------------------- */
+.cdk-seccion {
+    margin-bottom: 16px;
+    padding: 18px;
+    background: var(--cdk-superficie);
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    box-shadow: var(--cdk-sombra);
+}
+
+.cdk-seccion__titulo { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.cdk-seccion__sub    { margin: 0 0 16px; font-size: 13px; line-height: 1.45; color: var(--cdk-texto-suave); }
+
+.cdk-campo { margin-bottom: 16px; }
+.cdk-campo:last-child { margin-bottom: 0; }
+
+.cdk-campo__etiqueta {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Campo de texto estándar.
+   16px de tamaño de letra a propósito: por debajo de eso, Safari en iOS
+   hace zoom automático al enfocar el campo y descoloca la pantalla. */
+.cdk-entrada {
+    width: 100%;
+    min-height: var(--cdk-tactil);
+    padding: 0 12px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    color: var(--cdk-texto);
+    font: inherit;
+    font-size: 16px;
+}
+
+.cdk-entrada:focus {
+    outline: 2px solid var(--cdk-primario);
+    outline-offset: -1px;
+    border-color: var(--cdk-primario);
+}
+
+.cdk-entrada:disabled { background: var(--cdk-fondo); color: var(--cdk-texto-suave); }
+
+select.cdk-entrada { padding-right: 8px; }
+
+/* Buscador: campo + botón. Apilado en móvil, en línea desde 480px. */
+.cdk-buscador { display: flex; flex-direction: column; gap: 10px; }
+.cdk-buscador__campo { flex: 1; min-width: 0; }
+
+@media (min-width: 480px) {
+    .cdk-buscador { flex-direction: row; align-items: flex-end; }
+    .cdk-buscador .cdk-boton { flex: 0 0 auto; }
+}
+
+.cdk-campo__ayuda { margin: 6px 0 0; font-size: 12px; line-height: 1.45; color: var(--cdk-texto-suave); }
+
+/* Dato de referencia dentro de la etiqueta, como el tope de descuento: hay
+   que verlo mientras se teclea, no en una ayuda debajo. */
+.cdk-campo__pista { font-weight: 400; color: var(--cdk-texto-suave); }
+
+.cdk-campo__error {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--cdk-error);
+}
+
+.cdk-campo__error.hidden { display: none; }
+
+/* Dos campos o dos botones en una fila. Apilados en pantallas estrechas:
+   por debajo de 380px, dos campos lado a lado dejan de ser usables. */
+.cdk-pareja { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 380px) { .cdk-pareja { grid-template-columns: 1fr 1fr; } }
+.cdk-pareja .cdk-campo { margin-bottom: 0; }
+
+/* Bloque que se despliega. Para lo secundario que no debe competir con la
+   accion principal pero tampoco esconderse del todo. */
+.cdk-plegable {
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+}
+
+.cdk-plegable__titulo {
+    display: flex;
+    align-items: center;
+    min-height: var(--cdk-tactil);
+    padding: 10px 14px;
+    font-size: 14px;
+    color: var(--cdk-primario);
+    cursor: pointer;
+    list-style: none;
+}
+
+/* Safari pinta su propio triangulo y descoloca la fila. */
+.cdk-plegable__titulo::-webkit-details-marker { display: none; }
+
+.cdk-plegable__titulo::before {
+    content: "+";
+    margin-right: 8px;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.cdk-plegable[open] > .cdk-plegable__titulo::before { content: "2"; }
+.cdk-plegable__titulo:hover { background: var(--cdk-primario-suave); }
+.cdk-plegable > *:not(summary) { padding: 0 14px 14px; }
+
+/* Cantidad: campo escribible con - y + a los lados */
+.cdk-contador {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    overflow: hidden;
+    background: var(--cdk-superficie);
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+}
+
+.cdk-contador__boton {
+    flex: none;
+    width: var(--cdk-tactil);
+    font: inherit;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--cdk-texto);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+
+.cdk-contador__boton:hover { background: var(--cdk-primario-suave); }
+.cdk-contador__boton:disabled { opacity: .35; cursor: default; }
+.cdk-contador__boton:disabled:hover { background: none; }
+
+.cdk-contador__campo {
+    flex: 1;
+    min-width: 0;
+    height: var(--cdk-tactil);
+    padding: 0 4px;
+    font: inherit;
+    font-size: 16px;            /* menos de 16 y iOS hace zoom al enfocar */
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    text-align: center;
+    color: var(--cdk-texto);
+    background: none;
+    border: 0;
+    border-left: 1px solid var(--cdk-borde);
+    border-right: 1px solid var(--cdk-borde);
+}
+
+.cdk-contador__campo:focus { outline: 2px solid var(--cdk-primario); outline-offset: -2px; }
+
+/* Resultado de busqueda que se abre en su sitio: la fila y su configuracion
+   forman un bloque, para que se lea como una sola cosa y no como dos. */
+.cdk-grupo { border: 1px solid transparent; border-radius: var(--cdk-radio); }
+
+.cdk-grupo--abierto {
+    border-color: var(--cdk-primario);
+    background: var(--cdk-superficie);
+    box-shadow: var(--cdk-sombra);
+}
+
+/* Abierta deja de comportarse como fila de lista: ni separador ni hover. */
+.cdk-grupo--abierto > .cdk-articulo { border-bottom: 0; }
+.cdk-grupo--abierto > .cdk-articulo--pulsable:hover { background: none; }
+
+.cdk-config { padding: 0 12px 12px; }
+
+/* Zona para soltar o elegir la imagen */
+.cdk-soltar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 132px;
+    padding: 20px;
+    border: 2px dashed var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-fondo);
+    color: var(--cdk-texto-suave);
+    font: inherit;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.cdk-soltar:hover,
+.cdk-soltar.es-activa { border-color: var(--cdk-primario); background: var(--cdk-primario-suave); color: var(--cdk-primario-fuerte); }
+
+.cdk-soltar__icono { width: 28px; height: 28px; }
+
+/* Vista previa del fondo, con las mismas proporciones del panel */
+.cdk-previa {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+}
+
+.cdk-previa::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, var(--cdk-fondo-velo, .45));
+}
+
+.cdk-previa__contenido {
+    position: relative;
+    z-index: 1;
+    padding: 16px;
+}
+
+.cdk-previa__titulo { font-size: 16px; font-weight: 700; color: var(--cdk-texto); }
+.cdk-previa__sub    { font-size: 12px; color: var(--cdk-texto-suave); }
+
+.cdk-previa__ficha {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: 8px;
+    background: var(--cdk-superficie);
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: var(--cdk-sombra);
+}
+
+/* Control deslizante */
+.cdk-rango {
+    width: 100%;
+    height: var(--cdk-tactil);
+    accent-color: var(--cdk-primario);
+    cursor: pointer;
+}
+
+.cdk-rango__fila { display: flex; align-items: center; gap: 12px; }
+.cdk-rango__valor {
+    min-width: 48px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.cdk-acciones-fila { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Archivo real, oculto pero accesible: lo dispara la zona de soltar */
+.cdk-archivo {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Toast
+   --------------------------------------------------------------------- */
+.cdk-toasts {
+    position: fixed;
+    top: calc(var(--cdk-navbar-alto) + 12px);
+    right: 12px;
+    left: 12px;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+@media (min-width: 640px) { .cdk-toasts { left: auto; max-width: 380px; } }
+
+.cdk-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--cdk-borde);
+    border-left-width: 4px;
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    box-shadow: var(--cdk-sombra-alta);
+    pointer-events: auto;
+    animation: cdk-entrar .2s ease-out;
+}
+
+.cdk-toast--saliendo { animation: cdk-salir .2s ease-in forwards; }
+
+.cdk-toast__texto { margin: 0; flex: 1; font-size: 14px; line-height: 1.4; }
+
+.cdk-toast__cerrar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    margin: -4px -4px 0 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--cdk-texto-suave);
+    cursor: pointer;
+}
+.cdk-toast__cerrar:hover { background: var(--cdk-fondo); }
+
+.cdk-toast--exito { border-left-color: var(--cdk-exito); }
+.cdk-toast--exito .cdk-toast__icono { color: var(--cdk-exito); }
+.cdk-toast--error { border-left-color: var(--cdk-error); }
+.cdk-toast--error .cdk-toast__icono { color: var(--cdk-error); }
+.cdk-toast--aviso { border-left-color: var(--cdk-aviso); }
+.cdk-toast--aviso .cdk-toast__icono { color: var(--cdk-aviso); }
+.cdk-toast--info  { border-left-color: var(--cdk-info); }
+.cdk-toast--info  .cdk-toast__icono { color: var(--cdk-info); }
+
+/* ---------------------------------------------------------------------
+   Modal
+   --------------------------------------------------------------------- */
+.cdk-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.cdk-modal__fondo { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); }
+
+.cdk-modal__dialogo {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    padding: 22px;
+    border-radius: 14px;
+    background: var(--cdk-superficie);
+    box-shadow: var(--cdk-sombra-alta);
+    animation: cdk-entrar .18s ease-out;
+}
+
+.cdk-modal__titulo  { margin: 0 0 8px; font-size: 17px; font-weight: 600; }
+.cdk-modal__mensaje { margin: 0 0 20px; font-size: 14px; line-height: 1.5; color: var(--cdk-texto-suave); }
+.cdk-modal__mensaje:empty { display: none; }
+
+.cdk-modal__acciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.cdk-modal__acciones .cdk-boton { flex: 1 1 auto; }
+@media (min-width: 480px) { .cdk-modal__acciones .cdk-boton { flex: 0 0 auto; } }
+
+/* ---------------------------------------------------------------------
+   Estados de contenido
+   --------------------------------------------------------------------- */
+.cdk-estado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 20px;
+    text-align: center;
+}
+
+.cdk-estado__texto  { margin: 0; font-size: 14px; color: var(--cdk-texto-suave); max-width: 44ch; }
+.cdk-estado__icono  { width: 40px; height: 40px; color: #9ca3af; }
+.cdk-estado__icono--error { color: var(--cdk-error); }
+
+.cdk-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--cdk-borde);
+    border-top-color: var(--cdk-primario);
+    border-radius: 50%;
+    animation: cdk-girar .7s linear infinite;
+}
+
+.cdk-esqueleto {
+    display: block;
+    height: 40px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #eef0f3 25%, #e2e5ea 37%, #eef0f3 63%);
+    background-size: 400% 100%;
+    animation: cdk-brillo 1.3s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------
+   Foco visible
+
+   Varias pantallas del proyecto usan focus:outline-none sin reemplazo, lo que
+   deja a quien navega con teclado sin saber donde esta.
+   --------------------------------------------------------------------- */
+.cdk-navbar :focus-visible,
+.cdk-sidebar :focus-visible,
+.cdk-bottomnav :focus-visible,
+.cdk-modal :focus-visible,
+.cdk-hoja :focus-visible,
+.cdk-toast :focus-visible,
+.cdk-boton:focus-visible {
+    outline: 2px solid var(--cdk-primario);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------------
+   Animaciones
+   --------------------------------------------------------------------- */
+@keyframes cdk-girar  { to { transform: rotate(360deg); } }
+@keyframes cdk-entrar { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes cdk-salir  { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes cdk-subir  { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes cdk-brillo { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .cdk-toast,
+    .cdk-modal__dialogo,
+    .cdk-hoja__panel,
+    .cdk-esqueleto { animation: none; }
+    .cdk-spinner { animation-duration: 2s; }
+}
+
+/* ---------------------------------------------------------------------
+   Modo oscuro — opt-in con <html data-tema="oscuro">.
+
+   NO se engancha a prefers-color-scheme todavia. Hoy solo main.html e
+   index.html traen reglas oscuras, asi que quien tenga el sistema en oscuro
+   ve el panel oscuro y, al entrar a cualquier modulo, una pagina blanca.
+   Activarlo aqui extenderia esa inconsistencia a las 45 paginas.
+
+   Se conecta a prefers-color-scheme cuando el contenido de las paginas
+   tambien este cubierto.
+   --------------------------------------------------------------------- */
+[data-tema="oscuro"] {
+    --cdk-fondo:        #0f172a;
+    --cdk-superficie:   #1e293b;
+    --cdk-borde:        #334155;
+    --cdk-texto:        #f1f5f9;
+    --cdk-texto-suave:  #cbd5e1;
+    --cdk-primario-suave: #312e81;
+}

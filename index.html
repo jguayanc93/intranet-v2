@@ -9,7 +9,10 @@
     <link rel="stylesheet" href="./styles/login.css">
     <title>CDK - Portal de Vendedores</title>
 </head>
-<body class="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+<!-- data-shell="none": sin armazón y sin guard de sesión. Sin esto, un 401
+     mandaría al login estando ya en el login, en bucle. -->
+<body data-shell="none"
+      class="min-h-screen w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
     
     <!-- Contenedor principal con animación de entrada -->
     <main class="w-full max-w-4xl">
@@ -144,9 +147,13 @@
         </div>
     </main>
 
-    <!-- Scripts -->
-    <script src="./caminos/rutas.js"></script>
-    <script src="./styles/login-validation.js"></script>
-    <script src="./js/login/login.js"></script>
+    <!-- Núcleo mínimo: esta página no monta el armazón, solo necesita
+         resolver rutas y hablar con el backend. -->
+    <script src="/core/cdk.js"></script>
+    <script src="/core/cdk-rutas.js"></script>
+    <script src="/core/cdk-http.js"></script>
+
+    <script src="/js/login/validacion.js"></script>
+    <script src="/js/login/login.js"></script>
 </body>
 </html>

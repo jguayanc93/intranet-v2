@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Paso 2 · variantes</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 24px 16px 80px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco { max-width: 1100px; margin: 0 auto; }
+
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 20px; font-size: 14px; color: var(--cdk-texto-suave);
+                 line-height: 1.55; max-width: 66ch; }
+
+        .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+        .controles label { font-size: 13px; color: var(--cdk-texto-suave); }
+
+        /* Pestañas de variante */
+        .pestanas { display: flex; gap: 6px; flex-wrap: wrap; }
+        .pestana {
+            min-height: var(--cdk-tactil);
+            padding: 8px 14px;
+            font: inherit; font-size: 13px;
+            background: var(--cdk-superficie);
+            color: var(--cdk-texto-suave);
+            border: 1px solid var(--cdk-borde);
+            border-radius: var(--cdk-radio);
+            cursor: pointer;
+        }
+        .pestana[aria-selected="true"] {
+            background: var(--cdk-primario);
+            border-color: var(--cdk-primario);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .nota { margin: 0 0 20px; font-size: 13px; color: var(--cdk-texto-suave);
+                line-height: 1.55; max-width: 66ch; min-height: 40px; }
+
+        .escenario { display: grid; gap: 24px; grid-template-columns: 1fr; align-items: start; }
+        @media (min-width: 900px) { .escenario { grid-template-columns: 420px 1fr; } }
+
+        /* Ancho de móvil real, que es donde aprieta */
+        .movil { width: 100%; max-width: 420px; }
+
+        .caso__titulo { font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+
+        /* --- Contador de cantidad --- */
+        .demo-contador { display: inline-flex; align-items: center; gap: 2px;
+                         border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio);
+                         overflow: hidden; background: var(--cdk-superficie); }
+        .demo-contador__b {
+            width: 40px; height: 40px;
+            font: inherit; font-size: 18px; line-height: 1;
+            background: none; border: 0; color: var(--cdk-texto); cursor: pointer;
+        }
+        .demo-contador__b:hover { background: var(--cdk-primario-suave); }
+        .demo-contador__b[disabled] { opacity: .35; cursor: default; }
+        .demo-contador__b:hover[disabled] { background: none; }
+        .demo-contador__n { min-width: 34px; text-align: center; font-size: 15px;
+                            font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* Fila de acción dentro de un artículo (variante B) */
+        .demo-fila-add { display: flex; align-items: center; justify-content: space-between;
+                         gap: 10px; margin-top: 10px; }
+
+        /* --- Variante A: grupo fila + configuración --- */
+        .demo-grupo { border: 1px solid transparent; border-radius: var(--cdk-radio); }
+        .demo-grupo--abierto { border-color: var(--cdk-primario); }
+        .demo-config { padding: 0 12px 12px; }
+
+        /* --- Variante C: hoja de dos paneles --- */
+        .demo-pista { overflow: hidden; }
+        .demo-carril { display: flex; width: 200%; transition: transform .24s ease; }
+        .demo-carril--p2 { transform: translateX(-50%); }
+        .demo-panel { width: 50%; flex: 0 0 50%; }
+        .demo-hoja-cab { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .demo-hoja-cab__b { width: 40px; height: 40px; flex: none; font: inherit; font-size: 18px;
+                            background: none; border: 0; color: var(--cdk-texto); cursor: pointer;
+                            border-radius: var(--cdk-radio); }
+        .demo-hoja-cab__b:hover { background: var(--cdk-primario-suave); }
+
+        .demo-vacio { font-size: 13px; color: var(--cdk-texto-suave); padding: 12px 0; margin: 0; }
+        .demo-contador-add { font-size: 12px; color: var(--cdk-texto-suave); margin: 10px 0 0; }
+    </style>
+</head>
+
+<body>
+<div class="marco">
+
+    <h1>Paso 2 · Elegir productos</h1>
+    <p class="intro">
+        Tres formas de resolver el mismo paso, con los mismos datos. La pregunta de fondo es
+        cuántos toques cuesta meter cinco productos y si el descuento se decide al elegir o
+        después, en el carrito. Pruébalo en el celular: es donde se nota.
+    </p>
+
+    <div class="controles">
+        <div class="pestanas" role="tablist" id="pestanas">
+            <button class="pestana" role="tab" data-var="B" aria-selected="true">B · Buscador en página</button>
+            <button class="pestana" role="tab" data-var="A" aria-selected="false">A · Fila que se expande</button>
+            <button class="pestana" role="tab" data-var="C" aria-selected="false">C · Hoja inferior</button>
+        </div>
+
+        <label for="alm">Moneda</label>
+        <select id="alm" class="cdk-entrada" style="width:auto">
+            <option value="D">Dólares</option>
+            <option value="S">Soles</option>
+        </select>
+
+        <button type="button" id="vaciar" class="cdk-boton cdk-boton--suave">Vaciar carrito</button>
+    </div>
+
+    <p class="nota" id="nota"></p>
+
+    <div class="escenario">
+        <div class="movil" id="lienzo"></div>
+
+        <aside>
+            <p class="caso__titulo">Paso 3 · Carrito</p>
+            <div id="carrito"></div>
+        </aside>
+    </div>
+
+</div>
+
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/js/cotizacion/campos.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    var el = CDK.el;
+
+    // Datos de ejemplo. Los precios llegan del backend en dólares, igual que en
+    // la página real, y el selector de arriba los convierte con el tipo de
+    // cambio fijo que usa CDK.coti.
+    var CATALOGO = [
+        { id: "0505-012610", marca: "BROTHER",  descripcion: "TONER TN-450 NEGRO ORIGINAL",        stock1: 12, stock2: 3,  stock3: 0, precioUnitario: 89.90,  descuentoMaximo: 6 },
+        { id: "0505-012611", marca: "BROTHER",  descripcion: "TONER TN-660 NEGRO ALTO RENDIMIENTO", stock1: 5,  stock2: 0,  stock3: 2, precioUnitario: 145.00, descuentoMaximo: 4 },
+        { id: "0301-020793", marca: "HP",       descripcion: "CARTUCHO 664 NEGRO ORIGINAL",         stock1: 0,  stock2: 0,  stock3: 0, precioUnitario: 52.40,  descuentoMaximo: 10 },
+        { id: "0505-013001", marca: "EPSON",    descripcion: "BOTELLA DE TINTA T664 CYAN",          stock1: 34, stock2: 8,  stock3: 5, precioUnitario: 28.50,  descuentoMaximo: 12 },
+        { id: "0110-004422", marca: "LOGITECH", descripcion: "MOUSE INALAMBRICO M170 NEGRO",        stock1: 60, stock2: 15, stock3: 9, precioUnitario: 39.00,  descuentoMaximo: 8 },
+        { id: "0110-004500", marca: "LOGITECH", descripcion: "TECLADO K120 USB ESPANOL",            stock1: 7,  stock2: 2,  stock3: 0, precioUnitario: 45.00,  descuentoMaximo: 8 },
+        { id: "0210-009911", marca: "KINGSTON", descripcion: "MEMORIA USB 64GB DATATRAVELER",       stock1: 22, stock2: 0,  stock3: 4, precioUnitario: 18.90,  descuentoMaximo: 15 }
+    ];
+
+    var NOTAS = {
+        B: "Sin modales. El buscador vive en la pagina y cada resultado trae su contador: un toque y la linea baja al carrito. El descuento se ajusta despues, en el paso 3. Menos toques por producto y un modal menos que mantener, a cambio de que un toque errado agrega.",
+        A: "Un solo panel. Al elegir un resultado la fila se abre con cantidad y descuento, y al agregar se cierra sin perder la busqueda, asi metes varios de la misma consulta. Cantidad y descuento se deciden al agregar, pero la fila crece y empuja al resto.",
+        C: "Las dos etapas dentro de una hoja que desliza. La flecha devuelve a los resultados intactos. Es lo que mejor se siente en movil y lo que mas codigo nuevo pide; en desktop habria que convertirla en cajon lateral."
+    };
+
+    var carrito = [];      // { prod, cantidad, descuento }
+    var cantidades = {};   // id -> cantidad tecleada en el buscador (variante B)
+    var variante = "B";
+
+    // Cada variante deja aqui su repintado de resultados. Quitar algo del
+    // carrito tiene que refrescar la lista sin rehacer la variante entera:
+    // si no, se pierde lo que el vendedor tenia escrito en el buscador.
+    var repintarLista = null;
+
+    // ---------------------------------------------------------------- utiles
+
+    function moneda(valorEnDolares) {
+        return CDK.formato.moneda(CDK.coti.convertir(valorEnDolares, "D"), CDK.coti.moneda());
+    }
+
+    function buscar(texto) {
+        var t = (texto || "").trim().toUpperCase();
+        if (t.length < 3) return null;   // null = aun no hay que buscar
+        return CATALOGO.filter(function (p) {
+            return p.descripcion.indexOf(t) !== -1 || p.marca.indexOf(t) !== -1;
+        });
+    }
+
+    function enCarrito(id) {
+        return carrito.some(function (l) { return l.prod.id === id; });
+    }
+
+    function agregar(prod, cantidad, descuento) {
+        if (enCarrito(prod.id)) {
+            CDK.toast("Ese producto ya estaba en el carrito. Editalo desde la lista.", "aviso");
+            return false;
+        }
+        carrito.push({ prod: prod, cantidad: cantidad, descuento: descuento || 0 });
+        pintarCarrito();
+        return true;
+    }
+
+    function calcular(linea) {
+        return CDK.coti.calcularLinea({
+            precio: linea.prod.precioUnitario,
+            cantidad: linea.cantidad,
+            descuento: linea.descuento,
+            tope: linea.prod.descuentoMaximo
+        });
+    }
+
+    /** Contador -/+ reutilizado por las tres variantes. */
+    function contador(valor, alCambiar) {
+        var n = el("span", { clase: "demo-contador__n", texto: String(valor) });
+        var menos = el("button", { type: "button", clase: "demo-contador__b",
+                                   texto: "−", "aria-label": "Quitar uno" });
+        var mas = el("button", { type: "button", clase: "demo-contador__b",
+                                 texto: "+", "aria-label": "Agregar uno" });
+
+        function fijar(v) {
+            valor = Math.min(Math.max(v, 1), 500);
+            n.textContent = String(valor);
+            menos.disabled = valor <= 1;
+            if (alCambiar) alCambiar(valor);
+        }
+
+        menos.addEventListener("click", function () { fijar(valor - 1); });
+        mas.addEventListener("click", function () { fijar(valor + 1); });
+        menos.disabled = valor <= 1;
+
+        return el("div", { clase: "demo-contador" }, [menos, n, mas]);
+    }
+
+    /**
+     * Fila de producto. Los tres almacenes se muestran siempre, apagados
+     * cuando estan en cero: saber que no hay es tan util como saber que hay.
+     */
+    function filaProducto(p, alPulsar) {
+        var total = p.stock1 + p.stock2 + p.stock3;
+        return CDK.articulo({
+            distintivo: p.marca,
+            nombre: p.descripcion,
+            importe: moneda(p.precioUnitario),
+            datos: [
+                { etiqueta: "Principal", valor: p.stock1, tono: p.stock1 ? null : "nulo" },
+                { etiqueta: "M&M",       valor: p.stock2, tono: p.stock2 ? null : "nulo" },
+                { etiqueta: "Piura",     valor: p.stock3, tono: p.stock3 ? null : "nulo" }
+            ],
+            alerta: total === 0,
+            alPulsar: alPulsar
+        });
+    }
+
+    /** Buscador con lupa y boton de limpiar, igual que el del paso 1. */
+    function buscador(alEscribir) {
+        var campo = el("input", {
+            type: "search", clase: "cdk-entrada", autocomplete: "off",
+            enterkeyhint: "search", placeholder: "Nombre o marca del producto"
+        });
+
+        var limpiar = el("button", { type: "button", clase: "cdk-busca__limpiar hidden",
+                                     "aria-label": "Limpiar", texto: "✕" });
+
+        var lupa = el("span", { clase: "cdk-busca__lupa", html:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" ' +
+            'stroke-linecap="round" aria-hidden="true">' +
+            '<path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/></svg>' });
+
+        function cambio() {
+            limpiar.classList.toggle("hidden", campo.value === "");
+            alEscribir(campo.value);
+        }
+
+        campo.addEventListener("input", cambio);
+        limpiar.addEventListener("click", function () { campo.value = ""; cambio(); campo.focus(); });
+
+        var caja = el("div", { clase: "cdk-busca" }, [lupa, campo, limpiar]);
+        caja.campo = campo;
+        return caja;
+    }
+
+    /** Mensaje segun el estado de la busqueda: sin escribir, corto o sin resultados. */
+    function estadoBusqueda(texto, resultados) {
+        if (resultados === null) {
+            return el("p", { clase: "demo-vacio",
+                texto: texto ? "Escribe al menos 3 caracteres." : "Busca un producto por nombre o marca." });
+        }
+        if (!resultados.length) {
+            return el("p", { clase: "demo-vacio", texto: "Ningun producto coincide con “" + texto + "”." });
+        }
+        return null;
+    }
+
+    /** Campos de cantidad y descuento, compartidos por las variantes A y C. */
+    function configurador(p, alAgregar) {
+        var cantidad = 1;
+        var descuento = 0;
+
+        var importe = el("span", { clase: "cdk-total__valor" });
+        var errorDesc = el("p", { clase: "cdk-campo__error hidden" });
+
+        var campoDesc = el("input", { type: "number", clase: "cdk-entrada",
+                                      inputmode: "decimal", min: "0", step: "0.01", value: "0.00" });
+
+        function refrescar() {
+            var linea = CDK.coti.calcularLinea({
+                precio: p.precioUnitario, cantidad: cantidad,
+                descuento: descuento, tope: p.descuentoMaximo
+            });
+            importe.textContent = CDK.formato.moneda(linea.importe, CDK.coti.moneda());
+
+            // El tope no se impone en silencio: si lo pasa, se dice.
+            errorDesc.classList.toggle("hidden", !linea.acotado);
+            if (linea.acotado) {
+                errorDesc.textContent = "El maximo es " + p.descuentoMaximo.toFixed(2) + "%.";
+            }
+        }
+
+        campoDesc.addEventListener("input", function () {
+            descuento = parseFloat(campoDesc.value) || 0;
+            refrescar();
+        });
+
+        var bloqueCantidad = el("div", { clase: "cdk-campo" }, [
+            el("label", { clase: "cdk-campo__etiqueta", texto: "Cantidad" }),
+            contador(1, function (v) { cantidad = v; refrescar(); })
+        ]);
+
+        var bloqueDescuento = el("div", { clase: "cdk-campo" }, [
+            el("label", { clase: "cdk-campo__etiqueta" }, [
+                document.createTextNode("Descuento "),
+                el("span", { clase: "cdk-campo__pista", texto: "max. " + p.descuentoMaximo.toFixed(2) + "%" })
+            ]),
+            campoDesc,
+            errorDesc
+        ]);
+
+        var boton = el("button", { type: "button", clase: "cdk-boton cdk-boton--primario",
+                                   texto: "Agregar", style: "width:100%" });
+        boton.addEventListener("click", function () {
+            if (agregar(p, cantidad, descuento)) alAgregar();
+        });
+
+        refrescar();
+
+        return el("div", {}, [
+            el("div", { clase: "cdk-pareja" }, [bloqueCantidad, bloqueDescuento]),
+            el("div", { clase: "cdk-totales", style: "margin:8px 0 12px" }, [
+                el("div", { clase: "cdk-total cdk-total--principal" }, [
+                    el("span", { clase: "cdk-total__etiqueta", texto: "Importe" }),
+                    importe
+                ])
+            ]),
+            boton
+        ]);
+    }
+
+    // --------------------------------------------------- variante B (en pagina)
+
+    function variantaB(lienzo) {
+        var lista = el("div", { clase: "cdk-articulos" });
+        var texto = "";
+
+        function pintar() {
+            lista.innerHTML = "";
+            var resultados = buscar(texto);
+            var vacio = estadoBusqueda(texto, resultados);
+            if (vacio) { lista.appendChild(vacio); return; }
+
+            resultados.forEach(function (p) {
+                if (cantidades[p.id] === undefined) cantidades[p.id] = 1;
+
+                var fila = filaProducto(p, null);
+
+                var añadir = el("button", { type: "button", clase: "cdk-boton cdk-boton--primario",
+                                            texto: enCarrito(p.id) ? "En el carrito" : "Agregar" });
+                añadir.disabled = enCarrito(p.id);
+                añadir.addEventListener("click", function () {
+                    if (agregar(p, cantidades[p.id], 0)) pintar();
+                });
+
+                var acciones = el("div", { clase: "demo-fila-add" }, [
+                    contador(cantidades[p.id], function (v) { cantidades[p.id] = v; }),
+                    añadir
+                ]);
+
+                fila.querySelector(".cdk-articulo__cuerpo").appendChild(acciones);
+                lista.appendChild(fila);
+            });
+        }
+
+        var caja = buscador(function (v) { texto = v; pintar(); });
+        repintarLista = pintar;
+        pintar();
+
+        lienzo.appendChild(el("section", { clase: "cdk-seccion cdk-seccion--paso" }, [
+            el("div", { clase: "cdk-paso__cabecera" }, [
+                el("span", { clase: "cdk-paso__numero", texto: "2" }),
+                el("h2", { clase: "cdk-paso__titulo", texto: "Productos" })
+            ]),
+            caja,
+            lista
+        ]));
+    }
+
+    // ------------------------------------------- variante A (fila que se abre)
+
+    function variantaA(lienzo) {
+        var lista = el("div", { clase: "cdk-articulos" });
+        var contadorAdd = el("p", { clase: "demo-contador-add hidden" });
+        var texto = "";
+        var abierta = null;
+        var agregados = 0;
+
+        function pintar() {
+            lista.innerHTML = "";
+            var resultados = buscar(texto);
+            var vacio = estadoBusqueda(texto, resultados);
+            if (vacio) { lista.appendChild(vacio); return; }
+
+            resultados.forEach(function (p) {
+                var estaAbierta = abierta === p.id;
+
+                var fila = filaProducto(p, function () {
+                    abierta = estaAbierta ? null : p.id;
+                    pintar();
+                });
+
+                var grupo = el("div", { clase: "demo-grupo" + (estaAbierta ? " demo-grupo--abierto" : "") }, [fila]);
+
+                if (estaAbierta) {
+                    grupo.appendChild(el("div", { clase: "demo-config" }, [
+                        configurador(p, function () {
+                            abierta = null;
+                            agregados++;
+                            contadorAdd.textContent = agregados === 1
+                                ? "1 producto agregado"
+                                : agregados + " productos agregados";
+                            contadorAdd.classList.remove("hidden");
+                            pintar();   // los resultados siguen ahi
+                        })
+                    ]));
+                }
+
+                lista.appendChild(grupo);
+            });
+        }
+
+        var panel = el("div", { clase: "cdk-panel hidden", role: "dialog", "aria-modal": "true" });
+        var caja = buscador(function (v) { texto = v; abierta = null; pintar(); });
+        repintarLista = pintar;
+
+        function cerrar() { panel.classList.add("hidden"); }
+
+        var cerrarBtn = el("button", { type: "button", clase: "cdk-panel__cerrar",
+                                       "aria-label": "Cerrar", texto: "✕" });
+        cerrarBtn.addEventListener("click", cerrar);
+
+        var fondo = el("div", { clase: "cdk-panel__fondo" });
+        fondo.addEventListener("click", cerrar);
+
+        panel.appendChild(fondo);
+        panel.appendChild(el("div", { clase: "cdk-panel__caja" }, [
+            el("div", { clase: "cdk-panel__cabecera" }, [
+                el("h3", { clase: "cdk-panel__titulo", texto: "Buscar producto" }),
+                cerrarBtn
+            ]),
+            el("div", { clase: "cdk-panel__cuerpo" }, [caja, lista, contadorAdd])
+        ]));
+
+        var abrir = el("button", { type: "button", clase: "cdk-boton cdk-boton--suave",
+                                   texto: "Buscar producto", style: "width:100%" });
+        abrir.addEventListener("click", function () {
+            panel.classList.remove("hidden");
+            caja.campo.focus();
+        });
+
+        pintar();
+
+        lienzo.appendChild(el("section", { clase: "cdk-seccion cdk-seccion--paso" }, [
+            el("div", { clase: "cdk-paso__cabecera" }, [
+                el("span", { clase: "cdk-paso__numero", texto: "2" }),
+                el("h2", { clase: "cdk-paso__titulo", texto: "Productos" })
+            ]),
+            abrir
+        ]));
+        lienzo.appendChild(panel);
+    }
+
+    // ------------------------------------------- variante C (hoja deslizante)
+
+    function variantaC(lienzo) {
+        var lista = el("div", { clase: "cdk-articulos" });
+        var panelConfig = el("div", {});
+        var texto = "";
+
+        var carril = el("div", { clase: "demo-carril" });
+        var hoja = el("div", { clase: "cdk-hoja hidden" });
+
+        function irA(paso) { carril.classList.toggle("demo-carril--p2", paso === 2); }
+
+        function cerrar() { hoja.classList.add("hidden"); irA(1); }
+
+        function pintar() {
+            lista.innerHTML = "";
+            var resultados = buscar(texto);
+            var vacio = estadoBusqueda(texto, resultados);
+            if (vacio) { lista.appendChild(vacio); return; }
+
+            resultados.forEach(function (p) {
+                lista.appendChild(filaProducto(p, function () {
+                    panelConfig.innerHTML = "";
+                    panelConfig.appendChild(el("div", { clase: "cdk-ficha" }, [
+                        el("p", { clase: "cdk-ficha__titulo", texto: p.descripcion }),
+                        el("div", { clase: "cdk-ficha__datos" }, [
+                            el("span", { clase: "cdk-dato", texto: "Principal " + p.stock1 }),
+                            el("span", { clase: "cdk-dato", texto: "M&M " + p.stock2 }),
+                            el("span", { clase: "cdk-dato", texto: "Piura " + p.stock3 })
+                        ])
+                    ]));
+                    panelConfig.appendChild(configurador(p, function () {
+                        irA(1);          // vuelve a los resultados, que siguen ahi
+                        pintar();
+                    }));
+                    irA(2);
+                }));
+            });
+        }
+
+        var caja = buscador(function (v) { texto = v; pintar(); });
+        repintarLista = pintar;
+
+        var cerrar1 = el("button", { type: "button", clase: "demo-hoja-cab__b",
+                                     "aria-label": "Cerrar", texto: "✕" });
+        cerrar1.addEventListener("click", cerrar);
+
+        var volver = el("button", { type: "button", clase: "demo-hoja-cab__b",
+                                    "aria-label": "Volver a los resultados", texto: "←" });
+        volver.addEventListener("click", function () { irA(1); });
+
+        var cerrar2 = el("button", { type: "button", clase: "demo-hoja-cab__b",
+                                     "aria-label": "Cerrar", texto: "✕" });
+        cerrar2.addEventListener("click", cerrar);
+
+        carril.appendChild(el("div", { clase: "demo-panel" }, [
+            el("div", { clase: "demo-hoja-cab" }, [
+                el("h3", { clase: "cdk-hoja__titulo", style: "margin:0;flex:1", texto: "Buscar producto" }),
+                cerrar1
+            ]),
+            caja,
+            lista
+        ]));
+
+        carril.appendChild(el("div", { clase: "demo-panel" }, [
+            el("div", { clase: "demo-hoja-cab" }, [
+                volver,
+                el("h3", { clase: "cdk-hoja__titulo", style: "margin:0;flex:1", texto: "Configurar" }),
+                cerrar2
+            ]),
+            panelConfig
+        ]));
+
+        var fondo = el("div", { clase: "cdk-hoja__fondo" });
+        fondo.addEventListener("click", cerrar);
+
+        hoja.appendChild(fondo);
+        hoja.appendChild(el("div", { clase: "cdk-hoja__panel" }, [
+            el("div", { clase: "cdk-hoja__asa" }),
+            el("div", { clase: "demo-pista" }, [carril])
+        ]));
+
+        var abrir = el("button", { type: "button", clase: "cdk-boton cdk-boton--suave",
+                                   texto: "Buscar producto", style: "width:100%" });
+        abrir.addEventListener("click", function () {
+            hoja.classList.remove("hidden");
+            caja.campo.focus();
+        });
+
+        pintar();
+
+        lienzo.appendChild(el("section", { clase: "cdk-seccion cdk-seccion--paso" }, [
+            el("div", { clase: "cdk-paso__cabecera" }, [
+                el("span", { clase: "cdk-paso__numero", texto: "2" }),
+                el("h2", { clase: "cdk-paso__titulo", texto: "Productos" })
+            ]),
+            abrir
+        ]));
+        lienzo.appendChild(hoja);
+    }
+
+    // ------------------------------------------------------------- el carrito
+
+    function pintarCarrito() {
+        var destino = document.getElementById("carrito");
+        destino.innerHTML = "";
+
+        if (!carrito.length) {
+            destino.appendChild(el("div", { clase: "cdk-estado" }, [
+                el("p", { clase: "cdk-estado__texto", texto: "Todavia no hay productos." })
+            ]));
+            return;
+        }
+
+        var lista = el("div", { clase: "cdk-articulos" });
+        var subtotal = 0;
+
+        carrito.forEach(function (linea, i) {
+            var c = calcular(linea);
+            subtotal += c.importe;
+
+            var detalle = c.cantidad + " × " + CDK.formato.moneda(c.precioUnitario, CDK.coti.moneda());
+            if (c.descuentoAplicado > 0) {
+                detalle += "  ·  desc. " + c.descuentoAplicado.toFixed(2) + "%";
+            }
+
+            lista.appendChild(CDK.articulo({
+                distintivo: linea.prod.marca,
+                nombre: linea.prod.descripcion,
+                detalle: detalle,
+                importe: CDK.formato.moneda(c.importe, CDK.coti.moneda()),
+                acciones: [{
+                    texto: "Quitar",
+                    peligro: true,
+                    alPulsar: function () {
+                        carrito.splice(i, 1);
+                        pintarCarrito();
+                        // Solo la lista: asi no se pierde lo escrito en el buscador.
+                        if (repintarLista) repintarLista();
+                    }
+                }]
+            }));
+        });
+
+        destino.appendChild(lista);
+        destino.appendChild(el("div", { clase: "cdk-totales", style: "margin-top:12px" }, [
+            el("div", { clase: "cdk-total cdk-total--principal" }, [
+                el("span", { clase: "cdk-total__etiqueta", texto: "Subtotal" }),
+                el("span", { clase: "cdk-total__valor",
+                             texto: CDK.formato.moneda(subtotal, CDK.coti.moneda()) })
+            ])
+        ]));
+    }
+
+    // ---------------------------------------------------------------- montaje
+
+    function montar() {
+        var lienzo = document.getElementById("lienzo");
+        lienzo.innerHTML = "";
+        repintarLista = null;
+        document.getElementById("nota").textContent = NOTAS[variante];
+
+        if (variante === "B") variantaB(lienzo);
+        else if (variante === "A") variantaA(lienzo);
+        else variantaC(lienzo);
+    }
+
+    document.getElementById("pestanas").addEventListener("click", function (ev) {
+        var boton = ev.target.closest("[data-var]");
+        if (!boton) return;
+
+        variante = boton.getAttribute("data-var");
+        Array.prototype.forEach.call(this.querySelectorAll("[data-var]"), function (b) {
+            b.setAttribute("aria-selected", String(b === boton));
+        });
+        montar();
+    });
+
+    // Cambiar de moneda repinta todo: los precios ya calculados tambien.
+    document.getElementById("alm").addEventListener("change", function () {
+        montar();
+        pintarCarrito();
+    });
+
+    document.getElementById("vaciar").addEventListener("click", function () {
+        carrito = [];
+        cantidades = {};
+        pintarCarrito();
+        montar();
+    });
+
+    montar();
+    pintarCarrito();
+})();
+</script>
+</body>
+</html>

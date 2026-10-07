@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Cliente elegido</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 24px 16px 60px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco { max-width: 1100px; margin: 0 auto; }
+
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 20px; font-size: 14px; color: var(--cdk-texto-suave); line-height: 1.55; max-width: 62ch; }
+
+        .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+        .controles label { font-size: 13px; color: var(--cdk-texto-suave); }
+
+        .rejilla { display: grid; gap: 20px; grid-template-columns: 1fr; }
+        @media (min-width: 1000px) { .rejilla { grid-template-columns: repeat(3, 1fr); } }
+
+        .caso__titulo { font-size: 14px; font-weight: 700; margin: 0 0 2px; }
+        .caso__nota { font-size: 12px; color: var(--cdk-texto-suave); margin: 0 0 10px; line-height: 1.5; }
+
+        /* Ancho de móvil real, que es donde aprieta */
+        .movil { width: 100%; max-width: 380px; }
+
+        .tarjeta { padding: 14px; background: var(--cdk-superficie);
+                   border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio);
+                   box-shadow: var(--cdk-sombra); }
+    </style>
+</head>
+
+<body>
+<div class="marco">
+
+    <h1>Cliente elegido</h1>
+    <p class="intro">
+        El círculo indicará si el cliente tiene línea de crédito disponible.
+        Los tonos son suaves a propósito: esto aparece en todas las cotizaciones, y un verde
+        o un rojo saturados de forma permanente cansan la vista y le restan fuerza a los avisos
+        que sí son excepcionales. Aun así llegan al mínimo de contraste accesible.
+    </p>
+
+    <div class="controles">
+        <label for="cli">Cliente:</label>
+        <select id="cli" class="cdk-entrada" style="width:auto">
+            <option value="0">PC SUMINISTROS &amp; SISTEMAS INFORMATICOS S.A.C. (largo)</option>
+            <option value="1">HPC SUMINISTROS S.A.C. (corto)</option>
+            <option value="2">DISTRIBUIDORA TECNOLOGICA ANDINA S.A.C. (medio)</option>
+            <option value="3">COMERCIALIZADORA E IMPORTADORA DE EQUIPOS Y SUMINISTROS INFORMATICOS DEL PERU S.A.C. (extremo)</option>
+        </select>
+    </div>
+
+    <div class="rejilla">
+
+        <div>
+            <p class="caso__titulo">Con crédito disponible</p>
+            <p class="caso__nota">Verde suave. El estado normal.</p>
+            <div class="movil">
+                <div class="tarjeta">
+                    <div class="cdk-paso__cabecera">
+                        <span class="cdk-paso__numero">1</span>
+                        <h2 class="cdk-paso__titulo">Cliente</h2>
+                    </div>
+                    <div class="cdk-elegido">
+                        <span class="cdk-credito cdk-credito--si" title="Con línea de crédito disponible">S</span>
+                        <div class="cdk-elegido__datos">
+                            <div class="cdk-elegido__nombre" data-nombre></div>
+                            <div class="cdk-elegido__detalle" data-ruc></div>
+                        </div>
+                        <button type="button" class="cdk-enlace-accion">Cambiar</button>
+                    </div>
+                    <div class="cdk-buscador" style="margin-top:12px">
+                        <div class="cdk-buscador__campo">
+                            <button type="button" class="cdk-boton cdk-boton--suave" style="width:100%">Buscar cliente</button>
+                        </div>
+                        <select class="cdk-entrada" style="width:auto" aria-label="Moneda">
+                            <option>USD</option><option>PEN</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="caso__titulo">Sin crédito disponible</p>
+            <p class="caso__nota">Rojo suave. Se nota sin gritar.</p>
+            <div class="movil">
+                <div class="tarjeta">
+                    <div class="cdk-paso__cabecera">
+                        <span class="cdk-paso__numero">1</span>
+                        <h2 class="cdk-paso__titulo">Cliente</h2>
+                    </div>
+                    <div class="cdk-elegido">
+                        <span class="cdk-credito cdk-credito--no" title="Sin línea de crédito disponible">N</span>
+                        <div class="cdk-elegido__datos">
+                            <div class="cdk-elegido__nombre" data-nombre></div>
+                            <div class="cdk-elegido__detalle" data-ruc></div>
+                        </div>
+                        <button type="button" class="cdk-enlace-accion">Cambiar</button>
+                    </div>
+                    <div class="cdk-buscador" style="margin-top:12px">
+                        <div class="cdk-buscador__campo">
+                            <button type="button" class="cdk-boton cdk-boton--suave" style="width:100%">Buscar cliente</button>
+                        </div>
+                        <select class="cdk-entrada" style="width:auto" aria-label="Moneda">
+                            <option>USD</option><option>PEN</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="caso__titulo">Sin dato todavía</p>
+            <p class="caso__nota">Lo que se ve hoy: el backend aún no envía este campo.</p>
+            <div class="movil">
+                <div class="tarjeta">
+                    <div class="cdk-paso__cabecera">
+                        <span class="cdk-paso__numero">1</span>
+                        <h2 class="cdk-paso__titulo">Cliente</h2>
+                    </div>
+                    <div class="cdk-elegido">
+                        <span class="cdk-credito cdk-credito--nd" title="Sin información de crédito">–</span>
+                        <div class="cdk-elegido__datos">
+                            <div class="cdk-elegido__nombre" data-nombre></div>
+                            <div class="cdk-elegido__detalle" data-ruc></div>
+                        </div>
+                        <button type="button" class="cdk-enlace-accion">Cambiar</button>
+                    </div>
+                    <div class="cdk-buscador" style="margin-top:12px">
+                        <div class="cdk-buscador__campo">
+                            <button type="button" class="cdk-boton cdk-boton--suave" style="width:100%">Buscar cliente</button>
+                        </div>
+                        <select class="cdk-entrada" style="width:auto" aria-label="Moneda">
+                            <option>USD</option><option>PEN</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    var CLIENTES = [
+        ["PC SUMINISTROS & SISTEMAS INFORMATICOS S.A.C.", "20600828747"],
+        ["HPC SUMINISTROS S.A.C.", "20601445566"],
+        ["DISTRIBUIDORA TECNOLOGICA ANDINA S.A.C.", "20556998877"],
+        ["COMERCIALIZADORA E IMPORTADORA DE EQUIPOS Y SUMINISTROS INFORMATICOS DEL PERU S.A.C.", "20471223344"]
+    ];
+
+    function pintar() {
+        var c = CLIENTES[document.getElementById("cli").value];
+        document.querySelectorAll("[data-nombre]").forEach(function (n) { n.textContent = c[0]; });
+        document.querySelectorAll("[data-ruc]").forEach(function (n) { n.textContent = "RUC " + c[1]; });
+    }
+
+    document.getElementById("cli").addEventListener("change", pintar);
+    pintar();
+})();
+</script>
+</body>
+</html>

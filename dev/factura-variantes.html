@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Factura, las tres formas</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 24px 16px 80px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco { max-width: 1280px; margin: 0 auto; }
+
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 20px; font-size: 14px; color: var(--cdk-texto-suave);
+                 line-height: 1.6; max-width: 68ch; }
+        .intro strong { color: var(--cdk-texto); }
+
+        .rejilla { display: grid; gap: 28px; grid-template-columns: 1fr; align-items: start; }
+        @media (min-width: 1150px) { .rejilla { grid-template-columns: repeat(3, 1fr); } }
+
+        .caso__titulo { font-size: 15px; font-weight: 700; margin: 0 0 2px; }
+        .caso__nota { font-size: 12px; color: var(--cdk-texto-suave); margin: 0 0 12px;
+                      line-height: 1.55; min-height: 5.2em; }
+        .caso__coste { font-size: 12px; margin: 10px 0 0; padding: 8px 10px;
+                       border-left: 3px solid var(--cdk-borde);
+                       color: var(--cdk-texto-suave); line-height: 1.5; }
+
+        /* Ancho de movil real, que es donde esto se usa */
+        .movil { width: 100%; max-width: 390px; background: var(--cdk-superficie);
+                 border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio);
+                 padding: 14px; box-shadow: var(--cdk-sombra); }
+
+        .doc { font-size: 15px; font-weight: 700; margin: 0; }
+        .doc__cli { font-size: 13px; color: var(--cdk-texto-suave); margin: 2px 0 14px; }
+
+        /* Pestañas de la variante C */
+        .pest { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px;
+                border-bottom: 1px solid var(--cdk-borde); margin-bottom: 14px; }
+        .pest button { flex: 0 0 auto; padding: 7px 11px; font-size: 12px; font-weight: 600;
+                       border: 0; background: none; color: var(--cdk-texto-suave);
+                       border-bottom: 2px solid transparent; cursor: pointer; }
+        .pest button[aria-selected="true"] { color: var(--cdk-primario);
+                                             border-bottom-color: var(--cdk-primario); }
+    </style>
+</head>
+
+<body>
+<div class="marco">
+
+    <h1>Factura · las tres formas de la pantalla única</h1>
+    <p class="intro">
+        Una sola pantalla para los siete campos, como quedamos. Lo que cambia aquí es
+        <strong>cómo se presenta</strong>. Los datos son inventados y el CSS es el real.
+        <strong>Las filas y las pestañas se pueden tocar</strong>, para que se note la diferencia
+        al usarlo y no solo al mirarlo.
+    </p>
+    <p class="intro">
+        Dato que pesa en la decisión: cinco de los siete campos —despacho, transportista,
+        atención, dirección y vendedor— necesitan <strong>pedirle al backend su lista de
+        opciones</strong>. Observación y orden de compra son texto libre.
+    </p>
+
+    <div class="rejilla">
+
+        <!-- ============================================================ A -->
+        <div>
+            <p class="caso__titulo">A · Ficha con filas</p>
+            <p class="caso__nota">
+                Los siete valores actuales a la vista. Tocas una fila y se abre ahí mismo.
+                Es un patrón que el sistema de diseño ya tiene —<code>cdk-grupo</code>—, así
+                que no hay nada que inventar.
+            </p>
+
+            <div class="movil">
+                <p class="doc">F009-0649171</p>
+                <p class="doc__cli">KEYNERS COMPANY S.A.C.</p>
+
+                <div id="filas"></div>
+            </div>
+
+            <p class="caso__coste">
+                Pide la lista solo del campo que abres. Cada campo se guarda solo, así que un
+                toque equivocado afecta a uno y no a siete.
+            </p>
+        </div>
+
+        <!-- ============================================================ B -->
+        <div>
+            <p class="caso__titulo">B · Formulario completo</p>
+            <p class="caso__nota">
+                Los siete campos a la vez y un botón de guardar. Es la forma más conocida por
+                cualquiera, y se ve todo sin tocar nada.
+            </p>
+
+            <div class="movil">
+                <p class="doc">F009-0649171</p>
+                <p class="doc__cli">KEYNERS COMPANY S.A.C.</p>
+
+                <div class="cdk-campo">
+                    <label class="cdk-campo__etiqueta" for="b1">Despacho</label>
+                    <select id="b1" class="cdk-entrada">
+                        <option>Provincia</option><option>ventanilla</option><option>Lima</option>
+                    </select>
+                </div>
+                <div class="cdk-campo">
+                    <label class="cdk-campo__etiqueta" for="b2">Transportista</label>
+                    <select id="b2" class="cdk-entrada">
+                        <option>SHALOM EMPRESARIAL S.A.C.</option><option>OLVA COURIER S.A.C.</option>
+                    </select>
+                </div>
+                <div class="cdk-campo">
+                    <label class="cdk-campo__etiqueta" for="b3">Atención</label>
+                    <select id="b3" class="cdk-entrada">
+                        <option>JORGE MENDOZA RIVAS</option><option>LUCIA PAREDES SOTO</option>
+                    </select>
+                </div>
+                <div class="cdk-campo">
+                    <label class="cdk-campo__etiqueta" for="b4">Dirección de entrega</label>
+                    <select id="b4" class="cdk-entrada">
+                        <option>AV. LA MARINA 234 - SAN MIGUEL</option>
+                        <option>JR. LAMPA 1102 - CERCADO DE LIMA</option>
+                    </select>
+                </div>
+                <div class="cdk-campo">
+                    <label class="cdk-campo__etiqueta" for="b5">Observación</label>
+                    <input id="b5" class="cdk-entrada" value="" placeholder="Sin observación">
+                </div>
+                <div class="cdk-campo">
+                    <label class="cdk-campo__etiqueta" for="b6">Orden de compra</label>
+                    <input id="b6" class="cdk-entrada" value="OC-2026-1182">
+                </div>
+
+                <button type="button" class="cdk-boton cdk-boton--primario" style="width:100%">
+                    Guardar cambios
+                </button>
+            </div>
+
+            <p class="caso__coste">
+                Hay que pedir las cinco listas al cargar, se toquen o no. Y un «Guardar» que
+                dispara siete rutas distintas deja mal cuerpo cuando una falla y las otras no:
+                ¿qué quedó guardado?
+            </p>
+        </div>
+
+        <!-- ============================================================ C -->
+        <div>
+            <p class="caso__titulo">C · Pestañas por campo</p>
+            <p class="caso__nota">
+                Mantiene el «una cosa cada vez» de las siete pantallas de hoy, pero buscando la
+                factura una sola vez. Es lo más parecido a lo que ya conocen los vendedores.
+            </p>
+
+            <div class="movil">
+                <p class="doc">F009-0649171</p>
+                <p class="doc__cli">KEYNERS COMPANY S.A.C.</p>
+
+                <div class="pest" id="pestanas" role="tablist"></div>
+                <div id="panel"></div>
+            </div>
+
+            <p class="caso__coste">
+                El valor actual de los otros seis queda detrás de una pestaña. Para saber si la
+                dirección está bien hay que ir a buscarla.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ================================================== LISTAS LARGAS -->
+    <h1 style="margin-top:48px">Y cuando la lista es larga</h1>
+    <p class="intro">
+        Despacho tiene tres opciones y dirección suele tener dos, así que una lista basta.
+        <strong>Transportista no</strong>: si hay treinta, una lista de treinta dentro de una
+        fila no se puede usar. Y vendedor serían veintisiete.
+    </p>
+    <p class="intro">
+        Esto ya está resuelto en el proyecto —es lo que hace <em>buscar cliente</em> en Crear
+        cotización— pero hay que decidir si aquí se usa igual. Las dos se pueden tocar:
+        <strong>escribe «sur», «express» o «trans»</strong> y mira la diferencia.
+    </p>
+
+    <div class="rejilla">
+
+        <div>
+            <p class="caso__titulo">1 · Buscador dentro de la fila</p>
+            <p class="caso__nota">
+                La fila se abre con un campo de búsqueda y los resultados debajo. No se sale de
+                la pantalla: sigues viendo que estás en la factura F009-0649171.
+            </p>
+
+            <div class="movil">
+                <p class="doc">F009-0649171</p>
+                <p class="doc__cli">KEYNERS COMPANY S.A.C.</p>
+                <div id="largo-inline"></div>
+            </div>
+
+            <p class="caso__coste">
+                En un móvil, treinta resultados hacen que la fila ocupe toda la pantalla de
+                todos modos, y las otras filas quedan empujadas fuera de la vista.
+            </p>
+        </div>
+
+        <div>
+            <p class="caso__titulo">2 · Panel que sube desde abajo</p>
+            <p class="caso__nota">
+                La fila abre una hoja que cubre la pantalla, con su buscador. Eliges y se cierra.
+                Es exactamente lo que ya hace <em>buscar cliente</em>, así que a quien use
+                Crear cotización le resultará conocido.
+            </p>
+
+            <div class="movil">
+                <p class="doc">F009-0649171</p>
+                <p class="doc__cli">KEYNERS COMPANY S.A.C.</p>
+                <div id="largo-panel"></div>
+            </div>
+
+            <p class="caso__coste">
+                Tiene todo el alto para los resultados y el pulgar llega al buscador. A cambio,
+                tapa la factura mientras eliges.
+            </p>
+        </div>
+
+        <div>
+            <p class="caso__titulo">Lo que haría</p>
+            <p class="caso__nota">
+                Que la fila decida sola según cuántas opciones haya: lista a secas cuando son
+                pocas, panel con buscador cuando son muchas. El vendedor no tiene que saber
+                por qué una se abre de una forma y otra de otra; cada una se abre como le
+                conviene.
+            </p>
+            <p class="caso__coste">
+                Despacho y dirección → lista.<br>
+                Transportista, atención y vendedor → panel con buscador.<br><br>
+                El umbral es un número en un sitio, y se cambia si con datos reales resulta
+                que atención casi siempre tiene tres.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<!-- El panel de la variante 2. Mismo markup que el buscador de clientes. -->
+<div id="panel-busca" class="cdk-panel hidden" role="dialog" aria-modal="true" aria-labelledby="panel-busca-titulo">
+    <div class="cdk-panel__fondo" id="panel-busca-fondo"></div>
+    <div class="cdk-panel__caja">
+        <div class="cdk-panel__cabecera">
+            <h3 class="cdk-panel__titulo" id="panel-busca-titulo">Transportista</h3>
+            <button id="panel-busca-cerrar" type="button" class="cdk-panel__cerrar" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="cdk-panel__cuerpo">
+            <div class="cdk-busca">
+                <svg class="cdk-busca__lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                    <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+                </svg>
+                <input type="search" id="panel-busca-campo" class="cdk-entrada"
+                       placeholder="Nombre del transportista" autocomplete="off" enterkeyhint="search">
+            </div>
+            <p class="cdk-pista" style="margin:8px 0 10px" id="panel-busca-cuenta"></p>
+            <div id="panel-busca-lista"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    /* Los siete campos, con su valor actual inventado y sus opciones.
+       `texto:true` son los dos de texto libre. */
+    var CAMPOS = [
+        { id: "despacho", etiqueta: "Despacho", valor: "Provincia",
+          opciones: ["ventanilla", "Lima", "Provincia"] },
+        { id: "transporte", etiqueta: "Transportista", valor: "SHALOM EMPRESARIAL S.A.C.",
+          opciones: ["SHALOM EMPRESARIAL S.A.C.", "OLVA COURIER S.A.C.", "MARVISUR E.I.R.L."] },
+        { id: "atencion", etiqueta: "Atención", valor: "JORGE MENDOZA RIVAS",
+          opciones: ["JORGE MENDOZA RIVAS", "LUCIA PAREDES SOTO", "ALMACÉN CENTRAL"] },
+        { id: "direccion", etiqueta: "Dirección de entrega", valor: "AV. LA MARINA 234 - SAN MIGUEL",
+          opciones: ["AV. LA MARINA 234 - SAN MIGUEL", "JR. LAMPA 1102 - CERCADO DE LIMA"] },
+        { id: "observacion", etiqueta: "Observación", valor: "", texto: true,
+          ayuda: "Lo que haya que decir sobre esta factura." },
+        { id: "orden", etiqueta: "Orden de compra", valor: "OC-2026-1182", texto: true,
+          ayuda: "Corto, letras y números." }
+    ];
+
+    /* «Vendedor asignado» NO está en la lista a propósito: pasa a un grupo de
+       mayor privilegio, así que a un vendedor normal no le aparece. Con una
+       sola pantalla eso sale gratis — el campo sencillamente no se pinta. */
+
+    function el(etiqueta, props, hijos) {
+        var n = document.createElement(etiqueta);
+        Object.keys(props || {}).forEach(function (k) {
+            if (k === "clase") n.className = props[k];
+            else if (k === "texto") n.textContent = props[k];
+            else n.setAttribute(k, props[k]);
+        });
+        (hijos || []).forEach(function (h) { if (h) n.appendChild(h); });
+        return n;
+    }
+
+    /* ---------------------------------------------------- editor comun */
+    function editor(campo, alElegir) {
+        var caja = el("div", { clase: "cdk-config" });
+
+        if (campo.texto) {
+            var c = el("div", { clase: "cdk-campo" });
+            var entrada = el("input", { clase: "cdk-entrada", value: campo.valor,
+                                        placeholder: "Sin " + campo.etiqueta.toLowerCase() });
+            c.appendChild(entrada);
+            c.appendChild(el("p", { clase: "cdk-campo__ayuda", texto: campo.ayuda || "" }));
+            caja.appendChild(c);
+
+            var guardar = el("button", { type: "button",
+                clase: "cdk-boton cdk-boton--primario", style: "width:100%",
+                texto: "Guardar " + campo.etiqueta.toLowerCase() });
+            guardar.addEventListener("click", function () { alElegir(entrada.value); });
+            caja.appendChild(guardar);
+            return caja;
+        }
+
+        var lista = el("div", { clase: "cdk-opciones" });
+        campo.opciones.forEach(function (o) {
+            var esActual = o === campo.valor;
+            var b = el("button", { type: "button", clase: "cdk-opcion" }, [
+                el("span", { clase: "cdk-opcion__texto", texto: o }),
+                esActual ? el("span", { clase: "cdk-opcion__detalle", texto: "el actual" }) : null
+            ]);
+            b.addEventListener("click", function () { alElegir(o); });
+            lista.appendChild(b);
+        });
+        caja.appendChild(lista);
+        return caja;
+    }
+
+    /* ------------------------------------------------- A · filas */
+    var abierto = null;
+
+    function pintarFilas() {
+        var destino = document.getElementById("filas");
+        destino.innerHTML = "";
+
+        CAMPOS.forEach(function (campo) {
+            var grupo = el("div", { clase: "cdk-grupo" + (abierto === campo.id ? " cdk-grupo--abierto" : "") });
+
+            var fila = el("button", { type: "button", clase: "cdk-articulo cdk-articulo--pulsable" }, [
+                el("div", { clase: "cdk-articulo__cuerpo" }, [
+                    el("div", { clase: "cdk-articulo__cabecera" }, [
+                        el("div", { clase: "cdk-articulo__nombre", texto: campo.etiqueta }),
+                        el("div", { clase: "cdk-articulo__importe",
+                                    texto: campo.valor || "—" })
+                    ])
+                ])
+            ]);
+
+            fila.addEventListener("click", function () {
+                abierto = abierto === campo.id ? null : campo.id;
+                pintarFilas();
+            });
+
+            grupo.appendChild(fila);
+
+            if (abierto === campo.id) {
+                grupo.appendChild(editor(campo, function (nuevo) {
+                    campo.valor = nuevo;
+                    abierto = null;
+                    pintarFilas();
+                }));
+            }
+
+            destino.appendChild(grupo);
+        });
+    }
+
+    /* ------------------------------------------------- C · pestañas */
+    var activa = CAMPOS[0].id;
+
+    function pintarPestanas() {
+        var barra = document.getElementById("pestanas");
+        var panel = document.getElementById("panel");
+        barra.innerHTML = "";
+        panel.innerHTML = "";
+
+        CAMPOS.forEach(function (campo) {
+            var b = el("button", { type: "button", role: "tab",
+                "aria-selected": String(activa === campo.id),
+                texto: campo.etiqueta.split(" ")[0] });
+            b.addEventListener("click", function () { activa = campo.id; pintarPestanas(); });
+            barra.appendChild(b);
+        });
+
+        var campo = CAMPOS.filter(function (c) { return c.id === activa; })[0];
+
+        panel.appendChild(el("div", { clase: "cdk-totales" }, [
+            el("div", { clase: "cdk-total" }, [
+                el("span", { clase: "cdk-total__etiqueta", texto: "Actual" }),
+                el("span", { clase: "cdk-total__valor", texto: campo.valor || "—" })
+            ])
+        ]));
+
+        panel.appendChild(editor(campo, function (nuevo) {
+            campo.valor = nuevo;
+            pintarPestanas();
+        }));
+    }
+
+    /* ===============================================================
+     * Listas largas
+     * ============================================================= */
+    var TRANSPORTISTAS = [
+        "SHALOM EMPRESARIAL S.A.C.", "OLVA COURIER S.A.C.", "MARVISUR E.I.R.L.",
+        "TRANSPORTES CRUZ DEL SUR S.A.C.", "TRANSPORTES LINEA S.A.", "MOVIL BUS S.A.C.",
+        "EXPRESO INTERNACIONAL ORMEÑO S.A.", "TRANSPORTES FLORES HERMANOS S.R.L.",
+        "TEPSA TRANSPORTES S.A.", "CIVA S.A.C.", "EXPRESO MOLINA UNION E.I.R.L.",
+        "TRANSPORTES CHICLAYO S.A.", "TRANSPORTES EL SOL E.I.R.L.",
+        "TRANSPORTES JUNIN S.A.C.", "EXPRESO HUAMANGA S.A.C.",
+        "SERVICIOS LOGISTICOS DEL NORTE S.A.C.", "RANSA COMERCIAL S.A.", "DINET S.A.",
+        "NEPTUNIA S.A.", "TRANSPORTES RODRIGO CARRANZA S.A.C.",
+        "SCHARFF INTERNATIONAL COURIER S.A.", "DHL EXPRESS PERU S.A.C.",
+        "FEDEX EXPRESS PERU S.A.C.", "URBANO EXPRESS PERU S.A.", "SERPOST S.A.",
+        "TRANSPORTES PAKATNAMU S.A.C.", "EMTRAFESA S.A.C.", "TRANSPORTES ITTSA S.A.",
+        "EXPRESO CIAL S.A.C.", "TRANSPORTES SANTA CRUZ S.A.C."
+    ];
+
+    /* Resalta la parte tecleada. En el proyecto esto es CDK.resaltar, y existe
+       porque en una lista de nombres parecidos lo que distingue a uno de otro
+       es justo lo que escribiste. */
+    function resaltar(texto, termino) {
+        var aguja = String(termino || "").trim();
+        if (!aguja) return [document.createTextNode(texto)];
+        var pos = texto.toUpperCase().indexOf(aguja.toUpperCase());
+        if (pos === -1) return [document.createTextNode(texto)];
+        return [
+            document.createTextNode(texto.slice(0, pos)),
+            el("mark", { clase: "cdk-marca", texto: texto.slice(pos, pos + aguja.length) }),
+            document.createTextNode(texto.slice(pos + aguja.length))
+        ];
+    }
+
+    function filtrar(termino) {
+        var t = String(termino || "").trim().toUpperCase();
+        if (!t) return TRANSPORTISTAS;
+        return TRANSPORTISTAS.filter(function (x) { return x.toUpperCase().indexOf(t) !== -1; });
+    }
+
+    function opcion(nombre, termino, alElegir) {
+        var b = el("button", { type: "button", clase: "cdk-opcion" });
+        var linea = el("span", { clase: "cdk-opcion__texto" });
+        resaltar(nombre, termino).forEach(function (n) { linea.appendChild(n); });
+        b.appendChild(linea);
+        b.addEventListener("click", function () { alElegir(nombre); });
+        return b;
+    }
+
+    /* ------------------------------------------- 1 · dentro de la fila */
+    var inlineValor = "SHALOM EMPRESARIAL S.A.C.";
+    var inlineAbierto = false;
+    var inlineTermino = "";
+    var TOPE = 8;
+
+    function pintarLargoInline() {
+        var destino = document.getElementById("largo-inline");
+        destino.innerHTML = "";
+
+        var grupo = el("div", { clase: "cdk-grupo" + (inlineAbierto ? " cdk-grupo--abierto" : "") });
+
+        var fila = el("button", { type: "button", clase: "cdk-articulo cdk-articulo--pulsable" }, [
+            el("div", { clase: "cdk-articulo__cuerpo" }, [
+                el("div", { clase: "cdk-articulo__cabecera" }, [
+                    el("div", { clase: "cdk-articulo__nombre", texto: "Transportista" }),
+                    el("div", { clase: "cdk-articulo__importe", texto: inlineValor })
+                ])
+            ])
+        ]);
+        fila.addEventListener("click", function () {
+            inlineAbierto = !inlineAbierto;
+            inlineTermino = "";
+            pintarLargoInline();
+        });
+        grupo.appendChild(fila);
+
+        if (inlineAbierto) {
+            var caja = el("div", { clase: "cdk-config" });
+
+            var busca = el("div", { clase: "cdk-busca" });
+            var campo = el("input", { type: "search", clase: "cdk-entrada",
+                                      placeholder: "Nombre del transportista",
+                                      autocomplete: "off" });
+            campo.value = inlineTermino;
+            busca.appendChild(campo);
+            caja.appendChild(busca);
+
+            var hallados = filtrar(inlineTermino);
+            caja.appendChild(el("p", { clase: "cdk-pista", style: "margin:8px 0 10px",
+                texto: hallados.length + " de " + TRANSPORTISTAS.length +
+                       (hallados.length > TOPE ? " · se muestran " + TOPE : "") }));
+
+            var lista = el("div", { clase: "cdk-opciones" });
+            hallados.slice(0, TOPE).forEach(function (n) {
+                lista.appendChild(opcion(n, inlineTermino, function (elegido) {
+                    inlineValor = elegido;
+                    inlineAbierto = false;
+                    pintarLargoInline();
+                }));
+            });
+            if (!hallados.length) {
+                lista.appendChild(el("p", { clase: "cdk-estado__texto",
+                    texto: "Ninguno coincide con «" + inlineTermino + "»." }));
+            }
+            caja.appendChild(lista);
+
+            campo.addEventListener("input", function () {
+                inlineTermino = campo.value;
+                pintarLargoInline();
+                var nuevo = document.querySelector("#largo-inline .cdk-entrada");
+                if (nuevo) { nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
+            });
+
+            grupo.appendChild(caja);
+        }
+
+        destino.appendChild(grupo);
+    }
+
+    /* ------------------------------------------------ 2 · panel */
+    var panelValor = "SHALOM EMPRESARIAL S.A.C.";
+    var panel = document.getElementById("panel-busca");
+    var panelCampo = document.getElementById("panel-busca-campo");
+    var panelLista = document.getElementById("panel-busca-lista");
+    var panelCuenta = document.getElementById("panel-busca-cuenta");
+
+    function pintarLargoPanel() {
+        var destino = document.getElementById("largo-panel");
+        destino.innerHTML = "";
+
+        var fila = el("button", { type: "button", clase: "cdk-articulo cdk-articulo--pulsable" }, [
+            el("div", { clase: "cdk-articulo__cuerpo" }, [
+                el("div", { clase: "cdk-articulo__cabecera" }, [
+                    el("div", { clase: "cdk-articulo__nombre", texto: "Transportista" }),
+                    el("div", { clase: "cdk-articulo__importe", texto: panelValor })
+                ])
+            ])
+        ]);
+        fila.addEventListener("click", abrirPanel);
+        destino.appendChild(el("div", { clase: "cdk-grupo" }, [fila]));
+    }
+
+    function pintarPanelLista() {
+        var termino = panelCampo.value;
+        var hallados = filtrar(termino);
+        panelCuenta.textContent = hallados.length + " de " + TRANSPORTISTAS.length;
+        panelLista.innerHTML = "";
+
+        if (!hallados.length) {
+            panelLista.appendChild(el("p", { clase: "cdk-estado__texto",
+                texto: "Ninguno coincide con «" + termino + "»." }));
+            return;
+        }
+        /* Aquí no hace falta tope: el panel tiene todo el alto y su propio
+           desplazamiento. */
+        hallados.forEach(function (n) {
+            panelLista.appendChild(opcion(n, termino, function (elegido) {
+                panelValor = elegido;
+                cerrarPanel();
+                pintarLargoPanel();
+            }));
+        });
+    }
+
+    function abrirPanel() {
+        panelCampo.value = "";
+        pintarPanelLista();
+        panel.classList.remove("hidden");
+        panelCampo.focus();
+    }
+    function cerrarPanel() { panel.classList.add("hidden"); }
+
+    panelCampo.addEventListener("input", pintarPanelLista);
+    document.getElementById("panel-busca-cerrar").addEventListener("click", cerrarPanel);
+    document.getElementById("panel-busca-fondo").addEventListener("click", cerrarPanel);
+    document.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") cerrarPanel();
+    });
+
+    pintarFilas();
+    pintarPestanas();
+    pintarLargoInline();
+    pintarLargoPanel();
+})();
+</script>
+</body>
+</html>

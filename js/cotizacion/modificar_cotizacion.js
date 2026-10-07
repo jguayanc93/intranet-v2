@@ -1,659 +1,773 @@
+/**
+ * Modificar cotización.
+ *
+ * Se elige una de las del día, se cambian cantidades, se quitan líneas o se
+ * agregan productos, y se guarda todo de una vez.
+ *
+ * Antes: 658 líneas de createElement con variables cuerpo1…cuerpo5 y
+ * contenedor1…contenedor5, `fetch` crudo con doble JSON.parse, sin manejo de
+ * 401, y la conversión de moneda escrita a mano dentro de la lógica de datos.
+ *
+ * LO QUE VIAJA AL BACKEND NO CAMBIA. `/cotizacion/update` sigue recibiendo
+ * `{ item: { … } }` con las claves como código de producto y cada valor como el
+ * arreglo de 22 posiciones que corresponde a las posiciones 1-22 de
+ * /cotizacion/read, saltándose la 0. Eso ya estaba modelado en campos.js como
+ * CDK.coti.lineaGuardada, así que aquí se lee con nombres y se vuelve a escribir
+ * en el mismo orden al guardar.
+ *
+ * Una cotización aprobada (flag = 1) no se puede modificar: hay que desaprobarla
+ * por fuera. La lista todavía no distingue esas, ver docs/modificar-cotizacion.md.
+ */
+;(function () {
+    "use strict";
 
-document.getElementById("buscar-coti").addEventListener("click",(ev)=>{
-    buscar_cotizacion_modificar();
-    // ev.target.value!='' ? buscar_producto() : document.getElementById("recorrer-productos").innerHTML="";
-})
+    var el = CDK.el;
 
+    /* --- pantalla --- */
+    var seccionElegir = document.getElementById("seccion-elegir");
+    var seccionDetalle = document.getElementById("seccion-detalle");
+    var listaCotis = document.getElementById("lista-cotis");
+    var tituloCoti = document.getElementById("titulo-coti");
+    var resumenCoti = document.getElementById("resumen-coti");
+    var datosCliente = document.getElementById("datos-cliente");
+    var destino = document.getElementById("aqui-nuevos");
+    var totalesCoti = document.getElementById("totales-coti");
+    var zonaPromos = document.getElementById("promos-de-la-coti");
 
-async function buscar_cotizacion_modificar(){
-    let dataenviar=new Object();
-    dataenviar.ncoti=document.getElementById("ncoti").value;
-    let fetchobj = new Object();
-    fetchobj.method="POST";
-    fetchobj.headers={"Content-Type":"application/json"};
-    fetchobj.mode="cors";
-    fetchobj.credentials="include";
-    fetchobj.body=JSON.stringify(dataenviar);
-    try{
-        document.getElementById("contendor-final-final").innerHTML="";
-        
-        let paso1=await fetch(rutacotizacionleer,fetchobj)
-        let paso2=await paso1.json();
-        let paso3=await JSON.parse(paso2);
-        console.log(paso3)
-        cotimodi_tipcli.push(paso3[0][0]);///clialfabeto
-        cotimodi_tipcli.push(paso3[0][1]);///fecha
-        cotimodi_tipcli.push(paso3[0][2]);///cdocu
-        cotimodi_tipcli.push(paso3[0][3]);///documento
-        cotimodi_tipcli.push(paso3[0][4]);///codcliente
-        cotimodi_tipcli.push(paso3[0][5]);///tcambio
-        cotimodi_tipcli.push(paso3[0][6]);///mone
-        cotimodi_tipcli.push(paso3[0][7]);///moneitem
-        cotimodi_tipcli.push(paso3[0][20]);///almacen
+    var btnHoy = document.getElementById("btn-hoy");
+    var btnDosDias = document.getElementById("btn-dos-dias");
+    var btnVolver = document.getElementById("btn-volver");
+    var btnGuardar = document.getElementById("crear-modificacion");
+    var btnAgregar = document.getElementById("cotimodificar-buscarnuevoproducto");
+    var formulario = document.getElementById("form-buscar");
+    var entrada = document.getElementById("ncoti");
 
-        /////guardando temporalmente los items
-        for(const item in paso3) cotimodi_tmpitems[paso3[item][10]]=[paso3[item][1],paso3[item][2],paso3[item][3],paso3[item][4],paso3[item][5],paso3[item][6],paso3[item][7],paso3[item][8],paso3[item][9],paso3[item][10],paso3[item][11],paso3[item][12],paso3[item][13],paso3[item][14],paso3[item][15],paso3[item][16],paso3[item][17],paso3[item][18],paso3[item][19],paso3[item][20],paso3[item][21],paso3[item][22]];
-        
-        console.log(cotimodi_tipcli);
-        
-        // coti_cant=Object.keys(paso3).length;
-        ///creacion del cuerpo
-        let cuerpo1=document.createElement('h2');
-        cuerpo1.className="text-lg font-medium text-gray-900";
-        cuerpo1.textContent="Lista de productos";
-        let cuerpo2=document.createElement('div');
-        cuerpo2.className="flex items-start justify-between";
-        cuerpo2.appendChild(cuerpo1);
-        let cuerpo3=document.createElement('div');
-        cuerpo3.className="flex-1 overflow-y-auto px-4 py-6 sm:px-6";
-        cuerpo3.appendChild(cuerpo2);
+    /* --- panel de búsqueda --- */
+    var panelBusqueda = document.getElementById("modal-busqueda-producto");
+    var fondoBusqueda = document.getElementById("modal-backdrop-producto");
+    var tipoBusqueda = document.getElementById("currency2");
+    var campoProducto = document.getElementById("producto");
+    var btnLimpiar = document.getElementById("btn-limpiar-producto");
+    var indicador = document.getElementById("indicador-producto");
+    var cargandoProducto = document.getElementById("busqueda-producto-loading");
+    var resultados = document.getElementById("recorrer-productos");
+    var sinResultados = document.getElementById("sin-resultados-producto");
+    var btnCerrarBusqueda = document.getElementById("btn-cerrar-busqueda-producto");
+    var btnListo = document.getElementById("encontrar");
 
-        let cuerpo4=document.createElement('div');
-        cuerpo4.className="mt-8";
-        let cuerpo5=document.createElement('div');
-        cuerpo5.className="flow-root";
-        /////INGRESAR EN ESTA LISTA LOS ITEMS A AGREGAR
-        let productos_cotizacion_detallada=document.createElement('ul');
-        productos_cotizacion_detallada.id="aqui-nuevos";
-        productos_cotizacion_detallada.role="list";
-        productos_cotizacion_detallada.className="-my-6 divide-y divide-gray-200";
-        
-        for(let indice in cotimodi_tmpitems){
-            let parrafo1=document.createElement('p')
-            parrafo1.className="mt-1 text-sm text-gray-500";
-            parrafo1.textContent=cotimodi_tmpitems[indice][10];
-            let contenedor1=document.createElement('div');
-            contenedor1.className="h-full size-16 shrink-0 overflow-hidden rounded-md border border-gray-200";
-            contenedor1.appendChild(parrafo1);
+    /* --- panel de cantidad --- */
+    var panelCantidad = document.getElementById("modal-cantidad");
+    var fondoCantidad = document.getElementById("modal-backdrop-cantidad");
+    var nombreCantidad = document.getElementById("cantidad-producto-nombre");
+    var campoCantidad = document.getElementById("cantidad-valor");
+    var cantidadMenos = document.getElementById("cantidad-menos");
+    var cantidadMas = document.getElementById("cantidad-mas");
+    var errorCantidad = document.getElementById("error-cantidad");
+    var btnCancelarCantidad = document.getElementById("btn-cancelar-cantidad");
+    var btnCerrarCantidad = document.getElementById("btn-cerrar-cantidad");
+    var btnConfirmarCantidad = document.getElementById("btn-confirmar-cantidad");
 
-            let enlace=document.createElement('a')
-            enlace.textContent=cotimodi_tmpitems[indice][13];
-            let titulo=document.createElement('h3');
-            titulo.appendChild(enlace);
-            let parrafo2=document.createElement('p');
-            parrafo2.className="ml-4";
-            parrafo2.textContent=`$${cotimodi_tmpitems[indice][16]}`;
-            let contenedor2=document.createElement('div')
-            contenedor2.className="flex justify-between text-base font-medium text-gray-900";
-            contenedor2.appendChild(titulo);
-            contenedor2.appendChild(parrafo2);
-            let parrafo3=document.createElement('p')
-            parrafo3.className="mt-1 text-sm text-gray-500";
-            parrafo3.textContent=cotimodi_tmpitems[indice][11];
+    if (!seccionElegir) return;
 
-            let contenedor_vacio=document.createElement('div');
-            contenedor_vacio.appendChild(contenedor2)
-            contenedor_vacio.appendChild(parrafo3)
+    /* ===============================================================
+     * Estado
+     * ============================================================= */
 
-            /////CAMBIAR LAS CANTIDADES SOLICITADAS
-            let boton1=document.createElement('button');
-            boton1.type="button";
-            boton1.className="font-medium text-indigo-600 hover:text-indigo-500";
-            boton1.textContent=`Cant. ${cotimodi_tmpitems[indice][14]}`;
-            boton1.addEventListener('click',()=>{
-                console.log(`cambiando esta cantidad ${cotimodi_tmpitems[indice][14]}`);
-                cambiar_cantidad(cotimodi_tmpitems[indice][9],cotimodi_tmpitems[indice][13],cotimodi_tmpitems[indice][14]);
-            })
+    var dias = 1;
+    var cabecera = null;      // la cabecera de la cotización abierta
+    var lineas = {};          // codigo -> producto, lo editable
+    var promociones = [];     // descuentos y obsequios: ni se editan ni se guardan
+    var numero = null;
+    var huboCambios = false;
 
-            let contenedor3=document.createElement('div');
-            contenedor3.className="flex";
-            contenedor3.appendChild(boton1);
-            let parrafo4=document.createElement('p')
-            parrafo4.className="text-gray-500";
-            parrafo4.textContent=`P.Unit ${cotimodi_tmpitems[indice][15]}`;
-            let contenedor4=document.createElement('div')
-            contenedor4.className="flex flex-1 items-end justify-between text-sm";
-            contenedor4.appendChild(parrafo4)
-            contenedor4.appendChild(contenedor3);
+    // Lo que se está por confirmar en el panel de cantidad.
+    var enCurso = null;       // { codigo, descripcion, esNuevo }
 
-            //////REMOVER ESTO Y CONVERTIRLO EN UN BOTON PARA ELIMINAR EL PRODUCTO DE LA COTI
-            let boton2=document.createElement('button')
-            boton2.type="button";
-            boton2.className="font-medium text-indigo-600 hover:text-indigo-500";
-            // boton2.textContent=`Alm.${paso3[indice][0]}`;
-            boton2.textContent="Remover";
-            boton2.addEventListener('click',()=>{
-                // document.getElementById("contendor-final-final").innerHTML="";
-                document.getElementById("aqui-nuevos").innerHTML="";
-                console.log("eliminado")
-                volver_correr(cotimodi_tmpitems[indice][9]);
-            });
-            
-            let contenedor5=document.createElement('div');
-            contenedor5.className="flex";
-            contenedor5.appendChild(boton2);
-            
-            let parrafo5=document.createElement('p')
-            parrafo5.className="text-gray-500";
-            parrafo5.textContent=`Dscto% ${cotimodi_tmpitems[indice][17]}`;
-            let contenedor6=document.createElement('div')
-            contenedor6.className="flex flex-1 items-end justify-between text-sm";
+    var tiempoBusqueda = null;
+    var enVuelo = null;
 
-            contenedor6.appendChild(parrafo5)
-            contenedor6.appendChild(contenedor5)
-
-            let contenedor7=document.createElement('div');
-            contenedor7.className="ml-4 flex flex-1 flex-col";
-            contenedor7.appendChild(contenedor_vacio);
-            contenedor7.appendChild(contenedor4)
-            contenedor7.appendChild(contenedor6)
-            
-            let fila=document.createElement('li')
-            fila.className="flex py-6 items-center";
-            fila.appendChild(contenedor1)
-            fila.appendChild(contenedor7)
-
-            // document.getElementById("productos-cotizacion-detallada").appendChild(fila);
-            productos_cotizacion_detallada.appendChild(fila);
-        }
-
-        cuerpo5.appendChild(productos_cotizacion_detallada);
-        cuerpo4.appendChild(cuerpo5);
-
-        cuerpo3.appendChild(cuerpo4);
-
-        // let parrafo6=document.createElement('p');
-        // parrafo6.className="mt-0.5 text-sm text-gray-500";
-        // parrafo6.textContent="Listado de productos detallado.";
-        //////espacio para la busqueda de promos
-        let boton_prom=document.createElement('button');
-        boton_prom.className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
-        boton_prom.textContent="AGREGAR PRODUCTO";
-        boton_prom.addEventListener('click',()=>{ coti_item_new();
-            // esperador(promos_conjunto_diferenciales);
-        })
-        ///////////////////
-        let cuerpo6=document.createElement('div');
-        cuerpo6.className="border-t border-gray-200 px-12 py-6";
-        // cuerpo6.appendChild(parrafo6);
-        cuerpo6.appendChild(boton_prom);
-
-        let cuerpo7=document.createElement('div');
-        cuerpo7.className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl";
-        cuerpo7.appendChild(cuerpo3)
-        cuerpo7.appendChild(cuerpo6)
-
-        document.getElementById("contendor-final-final").appendChild(cuerpo7);
-
-        /////////////ESPACIO PARA MOSTRAR EL BUSCADOR DE LA BUSUQEDA DE NUEVOS PRODUCTOS
-        
-    }
-    catch(err){ console.log(err); }
-}
-
-function coti_item_new(){
-    let new_item=document.getElementById('cotimodificar-buscarnuevoproducto');
-    
-    let parrafo=document.createElement('label');
-    parrafo.className="block text-sm/6 font-medium text-gray-900";
-    parrafo.textContent="Busca Producto:";
-
-    let contenedor1=document.createElement('div');
-    contenedor1.className="mt-2";
-    let contenedor2=document.createElement('div');
-    contenedor2.className="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600";
-    let contenedor3=document.createElement('div');
-    contenedor3.className="shrink-0 text-base text-gray-500 select-none sm:text-sm/6";
-
-    let boton_voz=document.createElement('button');
-    boton_voz.id='cotivoz';
-    boton_voz.disabled
-    boton_voz.textContent='presionar';
-    // contenedor3.appendChild(boton_voz);
-
-    let busqueda=document.createElement('input');
-    busqueda.type='search';
-    busqueda.id='producto';
-    busqueda.className='block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6';
-    busqueda.placeholder='buscalo por';
-    // busqueda.addEventListener('input',buscar_producto)
-    busqueda.addEventListener('input',(ev)=>{
-        document.getElementById("recorrer-productos").innerHTML="";
-        ev.target.value!='' ? buscar_producto() : document.getElementById("recorrer-productos").innerHTML="";
-    })
-
-    let contenedor4=document.createElement('div');
-    contenedor4.className='grid shrink-0 grid-cols-1 focus-within:relative';
-
-    let opciones=document.createElement('select');
-    opciones.id='currency2';
-    opciones.name='currency2';
-    opciones.ariaLabel="Currency";
-    opciones.className="col-start-1 row-start-1 w-full appearance-none rounded-md py-1.5 pr-7 pl-3 text-base text-gray-500 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6";
-    let opcion1=document.createElement('option')
-    opcion1.value='1'
-    opcion1.textContent='nombre'
-    let opcion2=document.createElement('option')
-    opcion2.value='2'
-    opcion2.textContent='partnumber'
-    opciones.appendChild(opcion1)
-    opciones.appendChild(opcion2)
-
-    contenedor4.appendChild(opciones);
-
-    contenedor2.appendChild(contenedor3);
-    contenedor2.appendChild(busqueda);
-    contenedor2.appendChild(contenedor4);
-    contenedor1.appendChild(contenedor2);
-
-    new_item.appendChild(parrafo);
-    new_item.appendChild(contenedor1);
-}
-
-
-async function buscar_producto(){
-    let dataenviar=new Object();
-    dataenviar.sugerencia=document.getElementById("producto").value;
-    dataenviar.tipbusq=document.getElementById("currency2").value;
-    let fetchobj = new Object();
-    fetchobj.method="POST";
-    fetchobj.headers={"Content-Type":"application/json"};
-    fetchobj.mode="cors";
-    fetchobj.credentials="include";
-    fetchobj.body=JSON.stringify(dataenviar);
-    try{
-        // let paso1=await fetch(rutabproducto,fetchobj)
-        let paso1=await fetch(rutaproductobuscar,fetchobj)
-        let paso2=await paso1.json();
-        let paso3=await JSON.parse(paso2);
-        console.log("que es lo q trae la busqueda de producto")
-        console.log(paso3);
-
-        let contenedor_general=document.createElement('div');
-        contenedor_general.className="absolute left-1/2 z-10 mt-5 flex w-screen max-w-max -translate-x-1/2 px-4";
-
-        let contenedor_general1=document.createElement('div');
-        contenedor_general1.className="w-screen max-w-md flex-auto overflow-hidden rounded-3xl bg-white text-sm/6 ring-1 shadow-lg ring-gray-900/5";
-
-        let contenedor_general2=document.createElement('div');
-        contenedor_general2.className="p-4";   
-        
-        for(let indice in paso3){
-            
-            let contenedor_general3=document.createElement('div')
-            contenedor_general3.className="group relative flex gap-x-6 rounded-lg p-4 hover:bg-gray-50";
-
-            let contenedor1=document.createElement('div');
-            let enlace_descripcion_titulo=document.createElement('a');
-            enlace_descripcion_titulo.href="#";
-            enlace_descripcion_titulo.className="font-semibold text-gray-900";
-            enlace_descripcion_titulo.textContent="DESCRIPCION";
-            let spamcito=document.createElement('span');
-            spamcito.className="absolute inset-0";
-            enlace_descripcion_titulo.appendChild(spamcito)          
-            let parrafo_descripcion_data=document.createElement('p')
-            parrafo_descripcion_data.className="mt-1 text-gray-600";
-            parrafo_descripcion_data.textContent=paso3[indice][1];
-            
-
-            contenedor1.appendChild(enlace_descripcion_titulo);
-            contenedor1.appendChild(parrafo_descripcion_data);
-
-            let contenedor2=document.createElement('div');
-            let enlace_descripcion_titulo2=document.createElement('a');            
-            enlace_descripcion_titulo2.className="font-semibold text-gray-900";
-            enlace_descripcion_titulo2.textContent="PRINCIPAL";
-            let spamcito2=document.createElement('span');
-            spamcito2.className="absolute inset-0";
-            enlace_descripcion_titulo2.appendChild(spamcito2)
-            let parrafo_descripcion_data2=document.createElement('p')
-            parrafo_descripcion_data2.className="mt-1 text-gray-600";
-            parrafo_descripcion_data2.textContent=paso3[indice][2];
-
-            contenedor2.appendChild(enlace_descripcion_titulo2);
-            contenedor2.appendChild(parrafo_descripcion_data2);
-
-            let contenedor3=document.createElement('div');
-            let enlace_descripcion_titulo3=document.createElement('a');
-            enlace_descripcion_titulo3.className="font-semibold text-gray-900";
-            enlace_descripcion_titulo3.textContent="M&M";
-            let spamcito3=document.createElement('span');
-            spamcito3.className="absolute inset-0";
-            // spamcito3.addEventListener('click',prod);
-            enlace_descripcion_titulo3.appendChild(spamcito3)
-            let parrafo_descripcion_data3=document.createElement('p')
-            parrafo_descripcion_data3.className="mt-1 text-gray-600";
-            parrafo_descripcion_data3.textContent=paso3[indice][3];
-            
-            contenedor3.appendChild(enlace_descripcion_titulo3);
-            contenedor3.appendChild(parrafo_descripcion_data3);
-            
-            contenedor_general3.appendChild(contenedor1);
-            contenedor_general3.appendChild(contenedor2);
-            contenedor_general3.appendChild(contenedor3);
-            contenedor3.addEventListener('click',()=>prod(paso3[indice][0],paso3[indice][1],paso3[indice][2],paso3[indice][3]));
-            // document.getElementById("recorrer-productos").appendChild(contenedor_general3);
-            contenedor_general2.appendChild(contenedor_general3);
-           
-        }
-
-        contenedor_general1.appendChild(contenedor_general2);
-        contenedor_general.appendChild(contenedor_general1);
-
-        document.getElementById("recorrer-productos").appendChild(contenedor_general);
-
-    }
-    catch(err){ console.log(err); }
-}
-
-function prod(codi,descr,stock1,stock2){
-    console.log("llege ala seleccion del producto seleccionado");
-    document.getElementById("recorrer-productos").innerHTML="";
-
-    let capa1=document.createElement('div');
-    capa1.className="fixed inset-0 bg-gray-500/75 transition-opacity";
-    capa1.setAttribute("aria-hidden","true");
-
-    let capa2=document.createElement('div');
-    capa2.className="fixed inset-0 z-10 w-screen overflow-y-auto";
-    let capa3=document.createElement('div');
-    capa3.className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0";
-    let capa4=document.createElement('div');
-    capa4.className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg";
-    let capa5=document.createElement('div');
-    capa5.className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4";
-    let capa6=document.createElement('div');
-    capa6.className="sm:flex sm:items-start";
-    let capa7=document.createElement('div');
-    capa7.className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left";
-    let interior1=document.createElement('h3');
-    interior1.className="text-base font-semibold text-gray-900";
-    interior1.textContent="AGREGAR PRODUCTO";
-    let interior2=document.createElement('div');
-    interior2.className="mt-2";
-    let parrafo=document.createElement('p');
-    parrafo.className="text-sm text-gray-500";
-    parrafo.textContent=`Esta seguro que desea agregar este producto ${descr}`;
-    let interior3=document.createElement('h3');
-    interior3.className="text-base font-semibold text-gray-900";
-    interior3.textContent="UNIDADES";
-    let interior4=document.createElement('div');
-    interior4.className="mt-2";
-    let parrafo2=document.createElement('input')
-    parrafo2.type="number";
-    parrafo2.id="cantidades";
-    parrafo2.className="inline-flex w-full justify-center rounded-md px-3 py-2 text-sm font-semibold text-black shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto";
-    parrafo2.placeholder="ingresa la cantidad";
-    parrafo2.addEventListener('input',activar_boton_confirmacion)
-    
-
-    let parte2=document.createElement('div');
-    parte2.className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6";
-    let boton1=document.createElement('button');
-    boton1.className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto";
-    boton1.setAttribute("type","button");
-    boton1.disabled=true;
-    boton1.textContent="SI";
-    boton1.id="producto-confirmado";
-    // boton1.addEventListener("click",verificador);
-    boton1.addEventListener("click",()=>{
-        let cantidad=document.getElementById("cantidades");
-        verificador(codi,cantidad.value)
+    var listaDia = CDK.coti.listaDelDia({
+        destino: listaCotis,
+        botonHoy: btnHoy,
+        botonDosDias: btnDosDias,
+        // Una facturada o convertida ya no se modifica.
+        soloAbiertas: true,
+        alElegir: function (coti) { abrir(coti.documento); }
     });
-    let boton2=document.createElement('button');
-    boton2.className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 shadow-xs ring-gray-300 ring-inset hover:bg-gray-50 sm:mt-0 sm:w-auto";
-    boton2.setAttribute("type","button");
-    boton2.textContent="NO";
-    boton2.addEventListener('click',cancelar_confirmacion)
 
-    parte2.appendChild(boton1);
-    parte2.appendChild(boton2);
+    /* ===============================================================
+     * Abrir una cotización
+     * ============================================================= */
 
-    interior2.appendChild(parrafo);
-    interior4.appendChild(parrafo2);
-    capa7.appendChild(interior1);
-    capa7.appendChild(interior2);
-    capa7.appendChild(interior3);
-    capa7.appendChild(interior4);
-    capa6.appendChild(capa7);
-    capa5.appendChild(capa6);
-    capa4.appendChild(capa5);
-    capa4.appendChild(parte2);
-    capa3.appendChild(capa4);
-    capa2.appendChild(capa3);
-    capa1.appendChild(capa2);
+    function abrir(ncoti) {
+        numero = String(ncoti);
+        mostrarDetalle(true);
+        tituloCoti.textContent = "Cotización " + numero;
+        CDK.estados.cargando(destino, "Cargando la cotización…");
 
-    document.getElementById("modal-aceptacion").appendChild(capa1);
-    document.getElementById("modal-aceptacion").classList.remove('hidden');
-}
+        CDK.http.post(CDK.rutas.api("/cotizacion/read"), { ncoti: numero })
+            .then(function (respuesta) {
+                var filas = Object.keys(respuesta || {}).map(function (k) { return respuesta[k]; });
 
+                if (!filas.length) {
+                    CDK.estados.error(destino, "La cotización " + numero + " no tiene líneas.", null);
+                    return;
+                }
 
+                cabecera = CDK.coti.cabecera(filas[0]);
 
-function cancelar_confirmacion(){
-    document.getElementById("producto").value="";
-    document.getElementById("modal-aceptacion").innerHTML="";
-}
+                /* Los productos van por código, que es como los espera
+                   /cotizacion/update. Las promociones NO: dos descuentos
+                   distintos comparten el código 0303-010001, así que agruparlas
+                   por código perdería una. Van en una lista aparte, que además
+                   es lo que les corresponde: no se editan y no se guardan. */
+                lineas = {};
+                promociones = [];
 
-function activar_boton_confirmacion(ev){
-    let valor=ev.target.value;
-    let tipo=parseInt(valor);
+                filas.forEach(function (fila) {
+                    var l = CDK.coti.linea(fila);
+                    if (!l) return;
+                    if (l.esProducto && l.codigo) lineas[l.codigo] = l;
+                    else if (!l.esProducto) promociones.push(l);
+                });
 
-    if(!isNaN(tipo)){
-        console.log("si es un entero");
-        console.log(parseInt(tipo))
-        document.getElementById("producto-confirmado").disabled=false;
-    }
-    else{
-        document.getElementById("producto-confirmado").disabled=true;
-        console.log("no es valido tu entero")
-    }
-}
-
-function verificador(codi,cantidad){
-    console.log("llege ala validacion del producto identificado");
-    ////////enviar ala otra funcion
-    //////////revisar q pasa con la variable global y el dismis de la alerta
-    // document.getElementById("producto").value="";
-    document.getElementById("modal-aceptacion").innerHTML="";
-    tblprd3(codi,cantidad);
-}
-
-async function tblprd3(cprd,stoc){
-    console.log(cotimodi_tipcli)
-    console.log(cotimodi_tipcli[0])
-    document.getElementById("cotimodificar-buscarnuevoproducto").innerHTML="";
-    // document.getElementById("producto").innerHTML="";
-    document.getElementById("aqui-nuevos").innerHTML="";
-    // document.getElementById("seleccionar-productos").innerHTML="";
-    let dataenviar=new Object();
-    dataenviar.sugerencia=cprd;
-    dataenviar.cctl=cotimodi_tipcli[0];
-    dataenviar.ccli=cotimodi_tipcli[4];
-    let fetchobj = new Object();
-    fetchobj.method="POST";
-    fetchobj.headers={"Content-Type":"application/json"};
-    fetchobj.mode="cors";
-    fetchobj.credentials="include";
-    fetchobj.body=JSON.stringify(dataenviar);
-    try{
-        // let paso1=await fetch(rutacotizacionbprdagregar,fetchobj)
-        let paso1=await fetch(rutaproductoencontrado,fetchobj)
-        let paso2=await paso1.json();
-        let paso3=await JSON.parse(paso2);
-
-        let dsct_sacado=0;
-        let tota=0;
-        let totn=0;
-
-        if(cotimodi_tipcli[6]=='S'){
-            let costo_sol=Number((paso3[10]*cotimodi_tipcli[5]).toFixed(2));
-            let preu_sol=Number((paso3[8]*cotimodi_tipcli[5]).toFixed(2));
-            let saca_descuento=paso3[9]/100;
-            dsct_sacado=Number((preu_sol*saca_descuento).toFixed(2));
-            tota=parseFloat((preu_sol-dsct_sacado).toFixed(2))*stoc;
-            totn=tota*1.18;
-            cotimodi_tmpitems[paso3[2]]=[cotimodi_tipcli[1],cotimodi_tipcli[2],cotimodi_tipcli[3],cotimodi_tipcli[4],cotimodi_tipcli[5],cotimodi_tipcli[6],cotimodi_tipcli[7],paso3[0],paso3[1],paso3[2],paso3[3],paso3[4],paso3[5],paso3[6],stoc,preu_sol,tota,paso3[9],totn,cotimodi_tipcli[8],costo_sol,paso3[11]];
-        }
-        else{
-            dsct_sacado=(paso3[8]*(paso3[9]/100));
-            tota=parseFloat((paso3[8]-dsct_sacado).toFixed(2))*stoc;
-            let totn=tota*1.18;
-            // cotimodi_tmpitems[paso3[2]]=[sacar_fecha,sacar_doc,paso3[0],paso3[1],stoc,paso3[4],tota,paso3[5],paso3[6],paso3[7]];
-            cotimodi_tmpitems[paso3[2]]=[cotimodi_tipcli[1],cotimodi_tipcli[2],cotimodi_tipcli[3],cotimodi_tipcli[4],cotimodi_tipcli[5],cotimodi_tipcli[6],cotimodi_tipcli[7],paso3[0],paso3[1],paso3[2],paso3[3],paso3[4],paso3[5],paso3[6],stoc,paso3[8],tota,paso3[9],totn,cotimodi_tipcli[8],paso3[10],paso3[11]];
-        }
-        //////////////DESCOMENTAR PARA REGRESAR COMO ESTABA
-        // let dsct_sacado=(paso3[8]*(paso3[9]/100));
-        // // let tota=((paso3[8]-dsct_sacado)*stoc).toFixed(2);
-        // let tota=parseFloat((paso3[8]-dsct_sacado).toFixed(2))*stoc;
-        // let totn=tota*1.18;
-        // // cotimodi_tmpitems[paso3[2]]=[sacar_fecha,sacar_doc,paso3[0],paso3[1],stoc,paso3[4],tota,paso3[5],paso3[6],paso3[7]];
-        // cotimodi_tmpitems[paso3[2]]=[cotimodi_tipcli[1],cotimodi_tipcli[2],cotimodi_tipcli[3],cotimodi_tipcli[4],cotimodi_tipcli[5],cotimodi_tipcli[6],cotimodi_tipcli[7],paso3[0],paso3[1],paso3[2],paso3[3],paso3[4],paso3[5],paso3[6],stoc,paso3[8],tota,paso3[9],totn,cotimodi_tipcli[8],paso3[10],paso3[11]];
-
-        volver_correr();
-    }
-    catch(err){
-        console.log(err);
-    }
-}
-
-function volver_correr(coti){
-    delete cotimodi_tmpitems[coti];
-
-    console.log(cotimodi_tmpitems);
-
-    // let cuerpo1=document.createElement('h2');
-    //     cuerpo1.className="text-lg font-medium text-gray-900";
-    //     cuerpo1.textContent="Lista Productos";
-    //     let cuerpo2=document.createElement('div');
-    //     cuerpo2.className="flex items-start justify-between";
-    //     cuerpo2.appendChild(cuerpo1);
-    //     let cuerpo3=document.createElement('div');
-    //     cuerpo3.className="flex-1 overflow-y-auto px-4 py-6 sm:px-6";
-    //     cuerpo3.appendChild(cuerpo2);
-
-    //     let cuerpo4=document.createElement('div');
-    //     cuerpo4.className="mt-8";
-    //     let cuerpo5=document.createElement('div');
-    //     cuerpo5.className="flow-root";
-    //     //////INGRESAR EN ESTA LISTA LOS ITEMS A AGREGAR
-    //     let productos_cotizacion_detallada=document.createElement('ul');
-    //     productos_cotizacion_detallada.id="aqui-nuevos";
-    //     productos_cotizacion_detallada.role="list";
-    //     productos_cotizacion_detallada.className="-my-6 divide-y divide-gray-200";
-        //////CORREGIR LA FUNCION DE VUELTA PORQE CREA UN NUEVO CONTENEDOR CUANDO SOLO DEVE CREAR LISTAS
-        for(let indice in cotimodi_tmpitems){
-            let parrafo1=document.createElement('p')
-            parrafo1.className="mt-1 text-sm text-gray-500";
-            parrafo1.textContent=cotimodi_tmpitems[indice][10];
-            let contenedor1=document.createElement('div');
-            contenedor1.className="size-16 shrink-0 overflow-hidden rounded-md border border-gray-200";
-            contenedor1.appendChild(parrafo1);
-
-            let enlace=document.createElement('a')
-            enlace.textContent=cotimodi_tmpitems[indice][13];
-            let titulo=document.createElement('h3');
-            titulo.appendChild(enlace);
-            let parrafo2=document.createElement('p');
-            parrafo2.className="ml-4";
-            parrafo2.textContent=`$${cotimodi_tmpitems[indice][16]}`;
-            let contenedor2=document.createElement('div')
-            contenedor2.className="flex justify-between text-base font-medium text-gray-900";
-            contenedor2.appendChild(titulo);
-            contenedor2.appendChild(parrafo2);
-            let parrafo3=document.createElement('p')
-            parrafo3.className="mt-1 text-sm text-gray-500";
-            parrafo3.textContent=cotimodi_tmpitems[indice][11];
-
-            let contenedor_vacio=document.createElement('div');
-            contenedor_vacio.appendChild(contenedor2)
-            contenedor_vacio.appendChild(parrafo3)
-
-            /////CAMBIAR LAS CANTIDADES SOLICITADAS
-            let boton1=document.createElement('button');
-            boton1.type="button";
-            boton1.className="font-medium text-indigo-600 hover:text-indigo-500";
-            boton1.textContent=`Cant. ${cotimodi_tmpitems[indice][14]}`;
-            boton1.addEventListener('click',()=>{
-                console.log(`cambiando esta cantidad ${cotimodi_tmpitems[indice][14]}`)
-                cambiar_cantidad(cotimodi_tmpitems[indice][9],cotimodi_tmpitems[indice][13],cotimodi_tmpitems[indice][14])
+                huboCambios = false;
+                pintarCliente();
+                pintarLineas();
             })
-
-            let contenedor3=document.createElement('div');
-            contenedor3.className="flex";
-            contenedor3.appendChild(boton1);
-            let parrafo4=document.createElement('p')
-            parrafo4.className="text-gray-500";
-            parrafo4.textContent=`P.Unit ${cotimodi_tmpitems[indice][15]}`;
-            let contenedor4=document.createElement('div')
-            contenedor4.className="flex flex-1 items-end justify-between text-sm";
-            contenedor4.appendChild(parrafo4)
-            contenedor4.appendChild(contenedor3);
-
-            //////REMOVER ESTO Y CONVERTIRLO EN UN BOTON PARA ELIMINAR EL PRODUCTO DE LA COTI
-            let boton2=document.createElement('button')
-            boton2.type="button";
-            boton2.className="font-medium text-indigo-600 hover:text-indigo-500";
-            // boton2.textContent=`Alm.${paso3[indice][0]}`;
-            boton2.textContent="Remover";
-            boton2.addEventListener('click',()=>{
-                // document.getElementById("contendor-final-final").innerHTML="";
-                document.getElementById("aqui-nuevos").innerHTML="";
-                console.log("eliminado")
-                volver_correr(cotimodi_tmpitems[indice][9]);
+            .catch(function (err) {
+                if (CDK.http.esError(err) && err.status === 401) return;
+                CDK.estados.error(destino, err, function () { abrir(numero); });
             });
-            
-            let contenedor5=document.createElement('div');
-            contenedor5.className="flex";
-            contenedor5.appendChild(boton2);
-            
-            let parrafo5=document.createElement('p')
-            parrafo5.className="text-gray-500";
-            parrafo5.textContent=`Dscto% ${cotimodi_tmpitems[indice][17]}`;
-            let contenedor6=document.createElement('div')
-            contenedor6.className="flex flex-1 items-end justify-between text-sm";
+    }
 
-            contenedor6.appendChild(parrafo5)
-            contenedor6.appendChild(contenedor5)
+    function mostrarDetalle(si) {
+        seccionElegir.classList.toggle("hidden", si);
+        seccionDetalle.classList.toggle("hidden", !si);
+        if (!si) {
+            cabecera = null;
+            lineas = {};
+            numero = null;
+            huboCambios = false;
+        }
+    }
 
-            let contenedor7=document.createElement('div');
-            contenedor7.className="ml-4 flex flex-1 flex-col";
-            contenedor7.appendChild(contenedor_vacio);
-            contenedor7.appendChild(contenedor4)
-            contenedor7.appendChild(contenedor6)
-            
-            let fila=document.createElement('li')
-            fila.className="flex py-6 items-center";
-            fila.appendChild(contenedor1)
-            fila.appendChild(contenedor7)
+    btnVolver.addEventListener("click", function () {
+        if (!huboCambios) return salir();
 
-            // document.getElementById("productos-cotizacion-detallada").appendChild(fila);
-            // productos_cotizacion_detallada.appendChild(fila);
-            document.getElementById("aqui-nuevos").appendChild(fila);
+        CDK.modal.confirmar({
+            titulo: "Hay cambios sin guardar",
+            mensaje: "Si vuelves ahora, los cambios de esta cotización se pierden.",
+            confirmar: "Volver igual",
+            peligro: true
+        }).then(function (si) { if (si) salir(); });
+    });
+
+    function salir() {
+        mostrarDetalle(false);
+        destino.innerHTML = "";
+        totalesCoti.innerHTML = "";
+    }
+
+    formulario.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var n = entrada.value.trim();
+        if (!n) {
+            CDK.toast("Escribe el número de cotización", "aviso");
+            entrada.focus();
+            return;
+        }
+        abrir(n);
+    });
+
+    /* ===============================================================
+     * Las líneas
+     * ============================================================= */
+
+    function moneda() {
+        return cabecera && (cabecera.monedaLinea || cabecera.moneda) === "S" ? "S" : "D";
+    }
+
+    function pintarCliente() {
+        var partes = [];
+        if (cabecera.razonSocial) partes.push(cabecera.razonSocial);
+        else if (cabecera.codcliente) partes.push(cabecera.codcliente);
+        if (cabecera.fecha) partes.push(CDK.formato.fecha(cabecera.fecha));
+        datosCliente.textContent = partes.join("  ·  ");
+    }
+
+    function pintarLineas() {
+        destino.innerHTML = "";
+
+        var codigos = Object.keys(lineas);
+
+        if (!codigos.length) {
+            destino.appendChild(el("div", { clase: "cdk-estado" }, [
+                el("p", { clase: "cdk-estado__texto",
+                          texto: "La cotización se quedó sin líneas. Agrega al menos un producto." })
+            ]));
+            pintarTotales();
+            return;
         }
 
-        // cuerpo5.appendChild(productos_cotizacion_detallada);
-        // cuerpo4.appendChild(cuerpo5);
+        var lista = el("ul", { clase: "cdk-articulos" });
 
-        // cuerpo3.appendChild(cuerpo4);
+        codigos.forEach(function (codigo) {
+            var l = lineas[codigo];
 
-        // let parrafo6=document.createElement('p');
-        // parrafo6.className="mt-0.5 text-sm text-gray-500";
-        // parrafo6.textContent="Listado de productos detallado.";
-        // //////espacio para la busqueda de promos
-        // let boton_prom=document.createElement('button');
-        // boton_prom.className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600";
-        // boton_prom.textContent="Agregar Producto";
-        // boton_prom.addEventListener('click',()=>{
-        //     coti_item_new();
-        // })
-        // ///////////////////
-        // let cuerpo6=document.createElement('div');
-        // cuerpo6.className="border-t border-gray-200 px-4 py-6 sm:px-6";
-        // cuerpo6.appendChild(parrafo6);
-        // cuerpo6.appendChild(boton_prom);
+            var datos = [{ etiqueta: "P. unit.", valor: CDK.formato.moneda(l.precioUnitario, moneda()) }];
+            if (Number(l.descuento) > 0) {
+                datos.push({ etiqueta: "Dscto.", valor: CDK.formato.porcentaje(l.descuento) });
+            }
 
-        // let cuerpo7=document.createElement('div');
-        // cuerpo7.className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl";
-        // cuerpo7.appendChild(cuerpo3)
-        // cuerpo7.appendChild(cuerpo6)
+            var quitar = el("button", {
+                type: "button", clase: "cdk-enlace-accion cdk-enlace-accion--peligro", texto: "Quitar"
+            });
+            quitar.addEventListener("click", function (ev) {
+                ev.stopPropagation();
+                quitarLinea(codigo, l.descripcion);
+            });
 
-        // document.getElementById("contendor-final-final").appendChild(cuerpo7);
-}
+            /* La fila entera abre el cambio de cantidad, que es lo que se hace
+               casi siempre; quitar va aparte para que no se pulse sin querer. */
+            var fila = CDK.articulo({
+                distintivo: l.marca,
+                nombre: l.descripcion,
+                detalle: l.cantidad + (l.unidad ? " " + l.unidad : ""),
+                importe: CDK.formato.moneda(l.importe, moneda()),
+                datos: datos
+            });
 
-function cambiar_cantidad(codi,descr,cantidad){
-    console.log("este es el codi")
-    console.log(codi);
-    console.log("este es el cantidad a cambiar")
-    console.log(cantidad);
-    prod(codi,descr,cantidad);
-}
+            var cuerpo = fila.querySelector(".cdk-articulo__cuerpo");
+            var acciones = el("div", { clase: "cdk-articulo__acciones" });
+
+            var cambiar = el("button", {
+                type: "button", clase: "cdk-enlace-accion", texto: "Cambiar cantidad"
+            });
+            cambiar.addEventListener("click", function () {
+                abrirCantidad(codigo, l.descripcion, l.cantidad, false);
+            });
+
+            acciones.appendChild(cambiar);
+            acciones.appendChild(quitar);
+            cuerpo.appendChild(acciones);
+
+            lista.appendChild(fila);
+        });
+
+        destino.appendChild(lista);
+        pintarPromociones();
+        pintarTotales();
+    }
+
+    /**
+     * Los descuentos y obsequios que trae la cotización.
+     *
+     * No se editan y **se pierden al guardar**: /cotizacion/update borra el
+     * detalle entero y lo reescribe con lo que se le mande, y aquí solo se le
+     * mandan los productos. Volver a calcularlas tendría que pasar por
+     * /promocion otra vez, con el carrito ya cambiado.
+     *
+     * Se muestran, en vez de ocultarlas, para que el vendedor sepa qué va a
+     * perder ANTES de ponerse a modificar. Enterarse después es peor.
+     */
+    function pintarPromociones() {
+        zonaPromos.innerHTML = "";
+        zonaPromos.classList.toggle("hidden", !promociones.length);
+        if (!promociones.length) return;
+
+        zonaPromos.appendChild(el("div", { clase: "cdk-aviso cdk-aviso--error" }, [
+            el("p", { clase: "cdk-aviso__texto",
+                texto: promociones.length === 1
+                    ? "Esta cotización tiene una promoción. Si guardas cambios se retira, " +
+                      "y habrá que volver a aplicarla desde el módulo de promociones."
+                    : "Esta cotización tiene " + promociones.length + " líneas de promoción. " +
+                      "Si guardas cambios se retiran todas, y habrá que volver a aplicarlas " +
+                      "desde el módulo de promociones." })
+        ]));
+
+        var lista = el("ul", { clase: "cdk-articulos" });
+
+        promociones.forEach(function (l) {
+            var esObsequio = l.tipo === CDK.coti.OBSEQUIO;
+            lista.appendChild(CDK.articulo({
+                distintivo: esObsequio ? "Obsequio" : "Descuento",
+                nombre: l.descripcionLimpia || l.descripcion,
+                detalle: esObsequio ? l.cantidad + " un." : "",
+                importe: esObsequio ? "Sin costo" : CDK.formato.moneda(l.importe, moneda()),
+                variante: esObsequio ? "obsequio" : "descuento"
+            }));
+        });
+
+        zonaPromos.appendChild(lista);
+    }
+
+    function pintarTotales() {
+        totalesCoti.innerHTML = "";
+
+        var subtotal = 0;
+        Object.keys(lineas).forEach(function (c) {
+            subtotal += Number(lineas[c].importe) || 0;
+        });
+        subtotal = Math.round(subtotal * 100) / 100;
+
+        /* El mismo criterio que el resto del módulo: el IGV sale del subtotal,
+           no de sumar el importe con IGV de cada línea. El trigger del ERP hace
+           eso mismo y sumarlo línea a línea se desvía por céntimos. */
+        var igv = Math.round(subtotal * 0.18 * 100) / 100;
+
+        function fila(etiqueta, valor, clase) {
+            return el("div", { clase: "cdk-total" + (clase ? " " + clase : "") }, [
+                el("span", { clase: "cdk-total__etiqueta", texto: etiqueta }),
+                el("span", { clase: "cdk-total__valor", texto: CDK.formato.moneda(valor, moneda()) })
+            ]);
+        }
+
+        totalesCoti.appendChild(fila("Sin IGV", subtotal));
+        totalesCoti.appendChild(fila("IGV 18 %", igv));
+        totalesCoti.appendChild(fila("Total", subtotal + igv, "cdk-total--principal"));
+
+        resumenCoti.textContent = Object.keys(lineas).length +
+            (Object.keys(lineas).length === 1 ? " línea" : " líneas");
+
+        btnGuardar.disabled = !huboCambios || !Object.keys(lineas).length;
+    }
+
+    function quitarLinea(codigo, descripcion) {
+        CDK.modal.confirmar({
+            titulo: "Quitar de la cotización",
+            mensaje: "Se quitará «" + descripcion + "». El cambio se guarda al pulsar «Guardar cambios».",
+            confirmar: "Quitar",
+            peligro: true
+        }).then(function (si) {
+            if (!si) return;
+            delete lineas[codigo];
+            huboCambios = true;
+            pintarLineas();
+        });
+    }
+
+    /* ===============================================================
+     * El panel de cantidad
+     * ============================================================= */
+
+    function abrirCantidad(codigo, descripcion, cantidad, esNuevo) {
+        enCurso = { codigo: codigo, descripcion: descripcion, esNuevo: !!esNuevo };
+
+        nombreCantidad.textContent = descripcion;
+        campoCantidad.value = String(cantidad || 1);
+        errorCantidad.classList.add("hidden");
+
+        panelCantidad.classList.remove("hidden");
+        document.body.classList.add("cdk-sin-scroll");
+        campoCantidad.focus();
+        campoCantidad.select();
+    }
+
+    function cerrarCantidad() {
+        panelCantidad.classList.add("hidden");
+        document.body.classList.remove("cdk-sin-scroll");
+        enCurso = null;
+    }
+
+    function ajustarCantidad(paso) {
+        var n = parseInt(campoCantidad.value, 10);
+        var actual = isFinite(n) ? n : 1;
+        campoCantidad.value = String(Math.min(Math.max(actual + paso, 1), 500));
+        errorCantidad.classList.add("hidden");
+    }
+
+    cantidadMenos.addEventListener("click", function () { ajustarCantidad(-1); });
+    cantidadMas.addEventListener("click", function () { ajustarCantidad(1); });
+    btnCancelarCantidad.addEventListener("click", cerrarCantidad);
+    btnCerrarCantidad.addEventListener("click", cerrarCantidad);
+    fondoCantidad.addEventListener("click", cerrarCantidad);
+
+    campoCantidad.addEventListener("input", function () {
+        var limpio = campoCantidad.value.replace(/[^\d]/g, "");
+        if (limpio !== campoCantidad.value) campoCantidad.value = limpio;
+        errorCantidad.classList.add("hidden");
+    });
+
+    btnConfirmarCantidad.addEventListener("click", function () {
+        if (!enCurso) return;
+
+        var cantidad = parseInt(campoCantidad.value, 10);
+
+        if (!isFinite(cantidad) || cantidad < 1) {
+            errorCantidad.textContent = "La cantidad mínima es 1.";
+            errorCantidad.classList.remove("hidden");
+            return;
+        }
+        if (cantidad > 500) {
+            errorCantidad.textContent = "La cantidad máxima es 500.";
+            errorCantidad.classList.remove("hidden");
+            return;
+        }
+
+        var tarea = enCurso;
+        cerrarCantidad();
+
+        if (tarea.esNuevo) traerProducto(tarea.codigo, cantidad);
+        else cambiarCantidad(tarea.codigo, cantidad);
+    });
+
+    /**
+     * Cambia la cantidad de una línea que ya está.
+     *
+     * El precio y el descuento no se tocan: son los que el backend fijó cuando
+     * se creó la cotización, y recalcularlos aquí con el precio de hoy cambiaría
+     * lo que ya se le cotizó al cliente.
+     */
+    function cambiarCantidad(codigo, cantidad) {
+        var l = lineas[codigo];
+        if (!l) return;
+
+        var calculo = CDK.coti.calcularLinea({
+            precio: l.precioUnitario,
+            cantidad: cantidad,
+            descuento: l.descuento
+        });
+
+        l.cantidad = cantidad;
+        l.importe = calculo.importe;
+        l.importeConIgv = Math.round(calculo.importe * 1.18 * 100) / 100;
+
+        huboCambios = true;
+        pintarLineas();
+    }
+
+    /* ===============================================================
+     * Agregar un producto
+     * ============================================================= */
+
+    btnAgregar.addEventListener("click", function () {
+        panelBusqueda.classList.remove("hidden");
+        document.body.classList.add("cdk-sin-scroll");
+        limpiarBusqueda();
+        campoProducto.focus();
+    });
+
+    function cerrarBusqueda() {
+        panelBusqueda.classList.add("hidden");
+        document.body.classList.remove("cdk-sin-scroll");
+        limpiarBusqueda();
+    }
+
+    btnCerrarBusqueda.addEventListener("click", cerrarBusqueda);
+    btnListo.addEventListener("click", cerrarBusqueda);
+    fondoBusqueda.addEventListener("click", cerrarBusqueda);
+
+    function limpiarBusqueda() {
+        cancelarBusqueda();
+        campoProducto.value = "";
+        resultados.innerHTML = "";
+        btnLimpiar.classList.add("hidden");
+        indicador.classList.add("hidden");
+        cargandoProducto.classList.add("hidden");
+        sinResultados.classList.add("hidden");
+    }
+
+    btnLimpiar.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        limpiarBusqueda();
+        campoProducto.focus();
+    });
+
+    /* Cancela lo que esté en vuelo: sin esto, dos búsquedas seguidas pueden
+       cruzarse y pintar resultados que no son los de lo escrito. */
+    function cancelarBusqueda() {
+        clearTimeout(tiempoBusqueda);
+        if (enVuelo) {
+            enVuelo.abort();
+            enVuelo = null;
+        }
+    }
+
+    campoProducto.addEventListener("input", function (ev) {
+        var texto = ev.target.value.trim();
+
+        btnLimpiar.classList.toggle("hidden", texto.length === 0);
+        cancelarBusqueda();
+        resultados.innerHTML = "";
+        sinResultados.classList.add("hidden");
+        cargandoProducto.classList.add("hidden");
+
+        if (texto.length < 3) {
+            indicador.classList.toggle("hidden", texto.length === 0);
+            return;
+        }
+
+        indicador.classList.add("hidden");
+        cargandoProducto.classList.remove("hidden");
+        tiempoBusqueda = setTimeout(function () { buscarProducto(texto); }, 400);
+    });
+
+    tipoBusqueda.addEventListener("change", function () {
+        var texto = campoProducto.value.trim();
+        cancelarBusqueda();
+        resultados.innerHTML = "";
+        sinResultados.classList.add("hidden");
+
+        if (texto.length < 3) {
+            cargandoProducto.classList.add("hidden");
+            campoProducto.focus();
+            return;
+        }
+        cargandoProducto.classList.remove("hidden");
+        buscarProducto(texto);
+    });
+
+    /**
+     * Busca el producto. Va SIN `letra` a propósito: aquí la búsqueda solo sirve
+     * para encontrarlo, y el precio que le corresponde a este cliente lo trae
+     * después /producto/encontrado con su letra y su código.
+     */
+    function buscarProducto(texto) {
+        var control = new AbortController();
+        enVuelo = control;
+
+        CDK.http.post(CDK.rutas.api("/producto/buscar"), {
+            sugerencia: texto,
+            tipbusq: tipoBusqueda.value
+        }, { senal: control.signal })
+            .then(function (respuesta) {
+                if (control.signal.aborted) return;
+                enVuelo = null;
+                pintarProductos(respuesta, texto);
+            })
+            .catch(function (err) {
+                if (control.signal.aborted) return;
+                enVuelo = null;
+                cargandoProducto.classList.add("hidden");
+                if (CDK.http.esError(err) && err.status === 401) return;
+                CDK.estados.error(resultados, err, function () { buscarProducto(texto); });
+            });
+    }
+
+    function pintarProductos(respuesta, termino) {
+        cargandoProducto.classList.add("hidden");
+        resultados.innerHTML = "";
+
+        var filas = Object.keys(respuesta || {}).map(function (k) { return respuesta[k]; });
+
+        if (!filas.length) {
+            sinResultados.classList.remove("hidden");
+            return;
+        }
+
+        var lista = el("ul", { clase: "cdk-articulos" });
+
+        filas.forEach(function (fila) {
+            var p = CDK.coti.producto(fila);
+            var yaEsta = !!lineas[p.codigo];
+
+            var datos = [
+                { etiqueta: "Principal", valor: p.stockPrincipal, tono: p.stockPrincipal ? "" : "nulo" },
+                { etiqueta: "M&M",       valor: p.stockMym,       tono: p.stockMym       ? "" : "nulo" },
+                { etiqueta: "Piura",     valor: p.stockPiura,     tono: p.stockPiura     ? "" : "nulo" }
+            ];
+
+            if (yaEsta) datos.push({ etiqueta: "", valor: "Ya está en la cotización", tono: "bien" });
+
+            lista.appendChild(CDK.articulo({
+                nombre: termino ? CDK.resaltar(p.descripcion, termino) : p.descripcion,
+                datos: datos,
+                alerta: p.stockTotal === 0,
+                /* El precio no se muestra aquí: el de esta búsqueda es genérico y
+                   el que vale lo trae /producto/encontrado con la letra del
+                   cliente. Enseñar uno y cobrar otro sería peor que no enseñarlo. */
+                alPulsar: yaEsta ? null : function () {
+                    cerrarBusqueda();
+                    abrirCantidad(p.codigo, p.descripcion, 1, true);
+                }
+            }));
+        });
+
+        resultados.appendChild(lista);
+    }
+
+    /**
+     * Trae el producto con el precio que le toca a ESTE cliente y lo agrega.
+     *
+     * /producto/encontrado devuelve 12 posiciones que encajan con las de
+     * /cotizacion/read: así la línea nueva queda igual que las que ya estaban.
+     */
+    function traerProducto(codigo, cantidad) {
+        CDK.toast("Agregando el producto…", "info", 1500);
+
+        CDK.http.post(CDK.rutas.api("/producto/encontrado"), {
+            sugerencia: codigo,
+            cctl: cabecera.clase,        // la letra del cliente
+            ccli: cabecera.codcliente
+        })
+            .then(function (p) {
+                if (!p) {
+                    CDK.toast("No se pudo traer el precio de ese producto.", "error", 0);
+                    return;
+                }
+
+                var precio = Number(p[8]) || 0;
+                var descuento = Number(p[9]) || 0;
+
+                var calculo = CDK.coti.calcularLinea({
+                    precio: precio, cantidad: cantidad, descuento: descuento
+                });
+
+                lineas[p[2]] = {
+                    afectoIgv: p[0],
+                    tipoCrudo: p[1],
+                    codigo: p[2],
+                    partnumber: p[3],
+                    marca: p[4],
+                    unidad: p[5],
+                    descripcion: p[6],
+                    cantidad: cantidad,
+                    precioUnitario: precio,
+                    importe: calculo.importe,
+                    descuento: descuento,
+                    importeConIgv: Math.round(calculo.importe * 1.18 * 100) / 100,
+                    almacen: cabecera.almacen,
+                    coste: Number(p[10]) || 0,
+                    extra: p[11]
+                };
+
+                huboCambios = true;
+                pintarLineas();
+                CDK.toast("Producto agregado.", "exito");
+            })
+            .catch(function (err) {
+                if (CDK.http.esError(err) && err.status === 401) return;
+                CDK.toast(
+                    (err && err.datos && err.datos.msg) || "No se pudo agregar el producto.",
+                    "error", 0
+                );
+            });
+    }
+
+    /* ===============================================================
+     * Guardar
+     * ============================================================= */
+
+    /**
+     * Rearma el arreglo de 22 posiciones que espera /cotizacion/update.
+     *
+     * Son las posiciones 1-22 de /cotizacion/read, así que la 0 de este arreglo
+     * es la 1 de aquella. Las siete primeras vienen de la cabecera y se repiten
+     * en todas las líneas, igual que las devuelve el backend.
+     */
+    function aFilaGuardada(l) {
+        return [
+            cabecera.fecha,          // 1  fecha
+            cabecera.tipoDoc,        // 2  tipo de documento
+            cabecera.documento,      // 3  documento
+            cabecera.codcliente,     // 4  cliente
+            cabecera.tipoCambio,     // 5  tipo de cambio
+            cabecera.moneda,         // 6  moneda del documento
+            cabecera.monedaLinea,    // 7  moneda de la línea
+            l.afectoIgv,             // 8
+            l.tipoCrudo,             // 9  tipo de línea
+            l.codigo,                // 10
+            l.partnumber,            // 11
+            l.marca,                 // 12
+            l.unidad,                // 13
+            l.descripcion,           // 14
+            l.cantidad,              // 15
+            l.precioUnitario,        // 16
+            l.importe,               // 17
+            l.descuento,             // 18
+            l.importeConIgv,         // 19
+            cabecera.almacen,        // 20
+            l.coste,                 // 21
+            l.extra                  // 22
+        ];
+    }
+
+    btnGuardar.addEventListener("click", function () {
+        var codigos = Object.keys(lineas);
+        if (!codigos.length) {
+            CDK.toast("La cotización no puede quedarse sin líneas.", "aviso");
+            return;
+        }
+
+        /* Si hay promociones, el aviso de arriba ya estaba a la vista, pero este
+           es el momento en que se pierden de verdad: conviene decirlo una vez
+           más, cuando la decisión se vuelve irreversible. */
+        if (!promociones.length) return guardar();
+
+        CDK.modal.confirmar({
+            titulo: promociones.length === 1 ? "Se perderá la promoción" : "Se perderán las promociones",
+            mensaje: "Al guardar, la cotización se queda solo con sus productos y los cambios " +
+                     "que hiciste. " +
+                     (promociones.length === 1
+                        ? "El descuento u obsequio de promoción se retira"
+                        : "Los " + promociones.length + " descuentos y obsequios de promoción se retiran") +
+                     ", y habrá que volver a aplicarlos desde el módulo de promociones.",
+            confirmar: "Guardar igual",
+            peligro: true
+        }).then(function (si) { if (si) guardar(); });
+    });
+
+    function guardar() {
+        var codigos = Object.keys(lineas);
+        var item = {};
+        codigos.forEach(function (c) { item[c] = aFilaGuardada(lineas[c]); });
+
+        var textoOriginal = btnGuardar.textContent;
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = "Guardando…";
+
+        CDK.http.post(CDK.rutas.api("/cotizacion/update"), { item: item })
+            .then(function () {
+                huboCambios = false;
+                promociones = [];   // el backend ya las borró
+                CDK.modal.alerta({
+                    titulo: "Cotización actualizada",
+                    mensaje: "Los cambios de la cotización " + numero + " se guardaron.",
+                    confirmar: "Cerrar"
+                }).then(function () {
+                    salir();
+                    listaDia.recargar();
+                });
+            })
+            .catch(function (err) {
+                if (CDK.http.esError(err) && err.status === 401) return;
+
+                /* Una cotización aprobada no se puede modificar, y eso no se
+                   arregla reintentando: hay que desaprobarla por fuera. Se dice
+                   así en vez de con un error genérico. */
+                var detalle = (err && err.datos && err.datos.msg) || "";
+                var aprobada = /aprob/i.test(detalle) ||
+                               /aprob/i.test((err && err.datos && err.datos.status) || "");
+
+                CDK.modal.alerta({
+                    titulo: aprobada ? "La cotización está aprobada" : "No se pudo guardar",
+                    mensaje: aprobada
+                        ? "Esta cotización ya fue aceptada, así que no se puede modificar. " +
+                          "Hay que desaprobarla primero, y eso se hace fuera de esta pantalla."
+                        : (detalle || "El backend no confirmó los cambios. El trabajo sigue aquí; " +
+                           "vuelve a intentarlo."),
+                    confirmar: "Cerrar",
+                    peligro: true
+                });
+            })
+            .then(function () {
+                btnGuardar.textContent = textoOriginal;
+                btnGuardar.disabled = !huboCambios || !Object.keys(lineas).length;
+            });
+    }
+
+    // Escape cierra el panel que esté abierto.
+    document.addEventListener("keydown", function (ev) {
+        if (ev.key !== "Escape") return;
+        if (!panelCantidad.classList.contains("hidden")) cerrarCantidad();
+        else if (!panelBusqueda.classList.contains("hidden")) cerrarBusqueda();
+    });
+
+    // Si se llega con ?ncoti= desde Ver cotización, se abre directamente.
+    /* Si se llega con ?ncoti= desde Ver cotización, se abre directamente. La
+       lista ya se cargó sola al montarse, así que queda detrás. */
+    var pedida = new URLSearchParams(location.search).get("ncoti");
+    if (pedida) abrir(pedida);
+
+})();

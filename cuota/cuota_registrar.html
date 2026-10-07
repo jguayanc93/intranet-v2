@@ -1,400 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-  <title>Registro de Cuota</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Registrar cuota - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Registrar cuota</title>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900">
-  <header class="bg-white border-b border-slate-200 shadow-sm">
-    <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Registro de cuota</p>
-        <h1 class="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Configura tu cuota mensual</h1>
-        <p class="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">Sigue los tres pasos en una sola pantalla y completa tu registro de forma simple.</p>
-      </div>
-      <a href="/main.html" class="inline-flex items-center justify-center rounded-full bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">Menú</a>
-    </div>
-  </header>
 
-  <main class="mx-auto w-full max-w-6xl px-4 py-8">
-    <section class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-      <div class="space-y-6">
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Flujo</p>
-              <h2 class="mt-3 text-2xl font-bold text-slate-900">Tus pasos visibles</h2>
+<body data-modulo="cuota" data-titulo="Registrar Cuota">
+
+<div class="cdk-pagina">
+
+    <section class="cdk-seccion">
+        <h2 class="cdk-seccion__titulo">Registrar mi cuota del mes</h2>
+        <p class="cdk-seccion__sub">
+            Se registra <strong>una vez al mes</strong> y no se puede cambiar después. El
+            avance aparece en cuanto la guardes.
+        </p>
+
+        <div id="estado"></div>
+
+        <form id="form-cuota" class="hidden">
+            <div class="cdk-campo">
+                <label class="cdk-campo__etiqueta" for="monto">Mi cuota de este mes</label>
+                <input type="number" id="monto" class="cdk-entrada"
+                       inputmode="decimal" step="0.01" min="0.01"
+                       autocomplete="off" placeholder="Ej: 380000">
+                <p class="cdk-campo__ayuda">En dólares. Tiene que ser mayor que cero.</p>
             </div>
-            <span class="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">Responsive</span>
-          </div>
 
-          <div class="mt-8 grid gap-4 sm:grid-cols-3">
-            <article class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Paso 1</p>
-              <h3 class="mt-3 text-lg font-semibold text-slate-900">Monto en dólares</h3>
-              <p class="mt-2 text-sm text-slate-600">Ingresa el valor en dólares. Solo se acepta número mayor a 0.</p>
-            </article>
-            <article class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Paso 2</p>
-              <h3 class="mt-3 text-lg font-semibold text-slate-900">Selecciona objetivo</h3>
-              <p class="mt-2 text-sm text-slate-600">Elige solo uno de los objetivos especiales fijos.</p>
-            </article>
-            <article class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Paso 3</p>
-              <h3 class="mt-3 text-lg font-semibold text-slate-900">Porcentaje entero</h3>
-              <p class="mt-2 text-sm text-slate-600">Indica qué porcentaje de la cuota va a ese objetivo.</p>
-            </article>
-          </div>
-        </div>
+            <button type="submit" id="btn-guardar" class="cdk-boton cdk-boton--primario">
+                Registrar
+            </button>
+        </form>
 
-        <div id="contenido-registro" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-slate-700 shadow-sm">
-            <p class="text-base font-semibold">Cargando formulario...</p>
-            <p class="mt-2 text-sm text-slate-500">Espera un momento mientras verificamos tu estado de cuota.</p>
-          </div>
-        </div>
-      </div>
-
-      <aside class="space-y-6">
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <h2 class="text-lg font-semibold text-slate-900">Resumen rápido</h2>
-          <div class="mt-6 grid gap-4">
-            <div class="rounded-3xl bg-slate-50 p-4">
-              <p class="text-sm font-semibold text-slate-500">Monto</p>
-              <p id="resumen-monto" class="mt-2 text-xl font-bold text-slate-900">$0.00</p>
-            </div>
-            <div class="rounded-3xl bg-slate-50 p-4">
-              <p class="text-sm font-semibold text-slate-500">Objetivo</p>
-              <p id="resumen-objetivo" class="mt-2 text-xl font-bold text-slate-900">-</p>
-            </div>
-            <div class="rounded-3xl bg-slate-50 p-4">
-              <p class="text-sm font-semibold text-slate-500">Porcentaje</p>
-              <p id="resumen-porcentaje" class="mt-2 text-xl font-bold text-slate-900">0%</p>
-            </div>
-          </div>
-        </div>
-
-        <div id="panel-alertas" class="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-900 shadow-sm hidden">
-          <p id="texto-alerta" class="font-medium"></p>
-        </div>
-      </aside>
+        <div id="resultado" style="margin-top:12px"></div>
     </section>
 
-    <div id="modal-aceptacion" class="relative z-10"></div>
-  </main>
+</div>
 
-  <script src="/caminos/rutas.js"></script>
-  <script>
-    // Lista fija de objetivos sugeridos.
-    const objetivosEspeciales = [
-      'ACCESORIOS Y PERIFERICOS',
-      'EQUIPOS INFORMATICOS',
-      'COMPONENTES',
-      'ALM. EXTERNO',
-      'IMPRESION',
-      'TELEFONIA'
-    ];
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
 
-    let marcaSeleccionada = null;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      if (document.getElementById('contenido-registro')) {
-        responder_revision_registro();
-      }
-    });
-
-    // Obtiene el estado del registro y decide si mostrar formulario o selección de marca.
-    function responder_revision_registro() {
-      const peticion = new Request(rutacuotarevisarregistro, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'include'
-      });
-
-      fetch(peticion)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Ya tienes un registro para este mes o no es posible cargar tu estado.');
-          }
-          return response.json();
-        })
-        .then(resultado => {
-          if (resultado && resultado.simple) {
-            prepararFormularioRegistro();
-          } else if (resultado && resultado.multiple) {
-            mostrarSeleccionMarcas(resultado.multiple);
-          } else if (resultado && resultado.superior) {
-            mostrarMensajeSupervision();
-          } else {
-            prepararFormularioRegistro();
-          }
-        })
-        .catch(error => {
-          mostrarFormularioError(error.message);
-        });
-    }
-
-    // Construye el formulario visible con los 3 pasos.
-    function prepararFormularioRegistro() {
-      const contenido = document.getElementById('contenido-registro');
-      contenido.innerHTML = `
-        <form id="cuota-form" class="space-y-6" onsubmit="event.preventDefault(); enviarRegistro();">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Paso 1</p>
-                <h2 class="text-xl font-bold text-slate-900">Monto en dólares</h2>
-              </div>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">Requerido</span>
-            </div>
-            <label for="monto-cuota" class="sr-only">Monto en dólares</label>
-            <input id="monto-cuota" type="number" min="0.01" step="0.01" placeholder="0.00"
-              class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none ring-1 ring-transparent transition focus:border-indigo-500 focus:bg-white focus:ring-indigo-500/20"
-              oninput="actualizarResumen(); validarFormulario();" required>
-            <p class="text-sm text-slate-500">Ingresa un número válido mayor a 0.</p>
-          </div>
-
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Paso 2</p>
-                <h2 class="text-xl font-bold text-slate-900">Objetivo especial</h2>
-              </div>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">Selecciona uno</span>
-            </div>
-            <label for="objetivo-especial" class="sr-only">Objetivo especial</label>
-            <select id="objetivo-especial" class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none ring-1 ring-transparent transition focus:border-indigo-500 focus:bg-white focus:ring-indigo-500/20"
-              onchange="actualizarResumen(); validarFormulario();" required>
-              <option value="">Selecciona un objetivo</option>
-              ${objetivosEspeciales.map(obj => `<option value="${obj}">${obj}</option>`).join('')}
-            </select>
-            <p class="text-sm text-slate-500">Solo puedes elegir uno de los objetivos predefinidos.</p>
-          </div>
-
-          <div class="space-y-3">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Paso 3</p>
-                <h2 class="text-xl font-bold text-slate-900">Porcentaje objetivo</h2>
-              </div>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">Entero</span>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-              <label for="porcentaje-objetivo" class="sr-only">Porcentaje</label>
-              <input id="porcentaje-objetivo" type="number" min="0" max="100" step="1" placeholder="0"
-                class="w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none ring-1 ring-transparent transition focus:border-indigo-500 focus:bg-white focus:ring-indigo-500/20"
-                oninput="actualizarResumen(); validarFormulario();" required>
-              <span class="inline-flex items-center justify-center rounded-3xl bg-slate-100 px-4 text-base text-slate-600">%</span>
-            </div>
-            <p class="text-sm text-slate-500">Ingresa un número entero entre 0 y 100.</p>
-          </div>
-
-          <div class="rounded-3xl bg-slate-50 p-4 text-sm text-slate-700">
-            <p class="font-semibold text-slate-900">Importante:</p>
-            <p class="mt-2">Todos los pasos están visibles. Completa el formulario y presiona Guardar cuota.</p>
-          </div>
-
-          <button id="boton-guardar" type="submit" class="inline-flex w-full items-center justify-center rounded-3xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-            disabled>Guardar cuota</button>
-        </form>
-      `;
-
-      actualizarResumen();
-      validarFormulario();
-    }
-
-    // Muestra selección de marcas si el usuario tiene varias marcas asignadas.
-    function mostrarSeleccionMarcas(marcas) {
-      const contenido = document.getElementById('contenido-registro');
-      contenido.innerHTML = `
-        <div class="space-y-6">
-          <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Marca asignada</p>
-            <h2 class="mt-3 text-2xl font-bold text-slate-900">Selecciona una marca</h2>
-            <p class="mt-2 text-sm text-slate-600">Antes de registrar tu cuota, elige la marca que te corresponde.</p>
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            ${marcas.map(marca => `
-              <button type="button" onclick="seleccionarMarca('${marca[0]}','${marca[1]}')"
-                class="rounded-3xl border border-slate-200 bg-white px-5 py-5 text-left text-slate-900 shadow-sm transition hover:border-indigo-500 hover:bg-indigo-50">
-                <p class="text-sm font-semibold text-slate-500">Código: ${marca[0]}</p>
-                <p class="mt-3 text-lg font-bold">${marca[1]}</p>
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    // Mensaje cuando la cuota está bajo revisión superior.
-    function mostrarMensajeSupervision() {
-      const contenido = document.getElementById('contenido-registro');
-      contenido.innerHTML = `
-        <div class="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
-          <h2 class="text-2xl font-bold">Revisión en curso</h2>
-          <p class="mt-3 text-sm leading-6">Tu cuota está pendiente de aprobación superior. Contacta a tu supervisor para continuar.</p>
-        </div>
-      `;
-    }
-
-    // Error general en carga del formulario.
-    function mostrarFormularioError(mensaje) {
-      const contenido = document.getElementById('contenido-registro');
-      contenido.innerHTML = `
-        <div class="rounded-3xl border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-sm">
-          <h2 class="text-2xl font-bold">No se pudo cargar el formulario</h2>
-          <p class="mt-3 text-sm leading-6">${mensaje}</p>
-          <p class="mt-4 text-sm text-slate-600">Si ya existe un registro, revisa tu cuota o intenta nuevamente más tarde.</p>
-        </div>
-      `;
-    }
-
-    function seleccionarMarca(codigo, abreviatura) {
-      marcaSeleccionada = { codigo, recortado: abreviatura };
-      prepararFormularioRegistro();
-    }
-
-    // Actualiza el resumen lateral con los valores actuales.
-    function actualizarResumen() {
-      const montoInput = document.getElementById('monto-cuota');
-      const objetivoSelect = document.getElementById('objetivo-especial');
-      const porcentajeInput = document.getElementById('porcentaje-objetivo');
-
-      const monto = montoInput ? parseFloat(montoInput.value) : 0;
-      const objetivo = objetivoSelect ? objetivoSelect.value : '';
-      const porcentaje = porcentajeInput ? parseInt(porcentajeInput.value, 10) : 0;
-
-      document.getElementById('resumen-monto').textContent = isFinite(monto) && monto > 0 ? `$${monto.toFixed(2)}` : '$0.00';
-      document.getElementById('resumen-objetivo').textContent = objetivo || '-';
-      document.getElementById('resumen-porcentaje').textContent = Number.isInteger(porcentaje) && porcentaje >= 0 ? `${porcentaje}%` : '0%';
-    }
-
-    // Valida todos los campos del formulario.
-    function validarFormulario() {
-      const montoInput = document.getElementById('monto-cuota');
-      const objetivoSelect = document.getElementById('objetivo-especial');
-      const porcentajeInput = document.getElementById('porcentaje-objetivo');
-      const botonGuardar = document.getElementById('boton-guardar');
-      const panelAlertas = document.getElementById('panel-alertas');
-      const textoAlerta = document.getElementById('texto-alerta');
-
-      if (!montoInput || !objetivoSelect || !porcentajeInput || !botonGuardar) {
-        return;
-      }
-
-      let valido = true;
-      let mensaje = '';
-
-      if (!esMontoValido(montoInput.value)) {
-        valido = false;
-        mensaje = 'El monto debe ser un número mayor a 0.';
-      } else if (!objetivoSelect.value) {
-        valido = false;
-        mensaje = 'Debes seleccionar un objetivo especial.';
-      } else if (!esPorcentajeValido(porcentajeInput.value)) {
-        valido = false;
-        mensaje = 'El porcentaje debe ser un número entero entre 0 y 100.';
-      }
-
-      botonGuardar.disabled = !valido;
-
-      if (!valido) {
-        panelAlertas.classList.remove('hidden');
-        textoAlerta.textContent = mensaje;
-      } else {
-        panelAlertas.classList.add('hidden');
-        textoAlerta.textContent = '';
-      }
-    }
-
-    function esMontoValido(valor) {
-      const numero = parseFloat(valor);
-      return Number.isFinite(numero) && numero > 0;
-    }
-
-    function esPorcentajeValido(valor) {
-      if (!/^[0-9]+$/.test(valor)) {
-        return false;
-      }
-      const entero = parseInt(valor, 10);
-      return entero >= 0 && entero <= 100;
-    }
-
-    // Envía el registro usando la ruta correcta según si hay marca seleccionada.
-    function enviarRegistro() {
-      const montoInput = document.getElementById('monto-cuota');
-      const objetivoSelect = document.getElementById('objetivo-especial');
-      const porcentajeInput = document.getElementById('porcentaje-objetivo');
-
-      if (!esMontoValido(montoInput.value) || !objetivoSelect.value || !esPorcentajeValido(porcentajeInput.value)) {
-        validarFormulario();
-        return;
-      }
-
-      const cuerpo = {
-        fijado: parseFloat(montoInput.value),
-        objetivo_especial: objetivoSelect.value,
-        porcentaje: parseInt(porcentajeInput.value, 10)
-      };
-
-      let ruta = rutacuotaregistro;
-      if (marcaSeleccionada) {
-        cuerpo.codigo = marcaSeleccionada.codigo;
-        cuerpo.recortado = marcaSeleccionada.recortado;
-        ruta = rutacuotaregistromarcaseleccionada;
-      }
-
-      const peticion = new Request(ruta, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cuerpo),
-        mode: 'cors',
-        credentials: 'include'
-      });
-
-      fetch(peticion)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('No se pudo guardar la cuota. Intenta nuevamente.');
-          }
-          return response.json();
-        })
-        .then(() => {
-          window.location.assign('/main.html');
-        })
-        .catch(error => {
-          mostrarModalError(error.message);
-        });
-    }
-
-    function mostrarModalError(mensaje) {
-      const modalContenedor = document.getElementById('modal-aceptacion');
-      modalContenedor.innerHTML = '';
-
-      const overlay = document.createElement('div');
-      overlay.className = 'fixed inset-0 bg-slate-900/50 backdrop-blur-sm';
-
-      const cuadro = document.createElement('div');
-      cuadro.className = 'fixed inset-0 flex items-center justify-center p-4';
-      cuadro.innerHTML = `
-        <div class="w-full max-w-xl rounded-3xl bg-white p-6 shadow-xl">
-          <h3 class="text-lg font-semibold text-slate-900">Error al registrar</h3>
-          <p class="mt-4 text-sm text-slate-600">${mensaje}</p>
-          <div class="mt-6 flex justify-end">
-            <button id="cerrar-modal" type="button" class="rounded-3xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">Cerrar</button>
-          </div>
-        </div>
-      `;
-
-      modalContenedor.appendChild(overlay);
-      modalContenedor.appendChild(cuadro);
-
-      document.getElementById('cerrar-modal').addEventListener('click', () => {
-        modalContenedor.innerHTML = '';
-      });
-    }
-  </script>
+<script src="/js/cuota/registrar.js"></script>
 </body>
 </html>

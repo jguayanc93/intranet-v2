@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Documento de cotización</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <link rel="stylesheet" href="/core/cdk-documento.css">
+    <style>
+        body { margin: 0; background: var(--cdk-fondo); color: var(--cdk-texto);
+               font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco { max-width: 1100px; margin: 0 auto; padding: 24px 16px 0; }
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 16px; font-size: 14px; color: var(--cdk-texto-suave);
+                 line-height: 1.55; max-width: 70ch; }
+        .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+                     margin-bottom: 16px; }
+        .controles label { font-size: 13px; color: var(--cdk-texto-suave); }
+
+        /* Lo de la demo no debe salir impreso. */
+        @media print { .marco { display: none !important; } }
+    </style>
+</head>
+
+<body>
+<div class="marco">
+    <h1>Documento de cotización</h1>
+    <p class="intro">
+        Los datos son los de la cotización <strong>009-00971087</strong> que pasaste, para
+        que puedas comparar contra el original. Pulsa <em>Guardar PDF</em>: se abre el
+        diálogo de impresión del navegador, donde se elige «Guardar como PDF». En el
+        celular, ese mismo diálogo permite compartir.
+    </p>
+
+    <div class="controles">
+        <button type="button" id="imprimir" class="cdk-boton cdk-boton--primario">
+            Guardar PDF
+        </button>
+
+        <label for="moneda">Moneda</label>
+        <select id="moneda" class="cdk-entrada" style="width:auto">
+            <option value="D">Dólares</option>
+            <option value="S">Soles</option>
+        </select>
+
+        <label><input type="checkbox" id="faltantes" checked>
+            con los datos que aún no llegan del backend</label>
+    </div>
+</div>
+
+<div class="cdk-doc__lienzo" id="lienzo"></div>
+
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/js/cotizacion/campos.js"></script>
+<script src="/js/cotizacion/documento.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    /* Las 10 lineas del documento original. Los precios con descuento del PDF
+       -75.720, 78.970, 103.610...- salen todos de aplicar 5 % al precio de
+       lista, asi que el descuento se guarda como porcentaje y la columna se
+       calcula, igual que hara con los datos reales. */
+    var LINEAS = [
+        ["TOHPCF28", "HEWL", "TONER HP CF283A (83A) MFP M 127F NEGRO",      1,  79.71, 5, "2026-10-03"],
+        ["TOHPCE28", "HEWL", "TONER HP CE285A (85A) L.J. P1102 NEGRO",      1,  83.13, 5, null],
+        ["TOHPW202", "HEWL", "TONER HP W2020A (414A) L.J. M454 BLACK 2,400", 1,  95.22, 5, null],
+        ["TOHPW202", "HEWL", "TONER HP W2022A (414A) L.J. M454 YELLOW",     1, 124.58, 5, null],
+        ["TOHPW202", "HEWL", "TONER HP W2023A (414A) L.J. M454 MAGENTA",    1, 124.58, 5, null],
+        ["TOHPW202", "HEWL", "TONER HP W2021A (414A) L.J. M454 CYAN  2,100", 1, 124.58, 5, null],
+        ["TOHPW230", "HEWL", "TONER HP W2303A (230A) L.J. MAGENTA  1,800",  2, 109.06, 5, null],
+        ["TOHPW230", "HEWL", "TONER HP W2300A (230A) L.J. BLACK  2000 PAGS", 2,  90.64, 5, null],
+        ["TOHPW230", "HEWL", "TONER HP W2301A (230A) L.J. CYAN    1,800",   2, 109.06, 5, "2026-10-03"],
+        ["TOHPW230", "HEWL", "TONER HP W2302A (230A) L.J. YELLOW  1,800",   2, 109.06, 5, "2026-10-08"]
+    ];
+
+    function armarDoc(moneda) {
+        var lineas = LINEAS.map(function (f) {
+            var precio = f[4];
+            var cantidad = f[3];
+            var conDescuento = Math.round(precio * (1 - f[5] / 100) * 100) / 100;
+            return {
+                codigo: f[0], partnumber: f[0], marca: f[1], descripcion: f[2],
+                unidad: "UND", cantidad: cantidad, precioUnitario: precio,
+                descuento: f[5], importe: Math.round(conDescuento * cantidad * 100) / 100,
+                tipo: "item"
+            };
+        });
+
+        var subtotal = lineas.reduce(function (a, l) { return a + l.importe; }, 0);
+        subtotal = Math.round(subtotal * 100) / 100;
+        var igv = Math.round(subtotal * 0.18 * 100) / 100;
+
+        return {
+            cabecera: { documento: "009-00971087", fecha: "2026-10-02", moneda: moneda },
+            lineas: lineas,
+            productos: lineas,
+            subtotal: subtotal,
+            igv: igv,
+            total: Math.round((subtotal + igv) * 100) / 100
+        };
+    }
+
+    function pintar() {
+        var moneda = document.getElementById("moneda").value;
+        var conFaltantes = document.getElementById("faltantes").checked;
+
+        /* Con la casilla desmarcada se ve como quedaria HOY, solo con lo que el
+           backend devuelve: sin direccion ni atte.
+           Sirve para juzgar si vale la pena pedirlos. */
+        var extra = conFaltantes
+            ? {
+                cliente: {
+                    razonSocial: "SERVICIOS INTERNET Y C.O. S.A.C.",
+                    direccion: "JR. PABLO BERMUDEZ NRO. 150 INT. 11C"
+                },
+                atte: "EDA JOANA RIVERA ESPINOZA",
+                vendedor: "FERNANDO UTANI ZUÑIGA"
+            }
+            : {
+                cliente: { razonSocial: "SERVICIOS INTERNET Y C.O. S.A.C." },
+                vendedor: "FERNANDO UTANI ZUÑIGA"
+            };
+
+        var lienzo = document.getElementById("lienzo");
+        lienzo.innerHTML = "";
+        lienzo.appendChild(CDK.coti.documentoImprimible(armarDoc(moneda), extra));
+    }
+
+    document.getElementById("imprimir")
+        .addEventListener("click", CDK.coti.imprimirDocumento);
+    document.getElementById("moneda").addEventListener("change", pintar);
+    document.getElementById("faltantes").addEventListener("change", pintar);
+
+    pintar();
+})();
+</script>
+</body>
+</html>

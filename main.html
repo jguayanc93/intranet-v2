@@ -2,373 +2,118 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Panel de control - CDK Sistema de Gestión de Ventas">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./styles/main-fixed.css">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>CDK - Panel de Control</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Panel de Control</title>
 </head>
-<body class="bg-gray-50">
-    
-    <!-- NAVBAR -->
-    <nav class="sticky top-0 z-50 bg-white shadow-md border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                
-                <!-- Logo y Marca -->
-                <div class="flex items-center space-x-3">
-                    <button id="toggle-sidebar" class="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i class="fas fa-bars text-gray-700 text-xl"></i>
-                    </button>
-                    <div class="flex items-center space-x-2">
-                        <img src="logotipo.png" alt="Logo CDK" class="h-8 w-8 object-contain">
-                        <h1 class="text-xl font-bold text-indigo-600">CDK</h1>
-                    </div>
-                </div>
 
-                <!-- Usuario y Acciones -->
-                <div class="flex items-center space-x-4">
-                    <!-- Notificaciones -->
-                    <button id="notifications-btn" class="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                        <i class="fas fa-bell text-lg"></i>
-                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    </button>
+<!-- data-shell="inicio": monta el shell sin módulo activo y sin botón de volver.
+     El navbar, el sidebar y la barra inferior los inyecta core/cdk-shell.js. -->
+<body data-shell="inicio" data-titulo="Panel de Control">
 
-                    <!-- Menú usuario -->
-                    <div class="relative">
-                        <button id="user-menu-btn" class="flex items-center space-x-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <span class="hidden sm:inline text-sm font-medium text-gray-700" id="user-name">Usuario</span>
-                            <i class="fas fa-chevron-down text-gray-600 text-xs hidden sm:inline"></i>
-                        </button>
+<!-- El lienzo va de borde a borde: el fondo que sube el usuario desde
+     Configuración se ve a todo el ancho. El contenido de dentro lo sigue
+     centrando .cdk-pagina. -->
+<div class="cdk-lienzo" id="lienzo">
+    <div class="cdk-pagina">
+        <header class="cdk-cabecera">
+            <h1 class="cdk-cabecera__titulo">Bienvenido</h1>
+            <p class="cdk-cabecera__sub">Accede a los módulos habilitados para tu cuenta</p>
+        </header>
 
-                        <!-- Dropdown menú -->
-                        <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 border border-gray-200">
-                            <div class="px-4 py-2 border-b border-gray-200">
-                                <p class="text-sm font-medium text-gray-900" id="dropdown-user-name">Usuario</p>
-                                <p class="text-xs text-gray-500 mt-1">Ver perfil</p>
-                            </div>
-                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-user-circle mr-2 text-gray-400"></i>
-                                Mi Perfil
-                            </a>
-                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                                <i class="fas fa-cog mr-2 text-gray-400"></i>
-                                Configuración
-                            </a>
-                            <hr class="my-1">
-                            <button id="sesion-terminada" class="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                                <i class="fas fa-sign-out-alt mr-2"></i>
-                                Cerrar Sesión
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div class="flex">
-        
-        <!-- SIDEBAR -->
-        <aside id="sidebar" class="hidden md:flex md:w-64 md:min-h-screen bg-gray-900 text-white flex-col transition-all duration-300 fixed md:relative top-16 md:top-0 left-0 w-64 h-[calc(100vh-4rem)] md:h-auto z-40">
-
-            <!-- Lista de módulos en sidebar -->
-            <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-                <h3 class="text-xs uppercase font-semibold text-gray-400 px-3 mb-4 tracking-wider">Módulos</h3>
-                <ul id="sidebar-modules" class="space-y-1">
-                    <!-- Se llena dinámicamente -->
-                </ul>
-            </nav>
-
-            <!-- Footer sidebar -->
-            <div class="p-4 border-t border-gray-800">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-bold">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white truncate" id="sidebar-user-name">Usuario</p>
-                        <p class="text-xs text-gray-400">Conectado</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- CONTENIDO PRINCIPAL -->
-        <main style="flex: 1; width: 100%; display: flex; flex-direction: column;">
-            <!-- Header de bienvenida -->
-            <div style="background: linear-gradient(to right, #4f46e5, #2563eb); color: white; padding: 2rem; flex-shrink: 0;">
-                <h2 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 0.5rem;">Bienvenido al Panel de Control</h2>
-                <p style="color: #c7d2fe;">Accede rápidamente a todos los módulos del sistema</p>
-            </div>
-
-            <!-- Grid de módulos -->
-            <div style="flex: 1; width: 100%; padding: 1.5rem; overflow-y: auto;">
-                <div id="modules-grid">
-                    <!-- Los módulos se cargan dinámicamente aquí -->
-                </div>
-            </div>
-        </main>
+        <div id="modulos"></div>
     </div>
+</div>
 
-    <!-- TOAST DE NOTIFICACIONES -->
-    <div id="toast-container" class="fixed top-20 right-6 z-50 space-y-3 pointer-events-none"></div>
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ajustes.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
 
-    <!-- SCRIPTS -->
-    <script src="/caminos/rutas.js"></script>
-    <script src="/styles/main-ui.js"></script>
-    <script src="/js/login/logout.js"></script>
-    <script>
-        // Manejar acceso y cargar módulos
-        document.addEventListener("DOMContentLoaded", function() {
-            manejar_acceso();
-            setupUIInteractions();
+<script>
+(function () {
+    "use strict";
+
+    var destino = document.getElementById("modulos");
+
+    CDK.ajustes.aplicarFondo(document.getElementById("lienzo"));
+
+    function pintar(modulos) {
+        var claves = CDK.catalogo.ordenar(Object.keys(modulos || {}));
+
+        if (!claves.length) {
+            CDK.estados.vacio(destino, "Tu cuenta no tiene módulos habilitados. Contacta con sistemas.");
+            return;
+        }
+
+        var lista = CDK.el("ul", { clase: "cdk-tarjetas" });
+
+        claves.forEach(function (clave) {
+            var meta = CDK.catalogo.modulo(clave);
+
+            lista.appendChild(CDK.el("li", {}, [
+                CDK.el("a", { href: CDK.catalogo.hub(clave), clase: "cdk-tarjeta" }, [
+                    CDK.el("span", { clase: "cdk-tarjeta__icono" }, [CDK.svg(meta.icono, "cdk-icono")]),
+                    CDK.el("span", { clase: "cdk-tarjeta__titulo", texto: meta.etiqueta }),
+                    CDK.el("span", { clase: "cdk-tarjeta__texto", texto: modulos[clave] || "" }),
+                    CDK.el("span", { clase: "cdk-tarjeta__pie", texto: "Acceder →" })
+                ])
+            ]));
         });
 
-        function manejar_acceso() {
-            console.log("🔄 Iniciando petición de acceso...");
-            console.log("URL:", rutavendedor);
-            
-            let peticion = new Request(rutavendedor, { 
-                method: "GET", 
-                mode: "cors", 
-                credentials: "include" 
-            });
+        destino.innerHTML = "";
+        destino.appendChild(lista);
+    }
 
-            fetch(peticion)
-                .then(resultado => {
-                    console.log("📤 Response Status:", resultado.status, resultado.statusText);
-                    
-                    if (!resultado.ok) {
-                        throw new Error(`HTTP Error: ${resultado.status}`);
-                    }
-                    return resultado.json();
-                })
-                .then(resultado => {
-                    console.log("✅ JSON recibido:", resultado);
-                    
-                    // Si es string, parsear
-                    let decodificar = typeof resultado === 'string' ? JSON.parse(resultado) : resultado;
-                    console.log("✅ Datos procesados:", decodificar);
-                    
-                    return decodificar;
-                })
-                .then(resultado => {
-                    console.log("📚 Cargando módulos...");
-                    modulos_dinamicos(resultado);
-                    mostrarToast("Módulos cargados exitosamente", "success");
-                })
-                .catch(err => {
-                    console.error("❌ Error:", err);
-                    mostrarToast(`Error al cargar módulos: ${err.message}`, "error");
-                    
-                    // Mostrar error en consola con detalles
-                    console.error("Detalles del error:", {
-                        message: err.message,
-                        stack: err.stack,
-                        url: rutavendedor
-                    });
-                });
-        }
+    function cargar() {
+        CDK.estados.cargando(destino, "Cargando módulos…");
 
-        function modulos_dinamicos(objmodulos) {
-            const modulosGrid = document.getElementById("modules-grid");
-            const sidebarModules = document.getElementById("sidebar-modules");
-            
-            const desmenuzar = Object.keys(objmodulos);
-            
-            console.log("📊 Módulos encontrados:", desmenuzar);
-            console.log("📊 Total de módulos:", desmenuzar.length);
-
-            if (desmenuzar.length === 0) {
-                console.warn("⚠️ No hay módulos para mostrar");
-                mostrarToast("No hay módulos disponibles", "warning");
-                return;
-            }
-
-            // Limpiar contenedores
-            modulosGrid.innerHTML = "";
-            sidebarModules.innerHTML = "";
-
-            // Crear módulos
-            desmenuzar.forEach((modulo, index) => {
-                try {
-                    console.log(`  ➕ Cargando módulo: ${modulo}`);
-                    
-                    // Card para grid
-                    const card = crearCardModulo(modulo, objmodulos[modulo], index);
-                    modulosGrid.appendChild(card);
-
-                    // Item para sidebar
-                    const sidebarItem = crearItemSidebar(modulo, objmodulos[modulo]);
-                    sidebarModules.appendChild(sidebarItem);
-                } catch (error) {
-                    console.error(`❌ Error al crear módulo ${modulo}:`, error);
+        // El shell ya pidió /vendedor; esta llamada reutiliza esa misma promesa
+        // o la caché, así que no genera una segunda petición.
+        CDK.permisos.modulos()
+            .then(pintar)
+            .catch(function (err) {
+                if (!CDK.http.esError(err)) {
+                    CDK.estados.error(destino, err, cargar);
+                    return;
                 }
-            });
-            
-            console.log("✅ Todos los módulos cargados correctamente");
-        }
 
-        function crearCardModulo(modulo, descripcion, index) {
-            const card = document.createElement("div");
-            card.className = `module-card`;
-            card.style.animationDelay = `${index * 0.05}s`;
-            card.style.opacity = '0';
-            card.style.animation = `fadeIn 0.5s ease-out ${index * 0.05}s forwards`;
+                // Ya redirige al login por su cuenta.
+                if (err.status === 401) return;
 
-            // Obtener icono basado en módulo
-            const icono = obtenerIconoModulo(modulo);
+                /* Estos dos no son culpa de quien entra ni se arreglan
+                   reintentando: su tipo de vendedor no tiene ruta en el
+                   direccionador, o su grupo no tiene mapa de modulos. Decirle
+                   "reintenta" lo deja pulsando un boton que nunca va a
+                   funcionar; decirle a quien avisar, no. */
+                var deConfiguracion =
+                    err.status === 404 ||
+                    (err.status === 400 && err.datos && err.datos.status === "no identificado");
 
-            card.innerHTML = `
-                <div style="margin-bottom: 1rem; display: flex; align-items: flex-start; justify-content: space-between;">
-                    <div style="width: 3rem; height: 3rem; background-color: #e0e7ff; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; color: #4f46e5; font-size: 1.25rem;">
-                        ${icono}
-                    </div>
-                </div>
-                
-                <h3 style="font-size: 1.125rem; font-weight: bold; margin-bottom: 0.5rem;">${modulo.toUpperCase()}</h3>
-                <p style="flex-grow: 1; margin-bottom: 1rem; font-size: 0.875rem;">${descripcion}</p>
-                
-                <div style="display: flex; align-items: center; font-size: 0.875rem; font-weight: 500;">
-                    <span>Acceder</span>
-                    <i class="fas fa-chevron-right" style="margin-left: 0.25rem; font-size: 0.75rem;"></i>
-                </div>
-            `;
-
-            card.addEventListener("click", () => {
-                window.location.href = `${modulo}.html`;
-            });
-
-            return card;
-        }
-
-        function crearItemSidebar(modulo, descripcion) {
-            const item = document.createElement("li");
-            const icono = obtenerIconoModulo(modulo);
-            
-            item.innerHTML = `
-                <a href="${modulo}.html" class="flex items-center px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors group">
-                    <span class="text-lg w-6 text-center text-gray-400 group-hover:text-indigo-400">${icono}</span>
-                    <span class="ml-3 text-sm font-medium text-gray-300 group-hover:text-white">${modulo.toUpperCase()}</span>
-                </a>
-            `;
-
-            return item;
-        }
-
-        function obtenerIconoModulo(modulo) {
-            const iconos = {
-                "cotizacion": '<i class="fas fa-file-invoice-dollar"></i>',
-                "pedidos": '<i class="fas fa-file-invoice-dollar"></i>',
-                "factura": '<i class="fas fa-receipt"></i>',
-                "cuota": '<i class="fas fa-chart-pie"></i>',
-                "promocion": '<i class="fas fa-gift"></i>',
-                "listas": '<i class="fas fa-list"></i>',
-                "pedidos": '<i class="fas fa-shopping-cart"></i>',
-                "reportes": '<i class="fas fa-chart-bar"></i>',
-                "despacho": '<i class="fas fa-truck"></i>',
-            };
-            return iconos[modulo] || '<i class="fas fa-box"></i>';
-        }
-
-        function filtrarModulos(busqueda) {
-            const cards = document.querySelectorAll(".module-card");
-            const busquedaLower = busqueda.toLowerCase();
-
-            cards.forEach(card => {
-                const titulo = card.querySelector("h3").textContent.toLowerCase();
-                const descripcion = card.querySelector("p").textContent.toLowerCase();
-                
-                if (titulo.includes(busquedaLower) || descripcion.includes(busquedaLower)) {
-                    card.style.display = "block";
-                    card.classList.add("animate-fadeIn");
-                } else {
-                    card.style.display = "none";
+                if (deConfiguracion) {
+                    CDK.estados.error(
+                        destino,
+                        "Tu usuario no tiene módulos asignados todavía. " +
+                        "Avisa al equipo de sistemas: no es algo que puedas resolver desde aquí.",
+                        null
+                    );
+                    return;
                 }
+
+                CDK.estados.error(destino, err, cargar);
             });
-        }
+    }
 
-        function mostrarToast(mensaje, tipo = "success") {
-            const container = document.getElementById("toast-container");
-            const toast = document.createElement("div");
-            
-            const colores = {
-                success: "bg-green-500",
-                error: "bg-red-500",
-                warning: "bg-yellow-500",
-                info: "bg-blue-500"
-            };
-
-            const iconos = {
-                success: "fa-check-circle",
-                error: "fa-times-circle",
-                warning: "fa-exclamation-circle",
-                info: "fa-info-circle"
-            };
-
-            toast.className = `
-                ${colores[tipo] || colores.info} 
-                text-white px-6 py-3 rounded-lg shadow-lg 
-                animate-fadeIn
-                pointer-events-auto
-                mb-3
-            `;
-            toast.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    <i class="fas ${iconos[tipo] || iconos.info}"></i>
-                    <span>${mensaje}</span>
-                </div>
-            `;
-
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove("animate-fadeIn");
-                toast.classList.add("animate-fadeOut");
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function setupUIInteractions() {
-            // Toggle sidebar en móvil
-            const toggleBtn = document.getElementById("toggle-sidebar");
-            const sidebar = document.getElementById("sidebar");
-            
-            if (toggleBtn) {
-                toggleBtn.addEventListener("click", () => {
-                    sidebar.classList.toggle("hidden");
-                });
-            }
-
-            // Menú usuario
-            const userMenuBtn = document.getElementById("user-menu-btn");
-            const userDropdown = document.getElementById("user-dropdown");
-
-            if (userMenuBtn) {
-                userMenuBtn.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    userDropdown.classList.toggle("hidden");
-                });
-
-                document.addEventListener("click", () => {
-                    userDropdown.classList.add("hidden");
-                });
-            }
-
-            // Cerrar sidebar al hacer click en un módulo
-            const moduleLinks = document.querySelectorAll("#sidebar-modules a");
-            moduleLinks.forEach(link => {
-                link.addEventListener("click", () => {
-                    sidebar.classList.add("hidden");
-                });
-            });
-        }
-    </script>
+    cargar();
+})();
+</script>
 </body>
 </html>

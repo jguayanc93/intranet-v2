@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Quitar promociones - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Quitar promociones</title>
+</head>
+
+<body data-modulo="promocion" data-titulo="Quitar Promociones">
+
+<div class="cdk-pagina">
+
+    <!-- ============ ELEGIR LA COTIZACIÓN ============ -->
+    <section class="cdk-seccion" id="seccion-elegir">
+        <h2 class="cdk-seccion__titulo">Quitar promociones de una cotización</h2>
+        <p class="cdk-seccion__sub">
+            Elige una cotización y marca qué líneas de promoción quitar. Puedes quitar
+            algunas o todas.
+        </p>
+
+        <div class="cdk-acciones-fila" role="group" aria-label="Periodo">
+            <button type="button" id="btn-hoy" class="cdk-boton cdk-boton--primario" aria-pressed="true">
+                Hoy
+            </button>
+            <button type="button" id="btn-dos-dias" class="cdk-boton cdk-boton--suave" aria-pressed="false">
+                2 días
+            </button>
+        </div>
+
+        <div id="lista-cotis" style="margin:12px 0"></div>
+
+        <details class="cdk-plegable">
+            <summary class="cdk-plegable__titulo">O escribe el número</summary>
+            <form id="form-numero" class="cdk-campo" style="margin-top:12px">
+                <label class="cdk-campo__etiqueta" for="ncoti">Número de cotización</label>
+                <input type="search" id="ncoti" class="cdk-entrada"
+                       inputmode="numeric" autocomplete="off" placeholder="Ej: 009-00970435">
+                <p class="cdk-campo__ayuda">Con su serie, como aparece en la lista.</p>
+                <button type="submit" class="cdk-boton cdk-boton--primario" style="margin-top:10px">
+                    Ver sus promociones
+                </button>
+            </form>
+        </details>
+    </section>
+
+    <!-- ============ LAS LÍNEAS CON PROMOCIÓN ============ -->
+    <section class="cdk-seccion hidden" id="seccion-items">
+        <div class="cdk-paso__cabecera">
+            <button type="button" id="btn-volver" class="cdk-navbar__atras" aria-label="Elegir otra cotización">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+            </button>
+            <h2 class="cdk-paso__titulo" id="titulo-coti">Cotización</h2>
+        </div>
+
+        <p class="cdk-pista" id="sub-coti" style="margin:0 0 14px"></p>
+
+        <div class="cdk-acciones-fila hidden" id="acciones-marcar" style="margin-bottom:12px">
+            <button type="button" id="btn-todas" class="cdk-boton cdk-boton--suave">
+                Marcar todas
+            </button>
+            <button type="button" id="btn-ninguna" class="cdk-boton cdk-boton--suave">
+                Ninguna
+            </button>
+        </div>
+
+        <div id="items"></div>
+
+        <div class="cdk-acciones-fila hidden" id="acciones" style="margin-top:16px">
+            <button type="button" id="btn-quitar" class="cdk-boton cdk-boton--peligro">
+                Quitar
+            </button>
+        </div>
+
+        <div id="resultado" style="margin-top:12px"></div>
+    </section>
+
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/cotizacion/lista_dia.js"></script>
+<script src="/js/promos/quitar.js"></script>
+</body>
+</html>

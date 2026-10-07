@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Modificar factura - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Modificar factura</title>
+</head>
+
+<body data-modulo="factura" data-titulo="Modificar Factura">
+
+<div class="cdk-pagina">
+
+    <!-- ============ BUSCAR ============ -->
+    <section class="cdk-seccion" id="seccion-buscar">
+        <h2 class="cdk-seccion__titulo">Modificar una factura</h2>
+        <p class="cdk-seccion__sub">
+            Busca la factura una vez y cambia lo que haga falta: despacho, transportista,
+            atención, dirección de entrega, observación y orden de compra.
+        </p>
+
+        <form id="form-buscar">
+            <div class="cdk-campo">
+                <label class="cdk-campo__etiqueta" for="doc">Número de documento</label>
+                <input type="search" name="doc" id="doc"
+                       class="cdk-entrada"
+                       autocomplete="off"
+                       placeholder="Ej: F009-0649171">
+                <p class="cdk-campo__ayuda">Con su serie. Solo tus facturas y boletas, y
+                    mientras no tengan guía emitida.</p>
+            </div>
+
+            <button type="submit" id="btn-buscar" class="cdk-boton cdk-boton--primario">
+                Buscar
+            </button>
+        </form>
+
+        <div id="buscando" style="margin-top:12px"></div>
+    </section>
+
+    <!-- ============ LA FICHA ============ -->
+    <section class="cdk-seccion hidden" id="seccion-ficha">
+        <div class="cdk-paso__cabecera">
+            <button type="button" id="btn-volver" class="cdk-navbar__atras" aria-label="Buscar otra factura">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"/>
+                </svg>
+            </button>
+            <h2 class="cdk-paso__titulo" id="titulo-doc">Factura</h2>
+        </div>
+
+        <p class="cdk-pista" id="sub-ficha" style="margin:0 0 14px"></p>
+
+        <!-- Una fila por campo. Las que el backend dice que esta persona no
+             puede cambiar salen de solo lectura, no desaparecen: que no se
+             pueda tocar no significa que no interese verlo. -->
+        <div id="campos"></div>
+    </section>
+
+</div>
+
+<!-- Panel de búsqueda para los campos con muchas opciones. Mismo markup que
+     el buscador de clientes de Crear cotización. -->
+<div id="panel-busca" class="cdk-panel hidden" role="dialog" aria-modal="true" aria-labelledby="panel-titulo">
+    <div class="cdk-panel__fondo" id="panel-fondo"></div>
+
+    <div class="cdk-panel__caja">
+        <div class="cdk-panel__cabecera">
+            <h3 class="cdk-panel__titulo" id="panel-titulo">Elegir</h3>
+            <button id="panel-cerrar" type="button" class="cdk-panel__cerrar" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                     stroke-linecap="round" class="cdk-icono" aria-hidden="true">
+                    <path d="M6 18 18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="cdk-panel__cuerpo">
+            <div class="cdk-busca">
+                <svg class="cdk-busca__lupa" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+                    <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"/>
+                </svg>
+                <input type="search" id="panel-campo" class="cdk-entrada"
+                       autocomplete="off" enterkeyhint="search">
+            </div>
+
+            <p id="panel-pista" class="cdk-pista" style="margin:8px 0 10px"></p>
+            <div id="panel-lista"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/factura/campos.js"></script>
+</body>
+</html>

@@ -1,116 +1,150 @@
-/* Toast animations */
+/**
+ * factura-components.css — Componentes de las pantallas de factura.
+ *
+ * Antes este archivo NO PRODUCÍA NINGÚN ESTILO. Sus reglas usaban `@apply`, que
+ * es una directiva de Tailwind y necesita un paso de compilación: el CDN del
+ * navegador escanea el DOM y genera utilidades, pero no procesa un `.css`
+ * enlazado con `<link>`. El resultado era que las ocho páginas que lo cargan
+ * mostraban los inputs sin borde, las tarjetas sin fondo y los botones planos.
+ *
+ * Reescrito como CSS plano, que es lo único que el navegador va a leer aquí.
+ *
+ * Se conservan los mismos nombres de clase para no tocar el markup de las ocho
+ * páginas. Las utilidades de Tailwind que las acompañan en el HTML
+ * -`flex-1`, `bg-gray-50`, `hover:bg-indigo-100`...- las sigue generando el CDN
+ * en tiempo de ejecución; esto solo repone lo que el `@apply` prometía.
+ *
+ * Nueve clases más -card, btn-primary, btn-secondary, btn-sm, grid-responsive y
+ * las cuatro de empty-state- se retiraron: no las usa ninguna página. Estaban
+ * escritas para un diseño que no llegó a existir, y como tampoco producían nada
+ * nadie notó que sobraban.
+ */
+
+/* ---------------------------------------------------------------
+ * Animaciones
+ *
+ * Estas sí funcionaban: son CSS puro y no dependían de Tailwind.
+ * ------------------------------------------------------------- */
 @keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(100%); }
+    to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideOutRight {
-    from {
-        opacity: 1;
-        transform: translateX(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateX(100%);
-    }
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(100%); }
 }
 
-.animate-slideInRight {
-    animation: slideInRight 0.3s ease-out;
-}
-
-.animate-slideOutRight {
-    animation: slideOutRight 0.3s ease-in forwards;
-}
-
-/* Loading spinner */
 @keyframes spin {
-    0% { transform: rotate(0deg); }
+    0%   { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-/* Fade animations */
 @keyframes fadeIn {
     from { opacity: 0; }
-    to { opacity: 1; }
+    to   { opacity: 1; }
 }
 
-.animate-fadeIn {
-    animation: fadeIn 0.3s ease;
+.animate-slideInRight  { animation: slideInRight .3s ease-out; }
+.animate-slideOutRight { animation: slideOutRight .3s ease-in forwards; }
+.animate-spin          { animation: spin 1s linear infinite; }
+.animate-fadeIn        { animation: fadeIn .3s ease; }
+
+/* Quien prefiera no ver movimiento tampoco debería verlo aquí. */
+@media (prefers-reduced-motion: reduce) {
+    .animate-slideInRight,
+    .animate-slideOutRight,
+    .animate-spin,
+    .animate-fadeIn {
+        animation: none;
+    }
 }
 
-/* Form elements */
+/* ---------------------------------------------------------------
+ * Campos de formulario
+ * ------------------------------------------------------------- */
 .input-field {
-    @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all;
+    box-sizing: border-box;
+    width: 100%;
+    /* 44 px de alto: por debajo de eso el dedo falla, y estas pantallas se usan
+       sobre todo en el móvil. */
+    min-height: 44px;
+    padding: 10px 16px;
+    font: inherit;
+    /* 16 px exactos: con menos, iOS hace zoom al enfocar el campo y descoloca
+       la página entera. */
+    font-size: 16px;
+    color: #111827;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.input-field::placeholder { color: #9ca3af; }
+
+.input-field:focus {
+    outline: none;
+    border-color: transparent;
+    /* Dos sombras: el anillo de color y un blanco por dentro que lo separa del
+       borde, que es lo que hacía el `focus:ring-2` original. */
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #6366f1;
 }
 
 .input-field:disabled {
-    @apply bg-gray-50 cursor-not-allowed;
+    background: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
 }
 
-/* Cards */
-.card {
-    @apply bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg;
-}
-
-.card-header {
-    @apply bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-white;
-}
-
-.card-body {
-    @apply p-6 space-y-4;
-}
-
-/* Buttons */
-.btn-primary {
-    @apply w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
-}
-
-.btn-secondary {
-    @apply w-full bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2.5 rounded-lg transition-colors;
-}
-
-.btn-sm {
-    @apply inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
-}
-
-.btn-icon {
-    @apply h-10 w-10 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors;
-}
-
-/* Label */
 .label {
-    @apply block text-sm font-medium text-gray-700 mb-2;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
 }
 
-/* Grid responsive */
-.grid-responsive {
-    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+/* ---------------------------------------------------------------
+ * Tarjetas
+ *
+ * Las páginas usan la cabecera y el cuerpo por separado, dentro de un
+ * contenedor que ya trae sus propias utilidades. Por eso no hay `.card`.
+ * ------------------------------------------------------------- */
+.card-header {
+    padding: 16px 24px;
+    color: #fff;
+    background: linear-gradient(to right, #6366f1, #4f46e5);
 }
 
-/* Empty state */
-.empty-state {
-    @apply flex flex-col items-center justify-center py-16 px-4 text-center;
+.card-body { padding: 24px; }
+
+/* `space-y-4` del original: separación entre los hijos, sin margen suelto
+   arriba ni abajo del bloque. */
+.card-body > * + * { margin-top: 16px; }
+
+/* ---------------------------------------------------------------
+ * Botón de icono
+ * ------------------------------------------------------------- */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    color: #374151;
+    background: #f3f4f6;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color .15s, color .15s;
 }
 
-.empty-state-icon {
-    @apply mx-auto h-12 w-12 text-gray-400;
-}
+.btn-icon:hover { background: #e5e7eb; }
 
-.empty-state-title {
-    @apply mt-4 text-lg font-medium text-gray-900;
-}
-
-.empty-state-text {
-    @apply mt-2 text-sm text-gray-500;
+.btn-icon:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #6366f1;
 }

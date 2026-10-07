@@ -1,0 +1,15 @@
+# Dependencias de las pruebas. Son 26 MB de jsdom y se reinstalan con
+# `npm install` dentro de dev/pruebas: no tienen por qué viajar en el
+# repositorio.
+node_modules/
+
+# Lo que dejan los editores y el sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Registros y temporales sueltos
+*.log
+npm-debug.log*

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Configuración - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Configuración</title>
+</head>
+
+<body data-shell="inicio" data-titulo="Configuración" data-volver="/main.html">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Configuración</h1>
+        <p class="cdk-cabecera__sub">Ajustes de tu cuenta en esta intranet</p>
+    </header>
+
+    <!-- ===== APARIENCIA ===== -->
+    <section class="cdk-seccion">
+        <h2 class="cdk-seccion__titulo">Fondo del panel</h2>
+        <p class="cdk-seccion__sub">
+            Imagen que se ve detrás de las tarjetas del panel principal.
+            Se guarda solo en este navegador, así que no se verá si entras desde otro equipo.
+        </p>
+
+        <div class="cdk-campo">
+            <span class="cdk-campo__etiqueta">Vista previa</span>
+            <div class="cdk-previa" id="previa">
+                <div class="cdk-previa__contenido">
+                    <div class="cdk-previa__titulo">Bienvenido</div>
+                    <div class="cdk-previa__sub">Accede a los módulos habilitados para tu cuenta</div>
+                    <div class="cdk-previa__ficha">Cotización</div>
+                </div>
+            </div>
+            <p class="cdk-campo__ayuda" id="info-imagen"></p>
+        </div>
+
+        <div class="cdk-campo">
+            <label class="cdk-campo__etiqueta" for="archivo">Imagen</label>
+
+            <input type="file" id="archivo" class="cdk-archivo"
+                   accept="image/jpeg,image/png,image/webp">
+
+            <button type="button" class="cdk-soltar" id="soltar">
+                <svg class="cdk-soltar__icono" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+                </svg>
+                <span id="soltar-texto">Toca para elegir una imagen, o arrástrala aquí</span>
+            </button>
+
+            <p class="cdk-campo__ayuda">
+                JPG, PNG o WebP, hasta 12&nbsp;MB. Se ajusta automáticamente a 2560&nbsp;px de ancho
+                y a 1&nbsp;MB como máximo, buscando la mejor calidad que quepa.
+            </p>
+        </div>
+
+        <div class="cdk-campo">
+            <label class="cdk-campo__etiqueta" for="atenuar">Atenuar la imagen</label>
+            <div class="cdk-rango__fila">
+                <input type="range" id="atenuar" class="cdk-rango" min="0" max="90" step="5">
+                <span class="cdk-rango__valor" id="atenuar-valor">45 %</span>
+            </div>
+            <p class="cdk-campo__ayuda">
+                Aclara la imagen para que los títulos se lean bien encima. Cuánto hace falta
+                depende de lo oscura que sea la foto.
+            </p>
+        </div>
+
+        <div class="cdk-acciones-fila">
+            <button type="button" class="cdk-boton cdk-boton--primario" id="btn-guardar" disabled>Guardar</button>
+            <button type="button" class="cdk-boton cdk-boton--suave" id="btn-quitar">Quitar fondo</button>
+        </div>
+    </section>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ajustes.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script>
+(function () {
+    "use strict";
+
+    var previa      = document.getElementById("previa");
+    var entrada     = document.getElementById("archivo");
+    var soltar      = document.getElementById("soltar");
+    var soltarTexto = document.getElementById("soltar-texto");
+    var atenuar     = document.getElementById("atenuar");
+    var atenuarVal  = document.getElementById("atenuar-valor");
+    var btnGuardar  = document.getElementById("btn-guardar");
+    var btnQuitar   = document.getElementById("btn-quitar");
+    var infoImagen  = document.getElementById("info-imagen");
+
+    // Imagen elegida pero aún sin guardar.
+    var pendiente = null;
+
+    /* --- pintado de la vista previa --------------------------------- */
+    function refrescar() {
+        var ajustes = CDK.ajustes.leer();
+        var imagen = pendiente ? pendiente.dataUrl : ajustes.fondo;
+
+        previa.style.setProperty("--cdk-fondo-velo", (atenuar.value / 100).toFixed(2));
+        atenuarVal.textContent = atenuar.value + " %";
+
+        if (imagen) {
+            previa.style.backgroundImage = 'url("' + imagen + '")';
+        } else {
+            previa.style.removeProperty("background-image");
+        }
+
+        btnQuitar.disabled = !ajustes.fondo && !pendiente;
+
+        if (pendiente) {
+            infoImagen.textContent =
+                "Sin guardar · " + pendiente.ancho + "×" + pendiente.alto + " px · " +
+                Math.round(CDK.ajustes.bytesDe(pendiente.dataUrl) / 1024) + " KB";
+        } else if (ajustes.fondo) {
+            infoImagen.textContent = "Guardada · " + CDK.ajustes.pesoFondo() + " KB";
+        } else {
+            infoImagen.textContent = "Sin imagen: el panel usa el fondo por defecto.";
+        }
+    }
+
+    /* --- elegir archivo --------------------------------------------- */
+    function procesar(archivo) {
+        if (!archivo) return;
+
+        soltarTexto.textContent = "Procesando…";
+
+        // Se reescala ya, para que la vista previa sea exactamente la imagen
+        // que se va a guardar y no una versión a tamaño completo.
+        CDK.ajustes.preparar(archivo)
+            .then(function (resultado) {
+                pendiente = resultado;
+                soltarTexto.textContent = archivo.name;
+                btnGuardar.disabled = false;
+                refrescar();
+            })
+            .catch(function (err) {
+                soltarTexto.textContent = "Toca para elegir una imagen, o arrástrala aquí";
+                CDK.toast(err.message, "error");
+            });
+    }
+
+    soltar.addEventListener("click", function () { entrada.click(); });
+
+    entrada.addEventListener("change", function () {
+        procesar(entrada.files && entrada.files[0]);
+    });
+
+    ["dragenter", "dragover"].forEach(function (evento) {
+        soltar.addEventListener(evento, function (ev) {
+            ev.preventDefault();
+            soltar.classList.add("es-activa");
+        });
+    });
+
+    ["dragleave", "drop"].forEach(function (evento) {
+        soltar.addEventListener(evento, function (ev) {
+            ev.preventDefault();
+            soltar.classList.remove("es-activa");
+        });
+    });
+
+    soltar.addEventListener("drop", function (ev) {
+        procesar(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]);
+    });
+
+    /* --- atenuación -------------------------------------------------- */
+    atenuar.addEventListener("input", function () {
+        refrescar();
+        btnGuardar.disabled = false;
+    });
+
+    /* --- guardar y quitar -------------------------------------------- */
+    btnGuardar.addEventListener("click", function () {
+        btnGuardar.disabled = true;
+
+        var pasos = [CDK.ajustes.fijar("fondoAtenuar", Number(atenuar.value))];
+        if (pendiente) pasos.push(CDK.ajustes.fijar("fondo", pendiente.dataUrl));
+
+        Promise.all(pasos)
+            .then(function () {
+                pendiente = null;
+                soltarTexto.textContent = "Toca para elegir una imagen, o arrástrala aquí";
+                CDK.toast("Ajustes guardados", "exito");
+                refrescar();
+            })
+            .catch(function (err) {
+                btnGuardar.disabled = false;
+                CDK.toast(err.message, "error");
+            });
+    });
+
+    btnQuitar.addEventListener("click", function () {
+        CDK.modal.confirmar({
+            titulo: "¿Quitar el fondo?",
+            mensaje: "El panel volverá a su fondo por defecto.",
+            confirmar: "Quitar",
+            peligro: true
+        }).then(function (si) {
+            if (!si) return;
+
+            pendiente = null;
+            soltarTexto.textContent = "Toca para elegir una imagen, o arrástrala aquí";
+            entrada.value = "";
+
+            CDK.ajustes.quitarFondo().then(function () {
+                CDK.toast("Fondo quitado", "exito");
+                btnGuardar.disabled = true;
+                refrescar();
+            });
+        });
+    });
+
+    /* --- estado inicial ---------------------------------------------- */
+    atenuar.value = CDK.ajustes.obtener("fondoAtenuar");
+    refrescar();
+    btnGuardar.disabled = true;
+})();
+</script>
+</body>
+</html>

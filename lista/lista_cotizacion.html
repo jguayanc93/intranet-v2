@@ -3,101 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <title>Lista de Cotizaciones</title>
-    <style>
-        .spinner {
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #4f46e5;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .card-item {
-            transition: all 0.3s ease;
-        }
-        .card-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-        .fade-in {
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-    </style>
+    <meta name="description" content="Cotizaciones - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Cotizaciones</title>
 </head>
-<body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Cotizaciones</h1>
-                    <p class="text-sm text-gray-500 mt-1">Gestiona todas tus cotizaciones</p>
-                </div>
-                <a href="/main.html" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-base font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
-                    ← Volver
-                </a>
-            </div>
-        </div>
-    </header>
 
-    <!-- Filtro por fecha -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-            <div class="flex flex-col sm:flex-row sm:items-end gap-4">
-                <div class="flex-1">
-                    <label for="fecha-dia" class="block text-sm font-medium text-gray-700 mb-2">Filtrar por fecha</label>
-                    <input type="date" id="fecha-dia" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
-                </div>
-                <button id="btn-limpiar" class="w-full sm:w-auto px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-900 rounded-lg font-medium transition-colors">
-                    Limpiar filtro
-                </button>
-            </div>
-        </div>
-    </div>
+<body data-modulo="listas" data-titulo="Cotizaciones">
 
-    <!-- Grid de cotizaciones -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="loader" class="flex justify-center py-12">
-            <div class="spinner"></div>
+<div class="cdk-pagina">
+
+    <section class="cdk-seccion">
+        <h2 class="cdk-seccion__titulo">Cotizaciones</h2>
+        <p class="cdk-seccion__sub">Todas tus cotizaciones, la última primero.</p>
+
+        <!-- Sin fecha se piden todas; con fecha, las de ese día. Son dos rutas
+             distintas del backend, no un parámetro. -->
+        <div class="cdk-campo">
+            <label class="cdk-campo__etiqueta" for="fecha-dia">Filtrar por fecha</label>
+            <input type="date" id="fecha-dia" class="cdk-entrada">
         </div>
 
-        <div id="ncotis" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
-
-        <!-- Estado vacío -->
-        <div id="empty-state" class="hidden text-center py-16">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <h3 class="mt-4 text-lg font-medium text-gray-900">No hay cotizaciones</h3>
-            <p class="mt-2 text-sm text-gray-500">Intenta cambiar los filtros o crear una nueva cotización</p>
+        <div class="cdk-acciones-fila">
+            <button type="button" id="btn-limpiar" class="cdk-boton cdk-boton--suave">
+                Quitar el filtro
+            </button>
         </div>
 
-        <!-- Estado error -->
-        <div id="error-state" class="hidden">
-            <div class="rounded-lg bg-red-50 p-6 text-center">
-                <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h3 class="mt-4 text-lg font-medium text-red-900">Error al cargar</h3>
-                <p class="mt-2 text-sm text-red-700" id="error-message">Ocurrió un error inesperado. Intenta nuevamente.</p>
-                <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
-                    Reintentar
-                </button>
-            </div>
-        </div>
-    </main>
-    
-    <script src="/caminos/rutas.js"></script>
-    <script src="/js/listas/cotizacion.js"></script>
+        <div id="ncotis" style="margin-top:12px"></div>
+    </section>
+
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Las tres listas comparten implementación: solo cambia lo que se declara. -->
+<script src="/js/listas/lista.js"></script>
+<script>
+CDK.listo(function () {
+    CDK.listas.montar({
+        destino:      "ncotis",
+        plural:       "cotizaciones",
+        ruta:         "/lista/cotis",
+        rutaDia:      "/lista/cotisxdia",
+        campos:       CDK.listas.CAMPOS.cotizacion,
+        estadoNormal: "cotizado"
+    });
+});
+</script>
 </body>
 </html>
