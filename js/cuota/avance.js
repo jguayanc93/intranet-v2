@@ -136,7 +136,7 @@
     function pintarAvance(d) {
         avance.innerHTML = "";
 
-        var pct = porcentaje(d.porcentaje);
+        var pct = porcentaje(d);
 
         /* La frase va arriba y grande. Es lo que la gente lee primero, y
            para eso se pidieron las 61: un «vas al 38 %» no se recuerda, un
@@ -150,6 +150,18 @@
         }
 
         avance.appendChild(barra(pct));
+
+        /* `mensaje` va por porcentaje y `diastexto` por días: son dos campos
+           distintos y se complementan. «Ya se te ve el potencial de Super
+           Saiyajin» dice dónde estás; «aún tienes más de la mitad de mes»
+           dice cuánto margen queda, que es la otra mitad de la decisión. */
+        if (d.diastexto) {
+            avance.appendChild(el("p", {
+                clase: "cdk-pista",
+                style: "margin:6px 0 0",
+                texto: d.diastexto
+            }));
+        }
 
         var filas = [
             total("Meta del mes", d.meta),
@@ -183,11 +195,22 @@
         ]);
     }
 
-    /** El porcentaje llega como "38.40 %" o como número. */
-    function porcentaje(valor) {
-        if (valor === undefined || valor === null) return 0;
-        var n = parseFloat(String(valor).replace("%", "").trim());
-        return isNaN(n) ? 0 : n;
+    /**
+     * El porcentaje del avance.
+     *
+     * `porcentaje` llega como **texto ya formateado** —"38.40 %"—, no como
+     * número: pasarlo tal cual a una barra da 0 siempre. Se parsea, y si por
+     * lo que sea no sale un número, se calcula con lo que sí son números.
+     */
+    function porcentaje(d) {
+        var n = parseFloat(String(d.porcentaje === undefined || d.porcentaje === null
+            ? "" : d.porcentaje).replace("%", "").trim());
+
+        if (!isNaN(n)) return n;
+
+        var meta = Number(d.meta);
+        var avance = Number(d.avance);
+        return meta > 0 ? (avance / meta) * 100 : 0;
     }
 
     function barra(pct, etiquetaIzq, etiquetaDer) {

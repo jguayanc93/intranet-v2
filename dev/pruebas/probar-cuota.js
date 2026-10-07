@@ -30,7 +30,9 @@ let sinCuota = false;       // jefatura, zona y hp: no les toca
 
 const AVANCE = {
     meta: 380000, avance: 288420,
+    // TEXTO ya formateado, no un numero: pasarlo a una barra da 0 siempre.
     porcentaje: "75.90 %",
+    diastexto: "aun tienes mas de la mitad de mes",
     mensaje: "la Genkidama ya esta cargada, solo falta lanzarla",
     falta: 91580,
     ritmo: { esperado: 60.0, real: 75.9, estado: "adelante", cierreTipico: 85.8,
@@ -82,10 +84,12 @@ function responder(url, opciones) {
                        debeRegistrar: true, meta: 0, avance: 0, porcentaje: null });
         }
 
-        const base = Object.assign({ status: "ok", codigo: 0, debeRegistrar: false },
-                                   AVANCE, { meta: registrada });
-        if (!conAnadidos) { base.ritmo = null; base.notas = null; base.reposicion = null; }
-        return r(base);
+        /* El avance va DENTRO de `data`. Devolverlo en el primer nivel era
+           lo que hacia pasar la prueba mientras la pantalla real salia
+           vacia: aqui no hay dos niveles que distinguir, alli si. */
+        const datos = Object.assign({ debeRegistrar: false }, AVANCE, { meta: registrada });
+        if (!conAnadidos) { datos.ritmo = null; datos.notas = null; datos.reposicion = null; }
+        return r({ status: "ok", codigo: 0, data: datos });
     }
 
     if (url.includes("/cuota/update")) {
@@ -266,6 +270,17 @@ function botonModal(doc, cual) {
     ok("y cuanto falta", texto.includes("91,580"), true);
     ok("con barra de progreso",
        !!p.doc.querySelector("#avance .cdk-progreso__relleno"), true);
+
+    /* La barra se calcula del porcentaje, que llega como TEXTO. Si se pasa
+       tal cual se queda en 0 y la pantalla parece vacia aunque los datos
+       esten. 75.90 % de 380.000 no es cero. */
+    const relleno = p.doc.querySelector("#avance .cdk-progreso__relleno");
+    ok("que no se queda en cero", /width: *0%/.test(relleno.getAttribute("style")), false);
+    ok("y marca el 75.9", texto.includes("75.9"), true);
+
+    /* `mensaje` va por porcentaje y `diastexto` por dias: son dos campos
+       distintos y los dos aportan. */
+    ok("y el margen que queda de mes", texto.includes("mitad de mes"), true);
 
     /* B · el ritmo, con su cierre tipico, que es lo que lo hace util. */
     ok("el bloque de ritmo sale",

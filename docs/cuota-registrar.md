@@ -1,4 +1,11 @@
-# Registrar la cuota del mes — por que sale "el monto debe ser mayor que cero"
+# Modulo de cuota — contrato de las rutas
+
+Dos problemas distintos, los dos del lado del cliente, y el contrato completo para
+cerrarlos.
+
+---
+
+## 1. Registrar: por que sale "el monto debe ser mayor que cero"
 
 El formulario manda **220000** y la pantalla responde *"el monto de la cuota debe ser un
 numero mayor que cero"*. El monto esta bien escrito: el problema es el **nombre del campo**
@@ -18,9 +25,9 @@ usara. Si os estorba, se puede cambiar o aceptar los dos; decidlo y se hace.
 
 ---
 
-## El contrato
+### El contrato
 
-### `POST /v1/cuota/update`
+#### `POST /v1/cuota/update`
 
 ```json
 { "fijado": 220000 }
@@ -43,7 +50,7 @@ ALM. EXTERNO                IMPRESION               TELEFONIA
 **Cookies.** Ademas de `cdk` hace falta `tip`, la del tipo de vendedor. Sin ella la
 respuesta es `401 falsa galleta`, que es facil de confundir con "sesion caducada".
 
-### Respuesta cuando sale bien
+#### Respuesta cuando sale bien
 
 ```json
 { "status": "ok", "codigo": 0, "permitido": true,
@@ -53,7 +60,7 @@ respuesta es `401 falsa galleta`, que es facil de confundir con "sesion caducada
 `cuota`, `family` y `objetivo` son **lo que quedo guardado**, no lo que se mando. Sirven
 para pintar la confirmacion sin volver a preguntar.
 
-### Errores
+#### Errores
 
 | HTTP | `status` | que significa | que hacer |
 |---|---|---|---|
@@ -68,7 +75,9 @@ dos mensajes distintos, asi que si vuelve a pasar se ve de inmediato de que lado
 
 ---
 
-## Ver la cuota: `/mostrar`, no `/revisar`
+---
+
+## 2. Ver la cuota: `/mostrar`, no `/revisar`
 
 Son dos rutas con nombres parecidos y trabajos distintos. Confundirlas da el sintoma
 "registre la cuota y ahora no la puedo ver".
@@ -103,7 +112,9 @@ mirar es **`puedeRegistrar`**.
 
 ---
 
-## Lo otro que vais a ver: "no tiene ninguna cuota registrada"
+---
+
+## 3. "No tiene ninguna cuota registrada" no es un fallo
 
 No es un fallo, y conviene saberlo antes de perseguirlo.
 
@@ -156,6 +167,86 @@ cookies en el salto.
 
 ---
 
+
+---
+
+## 4. Ver el avance: la pantalla carga pero sale vacia
+
+Sintoma: la barra queda en 0.0 %, y "Meta del mes" y "Llevas" muestran un guion. No es
+que no llegue la respuesta: llega entera, y la meta viene dentro.
+
+El motivo es **donde esta el dato**. La respuesta no trae los campos arriba del todo:
+
+```json
+{ "status": "ok", "codigo": 0,
+  "data": { "meta": 220000, "avance": 0, "porcentaje": "0.00 %", ... } }
+```
+
+Asi que es `respuesta.data.meta`, no `respuesta.meta`. Leyendo un nivel mas arriba todo
+sale `undefined`, que es exactamente el guion de la imagen.
+
+### Por que costaba acertar
+
+Cada ruta de cuota devolvia el objeto bajo un nombre distinto, y uno de ellos colisionaba:
+
+| ruta | clave que usaba | que contenia |
+|---|---|---|
+| `/cuota/cartera`, `/cuota/cobertura` | `simple` | el objeto del avance |
+| `/cuota/multiple`, `/cuota/especialista` | `multiple` | el objeto del avance |
+| `/cuota/marcamostrar` | `estimado` | el objeto del avance |
+| `/cuota/simple` | `simple` | **un texto**, no un objeto |
+
+La misma clave `simple` significaba una cosa en una ruta y otra distinta en otra. Eso es
+culpa del backend, y ya esta corregido: **las cinco rutas devuelven ahora el objeto en
+`data`**, siempre en el mismo sitio.
+
+Las claves viejas (`simple`, `multiple`, `estimado`) siguen ahi con el mismo contenido para
+no romper lo que ya las lee, pero **lo nuevo deberia usar `data`**.
+
+### Los campos de la pantalla de avance
+
+```json
+{
+  "meta": 220000,                 // la cuota del mes, numero
+  "avance": 0,                    // facturado hasta hoy, numero. Nunca null
+  "porcentaje": "0.00 %",         // TEXTO ya formateado, con el simbolo
+  "falta": 220000,                // lo que queda, numero
+  "mensaje": "arranca el motor que la carrera ya salio",
+  "diastexto": "aun tienes mas de la mitad de mes",
+
+  "codfam": "06",                 // objetivo especifico: familia
+  "objesp": 0,                    // porcentaje del objetivo especifico
+  "objspec_cuota": 0,
+  "objspec_avance": 0,
+  "objspec_porcentaje": null,
+
+  "ritmo":      { "esperado":22.6, "real":0, "estado":"detras",
+                  "cierreTipico":85.8, "historico":[{"periodo":"2026-09","porcentaje":42.3}] },
+  "notas":      { "facturado":0, "restado":0, "porcentaje":0, "avisar":false },
+  "reposicion": { "total":191480.58, "clientes":50, "top":[ ... ] }
+}
+```
+
+**Cuidado con `porcentaje`:** es un **texto** con el simbolo (`"0.00 %"`), no un numero.
+Pasarlo tal cual a una barra de progreso da 0 siempre. Para la barra conviene calcularlo:
+`avance / meta * 100`.
+
+`ritmo`, `notas` y `reposicion` pueden venir en **`null`** si su consulta falla. Esta hecho
+a proposito para que la pantalla abra igual aunque uno de los cuatro bloques no cargue; hay
+que contemplarlo al pintar.
+
+### Y antes de llegar ahi: la redireccion
+
+`GET /v1/cuota/mostrar` responde **302** y manda a `/cuota/cobertura`, `/cuota/cartera` o
+`/cuota/especialista` segun el tipo de vendedor. El cliente HTTP tiene que:
+
+- **seguir la redireccion** (con `axios`, ojo si teneis `maxRedirects: 0`);
+- **mandar las cookies en el salto** (`fetch` necesita `credentials: "include"`).
+
+Si no, la peticion termina sin cuerpo y la pantalla sale igual de vacia, pero por otro
+motivo. Merece la pena comprobar en la pestaña de red si la respuesta que estais leyendo es
+la del 302 o la de `/cartera`.
+
 ## Lo que esta en vuestras manos
 
 1. Cambiar el nombre del campo a **`fijado`** en el POST de registro. Es el unico cambio
@@ -165,5 +256,8 @@ cookies en el salto.
    cuota por registrar.
 3. Tratar `debeRegistrar: true`, `aplica: false` y `puedeRegistrar: false` como estados de
    pantalla, no como errores.
-4. Decirnos si preferis otro nombre para el campo `fijado`. Cambiarlo ahora es barato;
+4. Leer el avance de **`respuesta.data`**, no del primer nivel, y calcular el porcentaje
+   de la barra con `avance / meta`, porque `porcentaje` viene como texto.
+5. Comprobar que el cliente HTTP **sigue el 302 de `/mostrar` mandando las cookies**.
+6. Decirnos si preferis otro nombre para el campo `fijado`. Cambiarlo ahora es barato;
    cuando este en produccion y usandose, ya no.

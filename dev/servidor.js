@@ -645,12 +645,18 @@ http.createServer((pet, res) => {
         const tramo = pct >= 100 ? "hecho" : pct >= 65 ? "alto" : pct >= 35 ? "medio" : "bajo";
         const dia = new Date().getDate();
 
-        responder(res, {
-            status: "ok", codigo: 0,
+        /* El avance va dentro de `data`, como las demas rutas del modulo.
+           Antes cada una lo devolvia bajo un nombre distinto —`simple`,
+           `multiple`, `estimado`— y la clave `simple` ademas significaba dos
+           cosas segun la ruta. */
+        responder(res, { status: "ok", codigo: 0, data: {
             debeRegistrar: false,
             meta, avance,
+            // TEXTO ya formateado, con el simbolo. No es un numero.
             porcentaje: pct.toFixed(2) + " %",
             mensaje: FRASES[tramo][dia % FRASES[tramo].length],
+            diastexto: dia > 15 ? "ya pasaste la mitad del mes"
+                                : "aun tienes mas de la mitad de mes",
 
             // A · cuanto falta, en dolares
             falta: Number((meta - avance).toFixed(2)),
@@ -683,7 +689,7 @@ http.createServer((pet, res) => {
                       productos: 18, vencido: 32733.77 }
                 ]
             }
-        });
+        }});
         return;
     }
 

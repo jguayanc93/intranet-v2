@@ -77,7 +77,38 @@ ser lo mismo.
 
 ---
 
-## 6 · `/revisar` y `/mostrar`: corregido
+## 6 · El avance vacío: la pantalla ya leía bien
+
+Este conviene aclararlo, porque la conclusión es distinta de los otros dos.
+
+**`avance.js` ya lee de `respuesta.data`** —con un respaldo al primer nivel, porque
+`cuota no existe` y `cuota no corresponde` llegan sin envolver— y **ya trataba `porcentaje`
+como texto**, parseándolo antes de pasarlo a la barra. Si lo que probaron fue una versión
+anterior a nuestros últimos commits, puede ser eso; con la de ahora, esos dos puntos están
+cubiertos.
+
+**Lo que sí estaba mal era nuestro simulador de pruebas**, que devolvía el avance en el
+primer nivel. La suite pasaba sin tocar nunca la forma real, así que el día que alguien
+tocara esa línea no habría saltado nada. Es el mismo fallo que con `/revisar`, dos veces en
+el mismo módulo.
+
+Ya están las dos cosas: el simulacro devuelve `data` y hay **catorce comprobaciones** que
+saltan si la pantalla lee del nivel equivocado. Comprobado reintroduciendo el fallo.
+
+De paso añadimos dos cosas de su lista:
+
+- **`diastexto`**, que no estábamos enseñando. Va bien junto a la frase: `mensaje` dice
+  dónde estás y `diastexto` cuánto margen queda, que es la otra mitad de la decisión.
+- **Un respaldo en la barra**: si `porcentaje` no se puede parsear, se calcula con
+  `avance / meta`. Son números y no dependen del formato del texto.
+
+**Lo del 302 no necesitaba nada.** El núcleo usa `fetch` con `credentials: "include"` y sin
+`redirect: "manual"`, así que sigue la redirección y manda las galletas en el salto. Era de
+las primeras cosas que se unificaron.
+
+---
+
+## 7 · `/revisar` y `/mostrar`: corregido
 
 También era nuestro, y es el que daba el síntoma feo.
 
@@ -103,7 +134,7 @@ errores.
 
 ---
 
-## 7 · Lo de `fijado`: corregido, y no hace falta cambiarlo
+## 8 · Lo de `fijado`: corregido, y no hace falta cambiarlo
 
 Era nuestro. El formulario mandaba `monto` y ustedes leen `fijado`, así que el valor no
 llegaba y saltaba la validación del importe.
