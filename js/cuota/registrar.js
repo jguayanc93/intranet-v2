@@ -124,12 +124,28 @@
         boton.disabled = true;
         CDK.estados.cargando(resultado, "Registrando…");
 
-        CDK.http.post(CDK.rutas.api("/cuota/update"), { monto: valor })
-            .then(function () {
+        /* El campo se llama `fijado`, no `monto`. Viene del backend original
+           y se mantuvo para no romper lo que ya lo usaba.
+
+           Mandarlo con otro nombre no da «falta el campo»: da «el monto debe
+           ser mayor que cero», porque la validación del monto es la primera
+           que nota que el valor no existe. Costó un rato encontrarlo, y por
+           eso el backend separó los dos mensajes.
+
+           Los otros dos campos del contrato —`porcentaje` y
+           `objetivo_especial`— no se mandan: eran el objetivo específico por
+           familia, que es lo que enseñaba el segmento 2, y ese segmento se
+           retiró. El backend les pone 0 y COMPONENTES. */
+        CDK.http.post(CDK.rutas.api("/cuota/update"), { fijado: valor })
+            .then(function (respuesta) {
                 boton.disabled = false;
                 CDK.estados.limpiar(resultado);
                 CDK.toast("Cuota registrada", "exito");
-                yaEstaba({ meta: valor });
+
+                /* Lo que quedó guardado, no lo que mandamos. */
+                var guardada = respuesta && respuesta.cuota !== undefined
+                    ? respuesta.cuota : valor;
+                yaEstaba({ meta: guardada });
             })
             .catch(function (err) {
                 boton.disabled = false;
@@ -143,6 +159,14 @@
                     err.datos.status === "cuota ya registrada") {
                     CDK.estados.limpiar(resultado);
                     return revisar();
+                }
+
+                /* `cuota no enviada` significa que el cuerpo no trae `fijado`:
+                   es un fallo de este archivo, no del vendedor. Se deja dicho
+                   en consola para que la próxima vez se vea en un segundo. */
+                if (CDK.http.esError(err) && err.datos &&
+                    err.datos.status === "cuota no enviada") {
+                    console.error("[cuota] el POST no llevó `fijado`. Ver docs/cuota-registrar.md");
                 }
 
                 CDK.estados.error(resultado, err);

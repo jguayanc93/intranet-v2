@@ -79,17 +79,25 @@ function responder(url, opciones) {
     }
 
     if (url.includes("/cuota/update")) {
+        /* El campo se llama `fijado`. Si llega con otro nombre el backend
+           responde `cuota no enviada`, no «monto invalido»: son dos cosas
+           distintas y antes se veian igual. */
+        if (cuerpo.fijado === undefined || cuerpo.fijado === null || cuerpo.fijado === "") {
+            return r({ status: "cuota no enviada", codigo: 3,
+                       msg: "el cuerpo no trae el campo `fijado`" }, 400);
+        }
         if (registrada) {
             return r({ status: "cuota ya registrada", codigo: 3,
                        msg: "ya registraste tu cuota de este mes; solo se puede una vez" }, 409);
         }
-        const monto = Number(cuerpo.monto);
+        const monto = Number(cuerpo.fijado);
         if (!monto || monto <= 0) {
             return r({ status: "cuota invalida", codigo: 3,
                        msg: "el monto de la cuota debe ser un numero mayor que cero" }, 400);
         }
         registrada = monto;
-        return r({ status: "ok", codigo: 0, meta: monto });
+        return r({ status: "ok", codigo: 0, permitido: true,
+                   cuota: monto, family: "06", objetivo: 0 });
     }
 
     if (url.includes("/v1/")) return r({ status: "ok", codigo: 0, data: [] });
@@ -176,7 +184,11 @@ function botonModal(doc, cual) {
 
     const guardada = llamadas.filter(l => l.url.includes("/cuota/update")).pop();
     ok("registra", !!guardada, true);
-    ok("con el monto", guardada.cuerpo.monto, 380000);
+    /* El campo se llama `fijado`. Mandarlo como `monto` no daba «falta el
+       campo», daba «el monto debe ser mayor que cero», asi que el fallo
+       parecia del formulario. */
+    ok("en el campo `fijado`", guardada.cuerpo.fijado, 380000);
+    ok("y no en `monto`", guardada.cuerpo.monto, undefined);
     ok("y ya no deja volver a registrar",
        reg.doc.getElementById("form-cuota").classList.contains("hidden"), true);
     ok("enseñando la que quedo",

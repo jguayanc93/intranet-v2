@@ -35,6 +35,10 @@ y están escritos contra el código, no de memoria.
   cuánto falta para llegar al mínimo— y `/pedido/almacen`, que es nueva. Explica además
   qué es el flete: un descuento del 0,4 % que aplica un trigger del ERP a siete
   departamentos.
+- **[cuota-registrar.md](cuota-registrar.md)** — El contrato de `POST /cuota/update`. El
+  campo del monto se llama **`fijado`**, y mandarlo con otro nombre daba «el monto debe ser
+  mayor que cero», que mandaba a buscar el fallo al formulario. Trae los cuatro `status` de
+  error, ya separados, y el flujo completo desde `/cuota/mostrar`.
 - **[cuota.md](cuota.md)** — Trece rutas, no siete: `/cuota/mostrar` es un **GET que
   redirige** según el tipo de vendedor. Documenta que no haber registrado la cuota es un
   estado normal con `debeRegistrar` y no un 500, que el registro es una vez al mes y ahora

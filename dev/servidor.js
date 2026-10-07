@@ -679,8 +679,19 @@ http.createServer((pet, res) => {
        secas: un segundo envio metia una segunda fila con otra meta. */
     if (ruta === "/v1/cuota/update") {
         return conCuerpo(pet, (d) => {
-            const monto = Number(d.monto);
-            console.log(`      registrar cuota: ${monto}`);
+            /* El campo se llama `fijado`. Mandarlo con otro nombre daba antes
+               «el monto debe ser mayor que cero», que mandaba a buscar el
+               fallo al formulario; ahora son dos mensajes distintos. */
+            console.log(`      registrar cuota: ${d.fijado}`);
+
+            if (d.fijado === undefined || d.fijado === null || d.fijado === "") {
+                return responder(res, {
+                    status: "cuota no enviada", codigo: 3, data: null,
+                    msg: "el cuerpo no trae el campo `fijado`"
+                }, 400);
+            }
+
+            const monto = Number(d.fijado);
 
             if (cuotaRegistrada) {
                 return responder(res, {
@@ -696,7 +707,13 @@ http.createServer((pet, res) => {
             }
 
             cuotaRegistrada = monto;
-            responder(res, { status: "ok", codigo: 0, meta: monto });
+            /* Lo que quedo guardado, no lo que mandaron. `objetivo` y
+               `family` son los valores por defecto cuando no se mandan
+               `porcentaje` ni `objetivo_especial`. */
+            responder(res, {
+                status: "ok", codigo: 0, permitido: true,
+                cuota: monto, family: "06", objetivo: 0
+            });
         });
     }
 

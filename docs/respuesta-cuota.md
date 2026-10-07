@@ -77,6 +77,27 @@ ser lo mismo.
 
 ---
 
+## 6 · Lo de `fijado`: corregido, y no hace falta cambiarlo
+
+Era nuestro. El formulario mandaba `monto` y ustedes leen `fijado`, así que el valor no
+llegaba y saltaba la validación del importe.
+
+**Lo que costó el rato no fue el nombre, fue el mensaje.** «El monto debe ser mayor que
+cero» manda a mirar el campo del formulario, que era justo donde no estaba el problema. Que
+ahora `cuota no enviada` sea un `status` distinto lo resuelve: la próxima vez se ve de qué
+lado está en cuanto se abre la consola.
+
+**Sobre si preferimos otro nombre: no, déjenlo en `fijado`.** Ya está documentado y la
+pantalla lo manda bien. Cambiarlo es tocar algo que funciona para ganar una palabra más
+bonita, y eso tiene más riesgo que valor. Si algún día se reescribe esa ruta por otro
+motivo, ahí sí.
+
+> No mandamos `porcentaje` ni `objetivo_especial`. Eran el objetivo específico por familia
+> —lo que enseñaba el segmento 2— y ese segmento se retiró, así que registrar un valor que
+> nadie va a ver no aporta. Se quedan con sus valores por defecto, `0` y `COMPONENTES`.
+
+---
+
 ## Lo que hicimos
 
 **Ver el avance** — [`cuota/cuota_observar.html`](../cuota/cuota_observar.html)
