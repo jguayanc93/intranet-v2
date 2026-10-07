@@ -104,7 +104,14 @@ con código 1 si alguna falla. Ver [`dev/pruebas/README.md`](dev/pruebas/README.
 
 Copiar los archivos al servidor, en la raíz del dominio. No hay paso de compilación.
 
-Conviene excluir `dev/` y `docs/` del despliegue.
+**Excluye `dev/` y `docs/`.** Ninguna página de producción los enlaza, así que no rompe
+nada, y conviene por dos razones:
+
+- `docs/` publicaría el contrato entero del backend en una URL pública: qué valida cada
+  ruta, cómo funcionan las cookies de sesión, qué permisos gobiernan cada acción. Está
+  escrito para leerse dentro.
+- `dev/` lleva el simulador de la API y `diagnostico.html`, que sondea los endpoints uno
+  por uno; más los 26 MB de `node_modules` de las pruebas.
 
 ---
 
