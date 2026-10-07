@@ -68,6 +68,41 @@ dos mensajes distintos, asi que si vuelve a pasar se ve de inmediato de que lado
 
 ---
 
+## Ver la cuota: `/mostrar`, no `/revisar`
+
+Son dos rutas con nombres parecidos y trabajos distintos. Confundirlas da el sintoma
+"registre la cuota y ahora no la puedo ver".
+
+| ruta | pregunta que responde | redirige a |
+|---|---|---|
+| `GET /v1/cuota/revisar` | **¿puedo registrar?** | `/simple` (grupo 20), `/multiple` (25), `/superior` (34) |
+| `GET /v1/cuota/mostrar` | **¿como voy?** | `/cobertura`, `/cartera` o `/especialista` segun el tipo |
+
+La pantalla de avance cuelga de **`/mostrar`**. `/revisar` solo sirve para decidir si se
+pinta el formulario de registro.
+
+### Y `/revisar` ya no devuelve error cuando la cuota existe
+
+Hasta ahora, en cuanto el vendedor registraba su cuota, `/revisar` respondia **403
+"vendedor tiene un registro de cuota de este mes"**. Que la cuota ya este registrada no es
+un fallo: es la mitad de la respuesta a la pregunta que se le hizo. Devolver un 403 obligaba
+a tratar como error el caso normal.
+
+Ahora las dos salidas son **200** y se decide con un booleano:
+
+```json
+{ "status":"ok", "codigo":0, "simple":"registro permitido",
+  "puedeRegistrar": true,  "yaRegistrada": false, "monto": null }
+
+{ "status":"ok", "codigo":0, "simple":"cuota existe",
+  "puedeRegistrar": false, "yaRegistrada": true,  "monto": 220000 }
+```
+
+El campo `simple` conserva el texto que devolvia antes, por si ya lo leeis. Lo que hay que
+mirar es **`puedeRegistrar`**.
+
+---
+
 ## Lo otro que vais a ver: "no tiene ninguna cuota registrada"
 
 No es un fallo, y conviene saberlo antes de perseguirlo.
@@ -101,13 +136,18 @@ cargado nunca, asi que para ellos el modulo no deberia ni aparecer. Se distingue
 ### Resumen del flujo
 
 ```
-GET  /v1/cuota/mostrar
+GET  /v1/cuota/mostrar          <- SIEMPRE por aqui para ver el avance
    |
-   +-- status "cuota no corresponde"  ->  no mostrar el modulo
-   +-- status "cuota no existe"       ->  formulario de registro
+   +-- status "cuota no corresponde"  ->  no mostrar el modulo       (aplica: false)
+   +-- status "cuota no existe"       ->  formulario de registro     (debeRegistrar: true)
    |                                        POST /v1/cuota/update  { "fijado": <monto> }
    |                                        y volver a /mostrar
    +-- 200 con datos                  ->  pantalla de avance
+
+GET  /v1/cuota/revisar          <- solo para saber si toca ofrecer el formulario
+   |
+   +-- puedeRegistrar: true   ->  ofrecer el formulario
+   +-- puedeRegistrar: false  ->  ya tiene cuota este mes; mandar a /mostrar
 ```
 
 `/v1/cuota/mostrar` **redirige** segun el tipo de vendedor (`/cobertura`, `/cartera`,
@@ -120,6 +160,10 @@ cookies en el salto.
 
 1. Cambiar el nombre del campo a **`fijado`** en el POST de registro. Es el unico cambio
    necesario para que el formulario funcione.
-2. Tratar `debeRegistrar: true` y `aplica: false` como estados de pantalla, no como errores.
-3. Decirnos si preferis otro nombre para el campo. Cambiarlo ahora es barato; cuando este
-   en produccion y usandose, ya no.
+2. Pedir el avance a **`/v1/cuota/mostrar`**, no a `/revisar`. Si ya usabais `/revisar`
+   para eso, ahora responde 200 en vez de 403, pero no trae el avance: solo dice si queda
+   cuota por registrar.
+3. Tratar `debeRegistrar: true`, `aplica: false` y `puedeRegistrar: false` como estados de
+   pantalla, no como errores.
+4. Decirnos si preferis otro nombre para el campo `fijado`. Cambiarlo ahora es barato;
+   cuando este en produccion y usandose, ya no.

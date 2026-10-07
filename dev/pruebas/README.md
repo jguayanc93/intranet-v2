@@ -58,7 +58,12 @@ Todas siguen la misma forma, y conviene mantenerla:
    DOM de jsdom, y devuelve la ventana.
 3. **`ok(etiqueta, real, esperado)`**, que cuenta y explica cuando falla.
 
-Dos cosas que han demostrado valer la pena:
+Tres cosas que han demostrado valer la pena:
+
+- **Que el simulacro distinga lo que el backend distingue.** Si dos rutas devuelven cosas
+  distintas allí, aquí no pueden compartir un `if`. Pasó con `/cuota/revisar` y
+  `/cuota/mostrar`: respondían lo mismo, así que la suite pasaba mientras la pantalla leía
+  la respuesta equivocada.
 
 - **Comprobar que una prueba falla cuando debe.** Más de una vez una comprobación pasaba
   por casualidad. Si se añade una guarda contra una regresión, conviene introducir la

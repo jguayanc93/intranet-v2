@@ -55,7 +55,17 @@ function responder(url, opciones) {
         return r({ status: "ok", codigo: 0, data: { cuota: "x" }, nombre: "JUAN" });
     }
 
-    if (url.includes("/cuota/mostrar") || url.includes("/cuota/revisar")) {
+    /* `/revisar` contesta «¿puedo registrar?» y NO trae el avance. Tratar
+       las dos como una sola es lo que tapaba el fallo. */
+    if (url.includes("/cuota/revisar")) {
+        return r(registrada
+            ? { status: "ok", codigo: 0, simple: "cuota existe",
+                puedeRegistrar: false, yaRegistrada: true, monto: registrada }
+            : { status: "ok", codigo: 0, simple: "registro permitido",
+                puedeRegistrar: true, yaRegistrada: false, monto: null });
+    }
+
+    if (url.includes("/cuota/mostrar")) {
         if (porMarca) return r({ status: "ok", codigo: 0, multiple: { HEWL: {}, EPSO: {} } });
 
         /* A jefatura, zona y hp la cuota no les toca. Llega con 200 y un
@@ -161,6 +171,10 @@ function botonModal(doc, cual) {
 
     ok("comprueba si ya estaba",
        llamadas.some(l => l.url.includes("/cuota/revisar")), true);
+    /* Registrar pregunta a /revisar; el avance cuelga de /mostrar. Confundir
+       las dos da el sintoma "registre la cuota y ahora no la puedo ver". */
+    ok("y no le pide el avance a /mostrar",
+       llamadas.some(l => l.url.includes("/cuota/mostrar")), false);
     ok("y ofrece el formulario",
        reg.doc.getElementById("form-cuota").classList.contains("hidden"), false);
 
@@ -217,6 +231,25 @@ function botonModal(doc, cual) {
        reg.doc.getElementById("estado").textContent.includes("Ya registraste"), true);
     ok("sin dejar un error rojo",
        reg.doc.getElementById("resultado").textContent.includes("error"), false);
+
+    /* ------------------- entrar a registrar con la cuota ya puesta */
+    console.log("\n— entrar a registrar cuando ya hay cuota —");
+    registrada = 380000;
+    llamadas = [];
+    reg = await montar("cuota/cuota_registrar.html");
+    await pausa(200);
+
+    /* `/revisar` responde 200 con `puedeRegistrar:false`. Antes respondia un
+       403, que caia en el catch y acababa ofreciendo el formulario a quien ya
+       habia registrado. */
+    ok("no ofrece el formulario",
+       reg.doc.getElementById("form-cuota").classList.contains("hidden"), true);
+    ok("dice que ya esta registrada",
+       reg.doc.getElementById("estado").textContent.includes("Ya registraste"), true);
+    ok("y enseña el monto que hay",
+       reg.doc.getElementById("estado").textContent.includes("380,000"), true);
+    ok("con un enlace al avance",
+       !!reg.doc.querySelector("#estado a[href*='cuota_observar']"), true);
 
     /* ================================================== el avance */
     console.log("\n— el avance, con los cuatro anadidos —");

@@ -38,14 +38,23 @@
     function revisar() {
         CDK.estados.cargando(estado, "Comprobando…");
 
-        // Es un GET, aunque el nombre no lo parezca.
+        /* `/revisar` y `/mostrar` se parecen en el nombre y no hacen lo
+           mismo: esta contesta **¿puedo registrar?** y la otra **¿cómo voy?**.
+           El avance cuelga de `/mostrar`; aquí solo se decide si se ofrece el
+           formulario. Es un GET, aunque el nombre no lo parezca. */
         CDK.http.get(CDK.rutas.api("/cuota/revisar"))
             .then(function (respuesta) {
                 var d = (respuesta && respuesta.data) || respuesta || {};
-                var registrada = d.debeRegistrar === false ||
-                                 (d.meta !== undefined && d.meta !== null && Number(d.meta) > 0);
 
-                if (registrada) return yaEstaba(d);
+                /* Lo que manda es `puedeRegistrar`. Antes esta ruta
+                   respondía 403 cuando la cuota ya existía —que no es un
+                   fallo, es la mitad de la respuesta a lo que se le
+                   pregunta—, así que caía en el `catch` de abajo y la
+                   pantalla acababa ofreciendo el formulario a quien ya había
+                   registrado. Ahora las dos salidas son 200. */
+                if (d.puedeRegistrar === false || d.yaRegistrada === true) {
+                    return yaEstaba({ meta: d.monto });
+                }
 
                 CDK.estados.limpiar(estado);
                 formulario.classList.remove("hidden");

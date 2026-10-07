@@ -588,7 +588,19 @@ http.createServer((pet, res) => {
      * direccionador que reenvia segun el tipo de vendedor de la galleta;
      * desde el navegador es una sola ruta. Ver docs/cuota.md.
      * ============================================================= */
-    if (ruta === "/v1/cuota/mostrar" || ruta === "/v1/cuota/revisar") {
+    /* `/revisar` contesta «¿puedo registrar?» y nada mas. No trae el avance:
+       para eso esta `/mostrar`. Se parecen en el nombre y confundirlas da el
+       sintoma "registre la cuota y ahora no la puedo ver". */
+    if (ruta === "/v1/cuota/revisar") {
+        console.log(`      puede registrar: ${cuotaRegistrada ? "no, ya tiene" : "si"}`);
+        return responder(res, cuotaRegistrada
+            ? { status: "ok", codigo: 0, simple: "cuota existe",
+                puedeRegistrar: false, yaRegistrada: true, monto: cuotaRegistrada }
+            : { status: "ok", codigo: 0, simple: "registro permitido",
+                puedeRegistrar: true, yaRegistrada: false, monto: null });
+    }
+
+    if (ruta === "/v1/cuota/mostrar") {
         console.log(`      cuota: ${cuotaRegistrada ? "registrada" : "sin registrar"}`);
 
         /* A jefatura, zona y hp la cuota no les toca: en toda la historia de

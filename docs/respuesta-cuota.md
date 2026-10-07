@@ -77,7 +77,33 @@ ser lo mismo.
 
 ---
 
-## 6 · Lo de `fijado`: corregido, y no hace falta cambiarlo
+## 6 · `/revisar` y `/mostrar`: corregido
+
+También era nuestro, y es el que daba el síntoma feo.
+
+*Registrar* preguntaba a `/revisar` —que es la ruta correcta— pero **leía su respuesta como
+si fuera la de `/mostrar`**: buscaba `debeRegistrar` y un `meta`, que esa ruta no devuelve.
+Como además antes respondía **403** cuando la cuota ya existía, la petición caía en el
+`catch`, y ahí la pantalla tiene una regla deliberada: si la comprobación falla, deja
+registrar igual, porque el servidor va a rechazar el duplicado de todos modos.
+
+El resultado era el peor de los dos mundos: a quien ya tenía cuota se le ofrecía el
+formulario, lo rellenaba, y se llevaba un 409.
+
+Ahora lee **`puedeRegistrar`**, que es lo que dijeron. Y que las dos salidas sean 200
+arregla la mitad del problema por sí solo: el caso normal deja de llegar por la vía de los
+errores.
+
+**El avance ya colgaba de `/mostrar`**, así que ahí no había nada que cambiar.
+
+> **Lo que nos lo escondió fue nuestro simulador de pruebas**, que respondía lo mismo a las
+> dos rutas. Si dos rutas se distinguen en el backend, tienen que distinguirse ahí también
+> o las pruebas pasan sin estar probando nada. Ya están separadas, y hay cinco
+> comprobaciones nuevas sobre el caso de entrar a registrar con la cuota ya puesta.
+
+---
+
+## 7 · Lo de `fijado`: corregido, y no hace falta cambiarlo
 
 Era nuestro. El formulario mandaba `monto` y ustedes leen `fijado`, así que el valor no
 llegaba y saltaba la validación del importe.
