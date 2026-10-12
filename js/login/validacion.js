@@ -54,10 +54,10 @@ class ValidadorLogin {
 
     validarClave() {
         const valor = this.clave.value;
-        const valido = valor.length >= 6;
+        const valido = valor.length >= 4;
 
         if (valido) this.marcarValido(this.clave);
-        else if (valor.length > 0) this.marcarInvalido(this.clave, 'La contraseña debe tener al menos 6 caracteres');
+        else if (valor.length > 0) this.marcarInvalido(this.clave, 'La contraseña debe tener al menos 4 caracteres');
         else this.limpiarCampo(this.clave);
 
         return valido;
