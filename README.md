@@ -126,20 +126,16 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
 - **La cookie de sesión es de otro host** (`landing.*` frente a `pulpo.*`). Si no se
   emite con `Domain=.compudiskett.com.pe`, depende de cookies de terceros y el
   endurecimiento de los navegadores puede dejar la intranet sin sesión.
-- **`styles/factura-components.css` no aplica ningún estilo.** Usa `@apply`, que requiere
-  un build de Tailwind que este proyecto no tiene, así que el navegador lo descarta
-  entero. Las pantallas de `factura/` se ven sin estilo.
-- **`parseJSONResponse` está definida dos veces con comportamientos opuestos**:
-  `js/cotizacion/buscar_promo_part4.js` devuelve `null` si el parseo falla y
-  `js/cotizacion/buscar_promo_part5.js` devuelve el valor original. Las dos se cargan en
-  `cotizacion/cotizacion_nuevo.html`, y como part5 va después, gana la suya: quien
-  comprueba `=== null` nunca lo recibe.
-- **`cotizacion/cotizacion_eliminar.html` no tiene lógica.** Sus scripts están
-  comentados a la espera de que se escriban.
 - **Los listados no paginan.** Se renderizan todos los registros de golpe.
-- `programador/` es el único módulo sin migrar, y está **en pausa a propósito**: su única
-  acción queda para más adelante, así que el hub no la enlaza. Su pantalla sigue en el
-  repositorio con su cabecera propia; lo que hay que saber antes de retomarla está en
-  [docs/programador.md](docs/programador.md).
+- **Quedan dos módulos sin migrar al núcleo:**
+  - `reporte.html` sigue con su estructura propia: Tailwind por CDN y los scripts de
+    `js/reporte/`. En el catálogo figura sin accesos.
+  - `programador/` está **en pausa a propósito**: su única acción queda para más
+    adelante, así que el hub no la enlaza. Lo que hay que saber antes de retomarla está
+    en [docs/programador.md](docs/programador.md).
 
   `cotizacion/`, `lista/`, `pedido/`, `factura/`, `promocion/` y `cuota/` ya usan el núcleo.
+
+Ya resueltos, por si alguien llega buscándolos: la hoja de factura con `@apply` que no
+pintaba nada y el `parseJSONResponse` definido dos veces se retiraron al migrar sus
+módulos. `cotizacion_eliminar.html` ya tiene su lógica y su suite.

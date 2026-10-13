@@ -52,7 +52,6 @@ mecánico.
 | `cdk-shell.js` | Construye el armazón: barra superior, lateral, inferior. |
 | `cdk-shell.css` | Estilos del armazón y de los componentes. |
 | `cdk-hub.js` | Solo en las páginas hub: pinta las acciones del módulo. |
-| `cdk-compat.js` | Opcional. Puentes hacia nombres antiguos durante una migración. |
 
 ---
 

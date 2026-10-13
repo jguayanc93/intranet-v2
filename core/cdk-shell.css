@@ -7,8 +7,9 @@
       DOM, asi que el chrome que inyecta cdk-shell.js se veria sin estilo
       durante varios frames. El armazon tiene que sobrevivir sin Tailwind;
       Tailwind solo decora el interior de cada pagina.
-   2. @apply necesita un build. styles/factura-components.css lo usa y por eso
-      hoy no pinta absolutamente nada en las 8 paginas que lo cargan.
+   2. @apply necesita un build. Una hoja de factura lo uso y no pinto
+      absolutamente nada en las 8 paginas que la cargaban, sin que nadie
+      lo notara durante meses.
 
    Va en el <head>. Si se carga al final hay salto de layout.
    ===================================================================== */
