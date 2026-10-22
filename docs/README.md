@@ -58,6 +58,66 @@ y están escritos contra el código, no de memoria.
   vendedor de la factura se mira, y las dos se solapan. Trae también las tres piezas del
   detalle y las tres correcciones al procedimiento.
 
+- **[marcas-grupo25.md](marcas-grupo25.md)** — El contrato del grupo 25 (jefaturas y
+  especialistas), escrito por el backend: el registro con marcas, el menú y las siete rutas
+  de `/v1/marcas`. Dice cómo funciona el negocio —una marca, un dueño al mes; el especialista
+  confirma y queda bloqueado, la jefatura no— y qué hacer con cada `omitidas`. Se actualizó
+  el 16/10 con las respuestas a nuestras dudas (sección 9). **Lo que declara pendiente**
+  (el menú por tipo; la cuota por marca ya está hecha) no está construido a propósito.
+- **[reportes-grupo25.md](reportes-grupo25.md)** — Los reportes por marca, **ya hechos por el
+  backend**: `GET /reporte/marca` con las marcas que se pueden consultar y **cuatro informes**
+  —stock, tiempo en almacén, lista de precios y **guías**— que se piden con `{ codmar, formato }`
+  y responden JSON o Excel. Define qué marcas ve cada tipo, cómo se calcula el «disponible» y
+  los días de tiempo en almacén, qué guías entran (remisión y notas de despacho, sin anuladas,
+  una fila por producto, hasta 3 meses) y qué cambia respecto a la pantalla antigua (que
+  calculaba mal el tiempo de 2026). Trae también las cuentas de prueba de bdnava08.
+- **[cuota-grupo25.md](cuota-grupo25.md)** — La **cuota por marca** del grupo 25: `GET
+  /cuota/marcas` con la meta, el avance, el cumplimiento y la proyección de cada marca, y `POST
+  /cuota/marcas/meta` para fijarla. Solo la fija el dueño de la marca y solo tras confirmar sus
+  marcas; la jefatura ve además el general de cada especialista (`porDueno`). El avance son las
+  ventas de la marca **de toda la empresa**, no las del usuario. Reemplaza, para el grupo 25, las
+  cinco rutas antiguas de cuota por marca. **La pantalla ya está construida**; falta recorrerla
+  contra bdnava08. Se actualizó el 20/10 con sus respuestas: el cumplimiento del total cuenta
+  solo las marcas con meta (`conMeta`), `proyeccion.cumplimiento`, una meta no puede ser 0,
+  `/cuota/mostrar` redirige al grupo 25 (con CORS en el `302`), `/cuota/revisar` le responde
+  `cuota por marca`, meses anteriores (hasta dos atrás, solo lectura) y `metaMesAnterior` para
+  precargar el formulario.
+- **[cobertura-grupo25.md](cobertura-grupo25.md)** — La **cobertura de clientes por marca** del grupo 25:
+  `GET /cobertura/marcas` (cada marca con cuántos clientes la compraron, unidades y venta, y un total de
+  **clientes distintos**) y `GET /cobertura/clientes?codmar=` (los clientes de una marca, por venta). Un cliente es
+  uno al que le **quedaron unidades** compradas; quien solo devolvió sale en negativo y no cuenta. Misma regla de
+  venta que la cuota, mes en curso y dos anteriores. **No es la cobertura del grupo 20** (`/cuota/cobertura`).
+  Se actualizó el 21/10 con nuestras respuestas: `/clientes` sin tope (máximo real 636), `columnas`, **exportar a Excel**
+  (`&formato=xlsx`), `formato invalido`, y que un 0 en `unidades` no siempre es «devolvió todo». **La pantalla ya está
+  construida**; falta recorrerla contra bdnava08.
+- **[vendedor-mes-grupo25.md](vendedor-mes-grupo25.md)** — El **vendedor del mes** del grupo 25: `GET
+  /vendedormes/top` con, de cada marca, **los 3 vendedores del grupo 20 que más la vendieron** (puesto, venta,
+  `participacion`, unidades, clientes) y su **tendencia** frente al mes anterior (`sube`, `baja`, `igual`, `nuevo`).
+  Solo el mes en curso y el anterior (`400 mes no disponible`). **`total.venta` no es el avance de la cuota**: es solo lo que
+  vendieron los vendedores del grupo 20 **con venta mayor que 0**. Se actualizó el 22/10 con nuestras respuestas: **desempate**
+  fijo (venta, unidades, clientes, código), **solo venta neta mayor que 0** y `ventasHasta`. **La pantalla ya está construida**;
+  falta recorrerla contra bdnava08.
+- **[despliegue-grupo25.md](despliegue-grupo25.md)** — **Antes de subir** los módulos del grupo 25: que el «servidor de prueba» es
+  el **del backend** (solo acepta `http://127.0.0.1:8080`, así que el frontend se prueba en local y no se sube a otro sitio), las
+  tres comprobaciones previas (`todas.js`, `dev/revisar-despliegue.js` y `git status`), la **lista de rutas** de las que ahora
+  depende el frontend —y por qué backend y frontend salen el mismo día—, el recorrido con una cuenta de cada tipo, y lo que el
+  repositorio no dice (cómo llega el código a producción).
+- **[servidor-prueba-grupo25.md](servidor-prueba-grupo25.md)** — Cómo **probar contra el servidor
+  de prueba** del backend (bdnava08): qué tiene que cumplirse (CORS para `http://127.0.0.1:8080`,
+  **https**, una dirección **bajo `compudiskett.com.pe`**, `credentials: 'include'`), las
+  cabeceras reales que devuelve y cómo se ve cada falla. La dirección y las claves de las cuentas
+  las pasa quien coordina.
+- **[ajuste-precios.md](ajuste-precios.md)** — El **ajuste de precios**: el vendedor (grupo 20) envía una
+  cotización o pedido para que el dueño de la marca —o la jefatura de su familia— le ajuste el
+  precio, y se lo devuelve. Una solicitud por responsable, con solo las líneas de sus marcas; al confirmar,
+  el descuento de la línea pasa a 0, se **quitan todas las promociones** del documento y el precio no puede
+  quedar bajo el costo; a los 3 días vence. Siete rutas (con la **vista previa**), y lo que cambia en cotización,
+  pedido y promoción mientras hay una pendiente (`409 documento en ajuste`). **Construido por las dos puntas, como módulo
+  aparte (`ajuste`).** Se actualizó el 21/10 —dos rondas— con nuestras respuestas: `GET /ajuste`, `precioMinimo` (el costo, con hasta
+  4 decimales, redondeado hacia arriba), `precioNeto`, filtros `desde`/`hasta`, las pendientes se **cierran al leer**,
+  `ajustesPendientes` en `/vendedor` (solo lo que se puede responder), la lista de pedidos con los `sin aprobar`,
+  `400 fechas invalidas` y el precio **redondeado al céntimo, la mitad hacia arriba**.
+
 ## Lo que está esperando a salir
 
 > **El renumerado de listas está en la base de pruebas, no en producción.** Nuestras dos
@@ -90,6 +150,38 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   dos. Está en [respuesta-pedido.md](respuesta-pedido.md).
 - **La cabecera de `/pedido/mostrar`.** Sin ella la pantalla suma las líneas, y los
   totales los gobierna un trigger del ERP: la suma va a discrepar. Está pedida.
+
+- **[respuesta-marcas.md](respuesta-marcas.md)** — Para el backend: lo construido del grupo
+  25, **qué campos lee el frontend de cada ruta y cuáles no**, las decisiones que tomamos por
+  nuestra cuenta, y cómo cerramos cada una de las siete dudas que contestaron. Queda una
+  decisión **nuestra**: avisar al salir de la pantalla con una lista sin confirmar.
+- **[respuesta-reportes.md](respuesta-reportes.md)** — El **seguimiento de Reportes**, para el
+  backend: qué hicimos con cada una de sus respuestas (las cuatro aclaraciones y las Guías,
+  ya construidas), **la dirección que piden para el CORS** (`http://127.0.0.1:8080`, no
+  `localhost`), lo que necesitamos para llegar a su servidor de prueba —sobre todo las
+  cookies— y los casos que recorreremos contra bdnava08. Una pregunta pequeña: los códigos de
+  almacén de las guías.
+- **[respuesta-cuota-marcas.md](respuesta-cuota-marcas.md)** — Para el backend: **cómo quedó
+  cada una de sus respuestas** a nuestras cinco preguntas y dos sugerencias (todas aplicadas),
+  dos decisiones nuestras, lo que cumplimos de su documento del servidor de prueba, **lo que
+  falta —la dirección y las claves—** y los casos que recorreremos contra bdnava08. Con su segunda
+  respuesta, **la pantalla ya no mira el tipo de `/vendedor` en ningún sitio de la cuota**: la
+  ruta y «Registrar» las decide lo que responde el backend.
+- **[respuesta-ajuste-precios.md](respuesta-ajuste-precios.md)** — Para el backend: **cómo leímos el ajuste de
+  precios** y qué hace cada pantalla de las dos puntas (pedir ajuste y mis ajustes, recibidas y ajustar),
+  **tercera ronda (21/10)**: qué hicimos con cada una de sus respuestas a los diez puntos (el costo con sus
+  decimales y el mínimo, `precioNeto`, el filtro por fecha, los pedidos en el paso 1, el numerito del menú…) y a las tres
+  preguntas de la segunda ronda (el contador, `fechas invalidas`, el redondeo), **sin nada abierto**, y cómo recorrerlo
+  contra bdnava08 sin gastar solicitudes reales.
+- **[respuesta-vendedor-mes.md](respuesta-vendedor-mes.md)** — Para el backend: **cómo leímos el vendedor del mes**
+  (una sola pantalla, sin hub; el top de cada marca con su tendencia leída por texto; menos de 3 o ninguno; un vendedor sin
+  `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de
+  `ventasHasta`**, ya reflejadas (queda solo la del `?top=`, que va en su próxima versión) y los casos que recorreremos contra
+  bdnava08.
+- **[respuesta-cobertura.md](respuesta-cobertura.md)** — Para el backend: **cómo leímos la cobertura de clientes**
+  (una sola pantalla, sin hub; que el total de clientes son distintos y la pantalla lo explica; quien solo devolvió o
+  quedó en cero; los 100 primeros y «Mostrar los N restantes»; **exportar a Excel**), **sus respuestas a las tres
+  preguntas y a la sugerencia**, ya reflejadas, y los casos que recorreremos contra bdnava08.
 
 ### Ya resueltas
 
@@ -202,16 +294,16 @@ el backend las lea.
 
 ## Las pruebas ya no son manuales
 
-La guía de pruebas manuales se archivó porque dejó de hacer falta. Hay **diez suites
+La guía de pruebas manuales se archivó porque dejó de hacer falta. Hay **dieciocho suites
 automáticas**, una por módulo migrado, en **[`dev/pruebas/`](../dev/pruebas/)**:
 
 ```
 cd dev/pruebas
 npm install          una sola vez: lo único que hace falta es jsdom
-node todas.js        las diez, con un resumen
+node todas.js        las dieciocho, con un resumen
 ```
 
-Nueve de las diez **cargan el HTML real con sus scripts reales** en un DOM y los accionan
+Diecisiete de las dieciocho **cargan el HTML real con sus scripts reales** en un DOM y los accionan
 como lo haría un vendedor. Existen porque las comprobaciones unitarias no vieron un fallo
 que sí se notaba pulsando.
 
