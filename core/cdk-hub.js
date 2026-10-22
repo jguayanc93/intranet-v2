@@ -50,7 +50,8 @@
     function pintar(claves) {
         var accesos = (claves || [])
             .map(function (clave) { return CDK.catalogo.acceso(modulo, clave); })
-            .filter(Boolean);
+            .filter(Boolean)
+            .filter(function (a) { return !a.oculto; });     // conocidos, pero sin pantalla propia
 
         /* Dos permisos que abren la MISMA pantalla son una sola tarjeta.
            Pasa en factura: sus siete permisos no son siete acciones, son

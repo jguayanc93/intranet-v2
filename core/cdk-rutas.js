@@ -23,7 +23,31 @@
         prod: "https://pulpo.compudiskett.com.pe/v1"
     };
 
-    var baseApi = BASES_API[CDK.env] || BASES_API.prod;
+    /**
+     * Apuntar la pagina a otro servidor, sin tocar codigo: el de PRUEBA del backend
+     * (base bdnava08), para recorrer lo construido con datos reales.
+     *
+     *     localStorage.setItem("cdk.api", "https://<direccion del servidor de prueba>")
+     *     localStorage.removeItem("cdk.api")          // para volver al simulador
+     *
+     * Solo existe en desarrollo, y solo acepta https bajo compudiskett.com.pe: es lo
+     * que el servidor de prueba exige para que viajen las cookies (son Secure y de
+     * ese dominio). En produccion no hace nada. Ver docs/servidor-prueba-grupo25.md.
+     */
+    function baseDePrueba() {
+        if (CDK.env !== "dev") return null;
+
+        var v;
+        try { v = global.localStorage.getItem("cdk.api"); } catch (e) { return null; }
+
+        var m = /^(https:\/\/([a-z0-9-]+\.)*compudiskett\.com\.pe(:\d{1,5})?)(\/v1)?\/?$/i.exec(String(v || "").trim());
+        return m ? m[1] + "/v1" : null;
+    }
+
+    var prueba = baseDePrueba();
+    if (prueba && global.console) console.info("[CDK] La API apunta al servidor de prueba: " + prueba);
+
+    var baseApi = prueba || BASES_API[CDK.env] || BASES_API.prod;
 
     function normalizar(camino) {
         if (!camino) return "";
@@ -62,9 +86,13 @@
             return CDK.rutas.app("/index.html");
         },
 
-        /** Pagina de registro / identificacion. */
+        /**
+         * Pagina de registro, a donde va quien tiene cuenta pero no figura en la
+         * intranet. Antes pasaba por registro.html, un menu intermedio cuya unica
+         * salida util era un enlace a este formulario; se retiro.
+         */
         registro: function () {
-            return CDK.rutas.app("/registro.html");
+            return CDK.rutas.app("/autenticador.html");
         },
 
         /** Panel principal. */

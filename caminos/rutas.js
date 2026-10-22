@@ -52,14 +52,10 @@ const rutapromodetalles=produccion+"/promocion/detalle";
 ///nuevas rutas con respecto ala CUOTA raiz principal con accesos dinamicos
 const rutacuotapermisos=produccion+"/cuota"
 const rutacuotarevisarregistro=produccion+"/cuota/revisar";
-const rutacuotarevisarregistromarca=produccion+"/cuota/marcarevisar";
-const rutacuotarevisarregistromarca2=produccion+"/cuota/marcawach";
 ///nuevas rutas con respecto ala CUOTA registrar
 const rutacuotaregistro=produccion+"/cuota/update";
-const rutacuotaregistromarcaseleccionada=produccion+"/cuota/marcaupdate";
 ///nuevas rutas con respecto ala CUOTA para mostrar
 const rutacuotamostrar=produccion+"/cuota/mostrar";
-const rutacuotamostrarmarca=produccion+"/cuota/marcamostrar";///puede q no sea necesario
 const rutacuotamostraritems=produccion+"/cuota/desechar";
 ///nuevas rutas con respecto ala PRODUCTOS en la BUSQUEDA DE MARCAS
 const rutaproductobuscarmarcas=produccion+"/producto/marcas";
@@ -139,7 +135,12 @@ const rutafacturaprogramadaminutos=desarrollo+"/vendedor/programarventanillaminu
 
 
 
-const rutamarcas=produccion+"/reporte/marcas";
-const rutastock=produccion+"/reporte/stoc";
-const rutatiempo=produccion+"/reporte/tiempo";
-const rutamarcaprecios=produccion+"/reporte/precios";
+/* Aqui estaban rutamarcas, rutastock, rutatiempo y rutamarcaprecios
+   (/reporte/marcas, /stoc, /tiempo y /precios). Reportes ya usa
+   CDK.rutas.api() y las rutas nuevas /reporte/marca/*: la marca va por codmar
+   y no por texto, y el informe se puede ver ademas de descargar. Las cuatro
+   antiguas se retiraron el 21/10/2026: responden 404. Ver docs/reportes-grupo25.md.
+
+   Lo mismo pasa con las de cuota por marca (/cuota/especialista, /multiple,
+   /marcarevisar, /marcawach, /marcaupdate y /marcamostrar): las reemplaza
+   /v1/cuota/marcas, que se llama con CDK.rutas.api(). Ver docs/cuota-grupo25.md. */
