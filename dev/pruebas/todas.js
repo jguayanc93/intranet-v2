@@ -1,5 +1,5 @@
 /**
- * Corre las diez suites y resume.
+ * Corre todas las suites (las que se llaman probar-*.js) y resume.
  *
  *     node dev/pruebas/todas.js
  *

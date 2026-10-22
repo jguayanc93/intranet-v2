@@ -235,6 +235,10 @@ ningún grupo válido.)
 diferenciador en minúsculas, pero el router solo registra `cobertura`, `cartera`, `zona`
 y `especialista`. Esos 3 usuarios reciben un 404 al abrir la pantalla.
 
+> **Actualización:** `JEFATURA` ya tiene ruta (`/v1/vendedor/jefatura`), añadida con el
+> grupo 25, y devuelve el mismo menú que `especialista`. `HP` sigue sin ella. Ver
+> [marcas-grupo25.md](marcas-grupo25.md), sección 4.
+
 **2 · Los grupos 32 y 39 no tienen mapa de módulos.** El archivo de módulos solo define
 `grupo20`, `grupo25` y `grupo34`; `grupo39` está comentado. Si un usuario de
 ADM-SISTEMAS (8 usuarios) o VENTAS-JEFE DE PRODU (5) llegara al paso 5, recibiría
@@ -263,12 +267,13 @@ grupos, y conviene decidirlas juntos.
 | `cuota` | Ver el avance de las cuotas | sí | sí | sí |
 | `programador` | Permite entregar factura a almacen | sí | — | sí |
 | `reporte` | Permite sacar reportes de marcas | — | sí | — |
+| `marcas` | Elige y administra tus marcas del mes | — | sí | — |
 
 Los grupos 20 y 34 reciben hoy **exactamente el mismo conjunto**. El 25 es el único que
-cambia: pierde pedido, listas y programador, y gana reporte.
+cambia: pierde pedido, listas y programador, y gana reporte y marcas.
 
 **Para armar la pantalla**: recorrer las claves de `data` en vez de escribir una lista fija.
-Son 8 identificadores posibles y el conjunto depende del grupo, así que una lista fija
+Son 9 identificadores posibles y el conjunto depende del grupo, así que una lista fija
 pinta tarjetas que el usuario no puede usar, o esconde las que sí.
 
 ---

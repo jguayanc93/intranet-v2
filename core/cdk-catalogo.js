@@ -31,6 +31,13 @@
         listas:      'M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z',
         programador: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5',
         reporte:     'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z',
+        /* Dos personas y una detras: los clientes que compran. */
+        cobertura:   'M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z',
+        /* Un trofeo: el que mas vendio. */
+        vendedormes: 'M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0',
+        marcas:      'M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3ZM6 6h.008v.008H6V6Z',
+
+        ajuste:      'M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75',
 
         generico:    'M21 7.5V18M15 7.5V18M3 16.811V8.69c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0 1.954l-7.108 4.061A1.125 1.125 0 0 1 3 16.811Z',
         mas:         'M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z',
@@ -57,6 +64,9 @@
      *              se ejecuta desde esta intranet (se gestiona en otro sistema) o
      *              la pantalla no vive aqui. No es deuda pendiente. Se pinta sin
      *              enlace en vez de mandar al usuario a un 404.
+     * `oculto:true` en un acceso: el permiso se conoce pero no es una pantalla
+     *              aparte, asi que el hub no le hace tarjeta. Se declara para que
+     *              no salte el aviso de «permiso sin declarar».
      * ------------------------------------------------------------- */
     /* La ficha de factura, a la que llevan sus siete permisos. Se declara
        aparte y se referencia siete veces para que se lea de un vistazo que
@@ -156,6 +166,12 @@
             accesos: {
                 "crear":  { pagina: "cuota_registrar", etiqueta: "Registrar", descripcion: "Registrar tu cuota mensual" },
                 "leer":   { pagina: "cuota_observar",  etiqueta: "Ver",       descripcion: "Consultar tu avance" },
+                /* El grupo 25 recibe `["leer", "marcas", "meta marca"]` (sin `crear`: no
+                   registra una cuota de un solo monto). `marcas` y `meta marca` son los
+                   permisos de /cuota/marcas y /cuota/marcas/meta; la pantalla es la de
+                   «Ver», asi que no son tarjetas. Ver docs/cuota-grupo25.md, secc. 5. */
+                "marcas":     { pagina: "cuota_observar", etiqueta: "Cuota por marca", descripcion: "Ver la cuota por marca", oculto: true },
+                "meta marca": { pagina: "cuota_observar", etiqueta: "Fijar meta",      descripcion: "Fijar la meta de una marca", oculto: true },
                 /* Modificar y eliminar no existen, y probablemente no deban:
                    la cuota se registra UNA VEZ AL MES y no se cambia. El
                    backend lo hace cumplir con un 409 desde que se cerró el
@@ -207,6 +223,74 @@
             prioridad: 8,
             carpeta: "",          // reporte.html vive en la raiz
             accesos: {}           // no usa el patron de accesos dinamicos
+        },
+
+        /* Solo lo devuelve el grupo 25. No es un hub con acciones: es una
+           pantalla, como reporte, y `GET /marcas` no devuelve la lista de
+           accesos sino el estado del mes, asi que el patron de permisos
+           dinamicos no aplica y marcas.html vive en la raiz.
+
+           Prioridad 2 porque es lo primero que hay que resolver cada mes —las
+           marcas fijan la cuota—, y porque nunca coincide con `pedido`, que el
+           grupo 25 no recibe. Ver docs/marcas-grupo25.md. */
+        marcas: {
+            etiqueta: "Marcas",
+            icono: ICONOS.marcas,
+            prioridad: 2,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* Solo lo devuelve el grupo 25: a que clientes se les vendio cada marca en el mes. Como
+           reporte y marcas, es una pantalla y no un hub: no hay `GET /cobertura` con accesos, asi que
+           el patron de permisos dinamicos no aplica y cobertura.html vive en la raiz.
+
+           NO es la cobertura del grupo 20 (`/cuota/cobertura`, la cuota de los vendedores de tipo
+           COBERTURA): esa no cambia. Prioridad 9, despues de reporte: es de consulta, no de uso diario.
+           Ver docs/cobertura-grupo25.md. */
+        cobertura: {
+            etiqueta: "Cobertura",
+            icono: ICONOS.cobertura,
+            prioridad: 9,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* Solo lo devuelve el grupo 25 (desde el 22/10/2026): de cada marca, los 3 vendedores del grupo 20 que mas
+           la vendieron en el mes. Como reporte, marcas y cobertura, es una pantalla y no un hub: no hay
+           `GET /vendedormes` con accesos, asi que el patron de permisos dinamicos no aplica y vendedormes.html vive
+           en la raiz. Prioridad 10, despues de cobertura: es de consulta, no de uso diario.
+           Ver docs/vendedor-mes-grupo25.md. */
+        vendedormes: {
+            etiqueta: "Vendedor del mes",
+            etiquetaCorta: "Vendedores",       // la barra de abajo de un movil no da para mas: «Vendedor d…» se cortaba
+            icono: ICONOS.vendedormes,
+            prioridad: 10,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* El vendedor (grupo 20) envia una cotizacion o pedido para que el especialista
+           o la jefatura de la marca (grupo 25) le ajuste el precio, y se lo devuelven.
+           Un hub, como los demas: `GET /ajuste` dira que acciones tiene cada uno. Son dos
+           puntas: el vendedor (grupo 20) pide el ajuste y ve sus respuestas, y el
+           responsable (grupo 25) recibe y responde. El detalle de una solicitud se abre
+           desde la lista, no desde aqui. Ver docs/ajuste-precios.md.
+
+           Prioridad 3: es de uso diario, y el grupo 25 no recibe factura, que es la otra
+           con esa prioridad. */
+        ajuste: {
+            etiqueta: "Ajustes",          // corto: en la barra inferior de un movil «Ajuste de precio» se corta
+            icono: ICONOS.ajuste,
+            prioridad: 3,
+            carpeta: "ajuste",
+            accesos: {
+                /* Grupo 20 */
+                "enviar":    { pagina: "ajuste_enviar",    etiqueta: "Pedir ajuste", descripcion: "Pedir que ajusten el precio de una cotización o pedido" },
+                "enviadas":  { pagina: "ajuste_enviadas",  etiqueta: "Mis ajustes",  descripcion: "Lo que pediste y lo que respondieron" },
+                /* Grupo 25 */
+                "recibidas": { pagina: "ajuste_recibidas", etiqueta: "Recibidas",    descripcion: "Ajustes de precio que te enviaron" }
+            }
         }
     };
 
@@ -256,23 +340,36 @@
      *
      *   vigente   — el negocio lo sigue usando.
      *   operativo — ya tiene modulos y tareas definidas en la intranet.
-     *               ZONA y TIO GASEOSA son vigentes pero todavia no operativos:
+     *               ZONA y HP son vigentes pero todavia no operativos:
      *               estan reconocidos, sin modulos asignados aun.
+     *
+     *   pideMarcas — el registro deja elegir marcas (solo el grupo 25). Elegir
+     *               alguna en el registro es la confirmacion del mes.
      * ------------------------------------------------------------- */
     var TIPOS = {
         "COBERTURA":    { etiqueta: "Cobertura",    descripcion: "Vendedor de cobertura",                 grupo: "VENTAS-EJECUTIVOS",    nivel: 1, vigente: true,  operativo: true },
         "CARTERA":      { etiqueta: "Cartera",      descripcion: "Vendedor de cartera",                   grupo: "VENTAS-EJECUTIVOS",    nivel: 1, vigente: true,  operativo: true },
 
-        "JEFATURA":     { etiqueta: "Jefatura",     descripcion: "Jefe de línea",                         grupo: "VENTAS-JEFES DE PROD", nivel: 2, vigente: true,  operativo: true },
+        "JEFATURA":     { etiqueta: "Jefatura",     descripcion: "Jefe de línea",                         grupo: "VENTAS-JEFES DE PROD", nivel: 2, vigente: true,  operativo: true, pideMarcas: true },
         "ESPECIALISTA": { etiqueta: "Especialista", descripcion: "Jefe de una marca específica",          grupo: "VENTAS-JEFES DE PROD", nivel: 2, vigente: true,  operativo: true, pideMarcas: true },
 
         // Jefe de jefatura y especialista, pero en otro grupo.
         "ZONA":         { etiqueta: "Zona",         descripcion: "Jefe de zona",                          grupo: "VENTAS-JEFES DE ZONA", nivel: 3, vigente: true,  operativo: false },
-        "TIO GASEOSA":  { etiqueta: "Tío Gaseosa",  descripcion: "Jefe de HP y gaseosas",                 grupo: "VENTAS-JEFE DE PRODU", nivel: 2, vigente: true,  operativo: false },
 
-        // Presentes en el switch de autenticador.html, fuera de uso.
-        "WEB":          { etiqueta: "Web",          descripcion: "Vendedor de canal web",                 grupo: "VENTAS-JEFES DE ZONA", nivel: 1, vigente: false, operativo: false },
-        "CHAKAL":       { etiqueta: "Chakal",       descripcion: "Chakal del tío gaseosa",                grupo: "VENTAS-JEFE DE PRODU", nivel: 1, vigente: false, operativo: false }
+        /* Antes figuraba como "TIO GASEOSA", que es como lo llamaba la pantalla
+           vieja pero no como lo guarda el backend: el diferenciador es `HP`.
+           /vendedor devuelve `tipo: "HP"`, y con el nombre equivocado el menu
+           de usuario no encontraba la etiqueta. */
+        "HP":           { etiqueta: "HP",           descripcion: "Jefe de HP y gaseosas",                 grupo: "VENTAS-JEFE DE PRODU", nivel: 2, vigente: true,  operativo: false },
+
+        /* El backend dejo de aceptarlo en el registro (16/10/2026): el grupo 39
+           solo acepta HP. Se conserva para ponerle etiqueta a quien ya figure
+           con este tipo, pero no se ofrece. */
+        "CHAKAL":       { etiqueta: "Chakal",       descripcion: "Chakal del tío gaseosa",                grupo: "VENTAS-JEFE DE PRODU", nivel: 1, vigente: false, operativo: false },
+
+        // Estaba en el switch de autenticador.html pero el backend no lo acepta
+        // para el grupo 34: solo ZONA.
+        "WEB":          { etiqueta: "Web",          descripcion: "Vendedor de canal web",                 grupo: "VENTAS-JEFES DE ZONA", nivel: 1, vigente: false, operativo: false }
     };
 
     /* ---------------------------------------------------------------
@@ -315,6 +412,7 @@
                 etiqueta: acc.etiqueta,
                 descripcion: acc.descripcion,
                 existe: acc.existe !== false,
+                oculto: acc.oculto === true,
                 href: acc.existe === false ? null : CDK.rutas.app(carpeta + "/" + acc.pagina + ".html")
             };
         },

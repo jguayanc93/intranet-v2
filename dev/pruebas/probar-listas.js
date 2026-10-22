@@ -88,12 +88,14 @@ function responder(url, opciones) {
     }
 
     if (url.includes("/lista/pedidos")) {
-        /* Un pedido solo esta `aprobado` o `atendido` —no "pedido", que era
-           lo que esta prueba suponia— y no trae `editable`: la 7 llega null.
-           Su numero tampoco tiene el formato de cotizacion. */
+        /* Un pedido esta `sin aprobar`, `aprobado` o `atendido` —no "pedido", que era lo que esta
+           prueba suponia—. Desde el 21/10 trae `editable`: 1 si esta sin aprobar, 0 si no (antes llegaba
+           null, y todo pedido abierto salia como aprobado). Su numero tampoco tiene el formato de cotizacion. */
         return r({
-            0: { 0: "2026/09/17", 1: "099-00132184", 2: "INNOVA 2512 S.A.C.",
-                 3: 144.05, 4: "S", 5: "2026-09-17 11:59:54", 6: "atendido", 7: null }
+            0: { 0: "2026/10/21", 1: "009-00774171", 2: "INVERSIONES MEGAHARD E.I.R.L.",
+                 3: 3177.00, 4: "S", 5: "2026-10-21 10:15:02", 6: "sin aprobar", 7: 1 },
+            1: { 0: "2026/09/17", 1: "099-00132184", 2: "INNOVA 2512 S.A.C.",
+                 3: 144.05, 4: "S", 5: "2026-09-17 11:59:54", 6: "atendido", 7: 0 }
         });
     }
 
@@ -269,9 +271,9 @@ const pausa = (ms) => new Promise(r => setTimeout(r, ms));
 
     ok("pide SU ruta",
        llamadas.some(l => l.url.endsWith("/lista/pedidos")), true);
-    ok("pinta el pedido",
-       ped.doc.querySelectorAll("#npedis .cdk-articulo").length, 1);
-    const impPed = ped.doc.querySelector("#npedis .cdk-articulo__importe").textContent;
+    ok("pinta los dos pedidos",
+       ped.doc.querySelectorAll("#npedis .cdk-articulo").length, 2);
+    const impPed = ped.doc.querySelectorAll("#npedis .cdk-articulo__importe")[1].textContent;
     ok("con su importe", impPed.includes("144.05"), true);
     ok("y en soles",     impPed.includes("S/"), true);
     /* Aqui el estado SI se pinta siempre: un pedido solo puede estar
@@ -279,6 +281,9 @@ const pausa = (ms) => new Promise(r => setTimeout(r, ms));
        Ocultar uno por "normal" escondería la mitad de la informacion. */
     ok("y se ve si esta atendido",
        ped.doc.getElementById("npedis").textContent.includes("atendido"), true);
+    /* Desde el 21/10 hay un tercer estado: el pedido sin aprobar, que es el unico que acepta ajuste. */
+    ok("y se ve el que esta sin aprobar", ped.doc.getElementById("npedis").textContent.includes("sin aprobar"), true);
+    ok("la posicion del `editable` es la 7", ped.w.CDK.listas.CAMPOS.pedido.editable, 7);
 
     /* ------------------------------------------------------ clientes */
     console.log("\n— clientes —");

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cobertura de clientes por marca - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Cobertura</title>
+</head>
+
+<!-- Una sola pantalla, no un hub: el módulo `cobertura` no tiene acciones que
+     listar (`GET /v1/cobertura` no existe). Se queda en la raíz, que es donde la
+     tarjeta del menú ya apunta.
+
+     No es la cobertura del grupo 20 (`/cuota/cobertura`): esa es la cuota de los
+     vendedores de tipo COBERTURA. Esta es del grupo 25 y vive en `/v1/cobertura`. -->
+<body data-modulo="cobertura" data-titulo="Cobertura">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Cobertura</h1>
+        <p class="cdk-cabecera__sub" id="periodo">A qué clientes se les vendió cada marca</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas el nombre del periodo y la lectura de los errores. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/cobertura/datos.js"></script>
+<script src="/js/cobertura/cobertura.js"></script>
+</body>
+</html>

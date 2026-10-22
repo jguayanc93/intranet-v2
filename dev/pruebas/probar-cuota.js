@@ -12,6 +12,9 @@ const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
 
+const marcasSim = require("../simulador-marcas");
+const cuotaSim = require("../simulador-cuota");
+
 const RAIZ = path.resolve(__dirname, "..", "..");
 
 let fallos = 0;
@@ -25,8 +28,9 @@ function ok(etiqueta, real, esperado) {
 let llamadas = [];
 let registrada = null;      // la cuota del mes, null hasta registrarla
 let conAnadidos = true;     // para probar que la pantalla aguanta sin ellos
-let porMarca = false;       // el caso del especialista
+let porMarca = false;       // el caso del grupo 25: el direccionador reenvia a /cuota/marcas
 let sinCuota = false;       // jefatura, zona y hp: no les toca
+let sinMarcas = false;      // especialista que aun no confirmo marcas este mes
 
 const AVANCE = {
     meta: 380000, avance: 288420,
@@ -52,6 +56,11 @@ function responder(url, opciones) {
         status: status || 200, ok: (status || 200) < 400, statusText: "",
         text: () => Promise.resolve(JSON.stringify(JSON.stringify(obj)))
     });
+    /* Lo que llega tras el redireccionamiento a /cuota/marcas: JSON plano, no doblemente codificado. */
+    const plano = (obj, status) => Promise.resolve({
+        status: status || 200, ok: (status || 200) < 400, statusText: "",
+        text: () => Promise.resolve(JSON.stringify(obj))
+    });
 
     if (url.includes("/vendedor")) {
         return r({ status: "ok", codigo: 0, data: { cuota: "x" }, nombre: "JUAN" });
@@ -68,7 +77,19 @@ function responder(url, opciones) {
     }
 
     if (url.includes("/cuota/mostrar")) {
-        if (porMarca) return r({ status: "ok", codigo: 0, multiple: { HEWL: {}, EPSO: {} } });
+        /* Sin marcas confirmadas en el mes. Va en el primer nivel, sin `data`,
+           tal como lo documenta el backend (docs/marcas-grupo25.md, secc. 7);
+           antes era un 500. */
+        if (sinMarcas) {
+            return plano({ status: "sin marcas del mes", codigo: 0, debeAsignar: true, marcas: {} });
+        }
+
+        /* Especialista y jefatura: el direccionador redirige a /cuota/marcas y esto
+           es lo que llega. La vista se prueba aparte, en probar-cuota-marcas.js. */
+        if (porMarca) {
+            const v = cuotaSim.ver();
+            return plano(v.cuerpo, v.status);
+        }
 
         /* A jefatura, zona y hp la cuota no les toca. Llega con 200 y un
            campo propio, no con un 404. */
@@ -316,17 +337,44 @@ function botonModal(doc, cual) {
     ok("y los bloques simplemente no salen",
        p.doc.getElementById("seccion-ritmo").classList.contains("hidden"), true);
 
-    /* --------------------------------- el especialista */
-    console.log("\n— un especialista, que va por marca —");
+    /* --------------------------------- el grupo 25 */
+    console.log("\n— especialista y jefatura: el direccionador los reenvia a la cuota por marca —");
+    marcasSim.reiniciar("ESPECIALISTA");
+    marcasSim.buscarMarca("0008").dueno = "233";
+    marcasSim.estado.confirmados["233"] = true;
     porMarca = true;
+    llamadas = [];
     p = await montar("cuota/cuota_observar.html");
     await pausa(200);
 
-    /* La forma de esa respuesta no esta documentada. Pintarla a ojo seria
-       enseñarle mal la cuota a alguien. */
-    ok("lo dice en vez de inventarse la pantalla",
-       p.doc.getElementById("avance").textContent.includes("por marca"), true);
+    /* El backend redirige a /cuota/marcas, y la pantalla lo reconoce por lo que
+       llega —una lista `marcas`—, no por el tipo: aqui /vendedor ni lo dice. Entra
+       siempre por /cuota/mostrar, y no vuelve a pedir lo que ya tiene. */
+    ok("pide /cuota/mostrar", llamadas.filter((l) => l.url.includes("/cuota/mostrar")).length, 1);
+    ok("y no vuelve a pedir /cuota/marcas", llamadas.some((l) => l.url.endsWith("/cuota/marcas")), false);
+    ok("pinta la cuota por marca", !!p.doc.getElementById("cuota-marcas-total"), true);
+    ok("con su tarjeta", !!p.doc.getElementById("marca-0008"), true);
+    ok("y oculta la cuota unica", p.doc.getElementById("seccion-avance").classList.contains("hidden"), true);
+    ok("sin llevar a registrar", !!p.doc.querySelector("#por-marca a[href*='cuota_registrar']"), false);
     porMarca = false;
+
+    console.log("\n— un especialista que todavia no tiene marcas este mes —");
+    sinMarcas = true;
+    p = await montar("cuota/cuota_observar.html");
+    await pausa(200);
+
+    const faltan = p.doc.getElementById("por-marca");
+    /* Lo que falta no es registrar una cuota sino elegir marcas: mandarlo a
+       registrar seria llevarlo a una pantalla que no resuelve nada. */
+    ok("manda a elegir las marcas",
+       !!faltan.querySelector("a[href*='/marcas.html']"), true);
+    ok("y no a registrar la cuota",
+       !!p.doc.querySelector("a[href*='cuota_registrar']"), false);
+    ok("sin pintar un avance vacio",
+       !!p.doc.querySelector(".cdk-progreso__relleno"), false);
+    ok("ni dejar un error",
+       p.doc.body.textContent.toLowerCase().includes("error"), false);
+    sinMarcas = false;
 
     console.log("\n— un tipo de vendedor al que no le toca —");
     sinCuota = true;

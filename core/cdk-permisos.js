@@ -92,6 +92,10 @@
                     grupo:  respuesta.grupo,
                     tipo:   respuesta.tipo || respuesta.diferenciador,
                     marcas: respuesta.marcas,
+                    /* Cuantas solicitudes de ajuste esperan: las que le llegaron al grupo 25, o las que envio
+                       y aun no le responden al 20. null si no aplica o si la consulta fallo; es para el
+                       numerito del menu. Ver docs/ajuste-precios.md, secc. 7. */
+                    ajustesPendientes: respuesta.ajustesPendientes,
                     /* Ya es el del dia, no el 3.408 fijo. Llega null si no hay
                        ninguno cargado para hoy; CDK.coti.tipoCambio() solo lo
                        usa si es mayor que cero, asi que el null vuelve al fijo

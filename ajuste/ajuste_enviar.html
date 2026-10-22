@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pedir un ajuste de precio - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Pedir ajuste</title>
+</head>
+
+<!-- Grupo 20: un asistente de tres pasos —documento, revisa, enviado— para pedir que ajusten el precio de una cotización o pedido propio. -->
+<body data-modulo="ajuste" data-titulo="Pedir ajuste">
+
+<div class="cdk-pagina">
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas la lectura de los errores del backend y el nombre de una marca. -->
+<script src="/js/marcas/datos.js"></script>
+<!-- Las posiciones de la lista de cotizaciones, de donde se elige lo que se pide ajustar. Solo se leen. -->
+<script src="/js/listas/lista.js"></script>
+<script src="/js/ajuste/datos.js"></script>
+<script src="/js/ajuste/enviar.js"></script>
+</body>
+</html>

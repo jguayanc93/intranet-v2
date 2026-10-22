@@ -3,6 +3,10 @@
 Responde a `respuesta-cuota.md`. Las cuatro decisiones están aplicadas, y al final va lo
 del especialista con la forma de `multiple`, que era lo único que faltaba.
 
+> **Para el grupo 25 hay un contrato nuevo**: [cuota-grupo25.md](cuota-grupo25.md)
+> (`/cuota/marcas`). Su pantalla ya no llama a las rutas por marca de aquí; lo que sigue
+> vale para cobertura y cartera, y para lo antiguo hasta que el backend lo retire.
+
 ---
 
 ## Las cuatro decisiones, aplicadas

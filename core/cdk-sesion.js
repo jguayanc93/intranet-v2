@@ -57,6 +57,8 @@
                 grupo:  datos.grupo  || null,
                 tipo:   datos.tipo   || datos.diferenciador || null,
                 marcas: datos.marcas || [],
+                /* Solo si es un numero: null es «no aplica» o «no se pudo contar», y el menu se abre igual. */
+                ajustesPendientes: typeof datos.ajustesPendientes === "number" ? datos.ajustesPendientes : null,
                 // Aún no lo envía el backend. Se acepta desde ya para que el día
                 // que lo incluya empiece a usarse sin tocar nada: hoy las
                 // conversiones a soles tiran de un valor fijo en el código.

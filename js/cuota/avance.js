@@ -16,7 +16,13 @@
  * El avance es lo primordial: si alguno de los cuatro añadidos llega `null`
  * —porque falló su consulta— la pantalla se abre igual y ese bloque no sale.
  *
- * Ver docs/cuota.md.
+ * **Se entra siempre por `/cuota/mostrar`.** Es un direccionador: según el tipo de
+ * vendedor que viaja en la galleta, el backend reenvía a /cobertura, /cartera o,
+ * para especialistas y jefaturas (grupo 25), a `/cuota/marcas`. La pantalla ya no
+ * decide por el tipo: mira qué forma trae lo que llega (js/cuota/marcas.js se
+ * encarga de la cuota por marca).
+ *
+ * Ver docs/cuota.md y docs/cuota-grupo25.md.
  */
 ;(function () {
     "use strict";
@@ -34,20 +40,52 @@
 
     function cargar() {
         CDK.estados.cargando(avance, "Cargando tu avance…");
+        mostrar();
+    }
 
+    /**
+     * Especialistas y jefaturas (grupo 25) no tienen UNA cuota sino una meta por
+     * marca: se ven en otra vista. Se le entrega la respuesta que ya llego, o el
+     * error si fue `no identificado` (no figura en la intranet), que esa vista
+     * sabe explicar. Se oculta la seccion de la cuota unica y la suya ocupa su sitio.
+     */
+    function porMarca(respuesta, error) {
+        document.getElementById("seccion-avance").classList.add("hidden");
+
+        var contenedor = document.getElementById("por-marca");
+        contenedor.classList.remove("hidden");
+        CDK.cuota.marcas.iniciar(contenedor, respuesta, error);
+    }
+
+    function mostrar() {
         /* Es un GET y es un direccionador: según el tipo de vendedor que
            viaja en la galleta, el backend reenvía a /cobertura, /cartera o
-           /especialista. Desde aquí es una sola ruta. */
+           /cuota/marcas. Desde aquí es una sola ruta. */
         CDK.http.get(CDK.rutas.api("/cuota/mostrar"))
             .then(pintar)
             .catch(function (err) {
                 if (CDK.http.esError(err) && err.status === 401) return;   // ya redirige
+
+                /* Sin alta en la intranet: del grupo 25, que es de quien lo dice
+                   el backend, y su vista lo explica con el camino al registro. */
+                if (CDK.marcas.statusDe(err) === "no identificado") return porMarca(null, err);
+
                 CDK.estados.error(avance, err, cargar);
             });
     }
 
+    /** ¿Es la cuota por marca? Trae `marcas` en una lista, o dice que no hay ninguna este mes. */
+    function esPorMarca(respuesta) {
+        var d = (respuesta && respuesta.data) || respuesta || {};
+        return Array.isArray(d.marcas) || d.debeAsignar === true || d.status === "sin marcas del mes";
+    }
+
     function pintar(respuesta) {
         var d = (respuesta && respuesta.data) || respuesta || {};
+
+        /* El grupo 25: el direccionador la reenvió a `/cuota/marcas`. Va antes que
+           lo demás porque «sin marcas del mes» es de esta cuota y no de la unica. */
+        if (esPorMarca(respuesta)) return porMarca(respuesta);
 
         /* Todavía no registró su cuota de este mes. No es un error: es un
            estado normal del día 1, y el backend lo dice con un campo propio
@@ -55,25 +93,14 @@
 
            Antes esto llegaba como un 500 y el vendedor veía una pantalla
            rota cuando lo único que pasaba es que le tocaba registrar. */
-        /* Hay cuatro tipos de vendedor a los que la cuota no les toca
-           —jefatura, zona, hp y, de hecho, el especialista, que nunca tuvo
-           una meta cargada—. El direccionador lo dice con 200 y un campo
-           propio, no con un 404, para que esto no tenga que adivinarlo. */
+        /* Hay tipos de vendedor a los que la cuota no les toca —zona y hp—. El
+           direccionador lo dice con 200 y un campo propio, no con un 404, para
+           que esto no tenga que adivinarlo. */
         if (d.aplica === false || d.status === "cuota no corresponde") {
             return noCorresponde(d);
         }
 
         if (d.debeRegistrar) return pedirRegistro(d);
-
-        /* Los especialistas tienen cuota POR MARCA —no es el caso de
-           cobertura ni de cartera, que son quienes usan esta pantalla— y el
-           direccionador los manda a otra ruta, que responde
-           `{ multiple: … }`. Esa forma no está documentada, así que no se
-           pinta a ojo: se dice lo que pasa.
-
-           Es una vista aparte y pendiente, no un fallo de esta.
-           Ver docs/respuesta-cuota.md. */
-        if (d.multiple !== undefined) return porMarcaPendiente();
 
         pintarAvance(d);
         pintarRitmo(d.ritmo);
@@ -114,18 +141,6 @@
                no ofrecer ninguna. */
             el("p", { clase: "cdk-pista",
                       texto: "Esta pantalla es para quienes tienen una cuota asignada." })
-        ]));
-    }
-
-    function porMarcaPendiente() {
-        avance.innerHTML = "";
-        avance.appendChild(el("div", { clase: "cdk-aviso" }, [
-            el("p", { clase: "cdk-aviso__texto",
-                      texto: "Tu cuota va por marca, y esa vista todavía no está montada." }),
-            el("p", { clase: "cdk-pista",
-                      texto: "Es una vista distinta de la de cobertura y cartera, y está " +
-                             "pedida al equipo de sistemas. Mientras tanto no se enseña " +
-                             "nada antes que enseñarlo mal." })
         ]));
     }
 

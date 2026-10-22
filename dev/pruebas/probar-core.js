@@ -117,6 +117,9 @@ ok("conocido() false",          CDK.catalogo.conocido("inventado"), false);
 ok("acceso resuelve href",      CDK.catalogo.acceso("cotizacion", "crear").href, "/demo1/cotizacion/cotizacion_nuevo.html");
 ok("acceso inexistente",        CDK.catalogo.acceso("cuota", "update").existe, false);
 ok("href null si no existe",    CDK.catalogo.acceso("cuota", "update").href, null);
+/* El grupo 25 recibe ["leer", "marcas", "meta marca"]: los dos ultimos se conocen pero no son tarjetas. */
+ok("permiso conocido sin tarjeta", [CDK.catalogo.acceso("cuota", "marcas").oculto, CDK.catalogo.acceso("cuota", "meta marca").oculto], [true, true]);
+ok("y los demas si la tienen",     [CDK.catalogo.acceso("cuota", "leer").oculto, CDK.catalogo.acceso("cuota", "crear").oculto], [false, false]);
 ok("permiso desconocido",       CDK.catalogo.acceso("cotizacion", "volar"), null);
 
 ok("listas usa carpeta lista",  CDK.catalogo.acceso("listas", "cotizacion").href, "/demo1/lista/lista_cotizacion.html");
@@ -131,6 +134,40 @@ ok("WEB fuera de uso",          CDK.catalogo.tipos("VENTAS-JEFES DE ZONA").map(t
 ok("solo operativos",           CDK.catalogo.tipos(null, {soloOperativos:true}).map(t => t.clave), ["COBERTURA","CARTERA","JEFATURA","ESPECIALISTA"]);
 ok("zona es nivel 3",           CDK.catalogo.tipo("ZONA").nivel, 3);
 ok("especialista pide marcas",  CDK.catalogo.tipo("ESPECIALISTA").pideMarcas, true);
+ok("jefatura tambien",          CDK.catalogo.tipo("JEFATURA").pideMarcas, true);
+ok("cobertura no",              CDK.catalogo.tipo("COBERTURA").pideMarcas, undefined);
+
+/* El backend guarda el diferenciador del grupo 39 como `HP`. «TIO GASEOSA» era
+   como lo llamaba la pantalla vieja, y el backend lo rechaza. */
+/* CHAKAL ya no se acepta (16/10/2026): no se ofrece, pero se conoce para
+   ponerle etiqueta a quien ya figure con ese tipo. */
+ok("grupo 39: solo HP", CDK.catalogo.tipos("VENTAS-JEFE DE PRODU").map(t => t.clave), ["HP"]);
+ok("CHAKAL sigue teniendo etiqueta", CDK.catalogo.tipo("CHAKAL").etiqueta, "Chakal");
+ok("«tio gaseosa» ya no se ofrece",      CDK.catalogo.tipo("TIO GASEOSA"), null);
+ok("/vendedor devuelve HP y se le halla etiqueta", CDK.catalogo.tipo("HP").etiqueta, "HP");
+
+/* marcas es una pantalla en la raiz, no un hub con acciones. */
+ok("marcas es modulo conocido", CDK.catalogo.conocido("marcas"), true);
+ok("y vive en la raiz",         CDK.catalogo.hub("marcas"), "/demo1/marcas.html");
+ok("en el menu del grupo 25, marcas va segundo",
+   CDK.catalogo.ordenar(["reporte", "cuota", "promocion", "marcas", "factura", "cotizacion"]),
+   ["cotizacion", "marcas", "factura", "promocion", "cuota", "reporte"]);
+
+/* cobertura (grupo 25): otra pantalla en la raiz. No es la cobertura del grupo 20, que es un tipo de vendedor. */
+ok("cobertura es modulo conocido", CDK.catalogo.conocido("cobertura"), true);
+ok("y vive en la raiz",            CDK.catalogo.hub("cobertura"), "/demo1/cobertura.html");
+ok("sin acciones: no es un hub",    [CDK.catalogo.modulo("cobertura").etiqueta, Object.keys(CDK.catalogo.modulo("cobertura").accesos)], ["Cobertura", []]);
+ok("en el menu del grupo 25 va el ultimo, despues de reportes",
+   CDK.catalogo.ordenar(["cobertura", "reporte", "cuota", "ajuste", "marcas", "cotizacion"]),
+   ["cotizacion", "marcas", "ajuste", "cuota", "reporte", "cobertura"]);
+
+/* vendedormes (grupo 25, desde el 22/10): otra pantalla en la raiz, de consulta, y la ultima del menu. */
+ok("vendedormes es modulo conocido", CDK.catalogo.conocido("vendedormes"), true);
+ok("vive en la raiz",               CDK.catalogo.hub("vendedormes"), "/demo1/vendedormes.html");
+ok("sin acciones: no es un hub",     [CDK.catalogo.modulo("vendedormes").etiqueta, Object.keys(CDK.catalogo.modulo("vendedormes").accesos)], ["Vendedor del mes", []]);
+ok("el menu completo del grupo 25: vendedormes va despues de cobertura",
+   CDK.catalogo.ordenar(["vendedormes", "cobertura", "reporte", "cuota", "ajuste", "marcas", "cotizacion"]),
+   ["cotizacion", "marcas", "ajuste", "cuota", "reporte", "cobertura", "vendedormes"]);
 
 /* === Formato ===================================================== */
 console.log("\n— formato —");
@@ -784,6 +821,34 @@ console.log("\n— entorno —");
     ok("api prod no cambia",
        env("landing.compudiskett.com.pe", "").rutas.api("/login"),
        "https://pulpo.compudiskett.com.pe/v1/login");
+
+    /* Apuntar la pagina al servidor de PRUEBA del backend (docs/servidor-prueba-grupo25.md).
+       Solo en desarrollo, y solo https bajo compudiskett.com.pe: es lo que exigen sus cookies. */
+    function conApi(host, puerto, valor) {
+        const v = crearEntorno(host, "http://" + host + "/core/cdk.js", puerto);
+        v.localStorage = { getItem: (k) => (k === "cdk.api" && valor !== undefined ? valor : null) };
+        return cargar(v, ARCHIVOS);
+    }
+    const PRUEBA = "https://prueba.compudiskett.com.pe";
+    const SIMULADOR = "http://127.0.0.1:3000/v1/login";
+
+    ok("el servidor de prueba, en desarrollo",
+       conApi("127.0.0.1", "8080", PRUEBA).rutas.api("/cuota/marcas"), PRUEBA + "/v1/cuota/marcas");
+    ok("con /v1 o sin el, con barra o sin ella",
+       [conApi("127.0.0.1", "8080", PRUEBA + "/v1").rutas.api("/login"), conApi("127.0.0.1", "8080", PRUEBA + "/v1/").rutas.api("/login"),
+        conApi("127.0.0.1", "8080", PRUEBA + "/").rutas.api("/login")],
+       [PRUEBA + "/v1/login", PRUEBA + "/v1/login", PRUEBA + "/v1/login"]);
+    ok("con puerto", conApi("127.0.0.1", "8080", PRUEBA + ":8443").rutas.api("/login"), PRUEBA + ":8443/v1/login");
+    ok("sin nada guardado, el simulador", conApi("127.0.0.1", "8080", undefined).rutas.api("/login"), SIMULADOR);
+    ok("por http no vale: sus cookies son Secure", conApi("127.0.0.1", "8080", "http://prueba.compudiskett.com.pe").rutas.api("/login"), SIMULADOR);
+    ok("otro dominio no vale", conApi("127.0.0.1", "8080", "https://prueba.otro.example").rutas.api("/login"), SIMULADOR);
+    ok("ni uno que solo lo contiene", [
+        conApi("127.0.0.1", "8080", "https://evilcompudiskett.com.pe").rutas.api("/login"),
+        conApi("127.0.0.1", "8080", "https://compudiskett.com.pe.malo.example").rutas.api("/login"),
+        conApi("127.0.0.1", "8080", "https://malo.example/https://x.compudiskett.com.pe").rutas.api("/login")
+    ], [SIMULADOR, SIMULADOR, SIMULADOR]);
+    ok("en produccion no hace nada", conApi("landing.compudiskett.com.pe", "", PRUEBA).rutas.api("/login"),
+       "https://pulpo.compudiskett.com.pe/v1/login");
 }
 
 
@@ -812,6 +877,14 @@ async function probarRespuestas() {
     ok("sobre: nombre",           hoy.usuario.nombre, "JUAN CARLOS");
     ok("sobre: tipo",             hoy.usuario.tipo, "ESPECIALISTA");
     ok("sobre: tipo de cambio",   hoy.usuario.tipoCambio, 3.437);
+
+    /* `ajustesPendientes` (21/10): el numerito del menu de Ajustes. Solo cuenta si es un numero. */
+    const conPendientes = (valor) => modulosCon({ status: "ok", codigo: 0, data: { ajuste: "..." }, nombre: "X", ajustesPendientes: valor });
+    ok("ajustesPendientes: un numero se guarda",        (await conPendientes(4)).usuario.ajustesPendientes, 4);
+    ok("ajustesPendientes: 0 es 0, no «no aplica»",     (await conPendientes(0)).usuario.ajustesPendientes, 0);
+    ok("ajustesPendientes: null es null",               (await conPendientes(null)).usuario.ajustesPendientes, null);
+    ok("ajustesPendientes: un texto no es un numero",   (await conPendientes("4")).usuario.ajustesPendientes, null);
+    ok("ajustesPendientes: sin el campo, null",         (await modulosCon({ data: { ajuste: "..." }, nombre: "X" })).usuario.ajustesPendientes, null);
 
     /* La anterior sigue valiendo: el backend migra pantalla por pantalla. */
     const antes = await modulosCon({ modulos: { cuota: "..." }, nombre: "X", tipo: "COBERTURA" });

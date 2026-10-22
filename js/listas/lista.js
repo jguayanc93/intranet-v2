@@ -59,7 +59,9 @@
     var CAMPOS = {
         cotizacion: mapa({ estado: 6, editable: 7 }),
         factura:    mapa({ entrega: 8, tipoDoc: 9 }),
-        pedido:     mapa({ estado: 6 })
+        /* Desde el 21/10 la lista de pedidos distingue los sin aprobar: el estado es `sin aprobar`, `aprobado`
+           o `atendido`, y `editable` vale 1 en los sin aprobar. Es lo que acepta el ajuste de precios. */
+        pedido:     mapa({ estado: 6, editable: 7 })
     };
 
     /* Cuántas filas se pintan de una vez.

@@ -86,6 +86,17 @@ body[data-shell="inicio"] {
 
 body.cdk-sin-scroll { overflow: hidden; }
 
+/* Pagina sin armazon que aun asi usa los componentes: el registro. El armazon
+   le da al body su fuente y su fondo a traves de [data-modulo], y una pagina
+   con data-shell="none" no tiene ese atributo. */
+body.cdk-suelta {
+    margin: 0;
+    background: var(--cdk-fondo);
+    color: var(--cdk-texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* La define tambien Tailwind, pero varias pantallas alternan `.hidden` desde
    JS y no todas cargan Tailwind. Teniendola aqui, el armazon no depende de el. */
 .hidden { display: none !important; }
@@ -306,6 +317,7 @@ body.cdk-sin-scroll { overflow: hidden; }
 .cdk-bottomnav__lista > li { flex: 1 1 0; min-width: 0; }
 
 .cdk-bottomnav__enlace {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -454,6 +466,9 @@ body.cdk-sin-scroll { overflow: hidden; }
     font: inherit;
     font-size: 14px;
     font-weight: 600;
+    /* Se usa tambien en enlaces <a> (Registrar mi cuota, Ir al panel): sin
+       esto salen subrayados como un enlace de texto, no como un boton. */
+    text-decoration: none;
     cursor: pointer;
 }
 .cdk-boton:disabled { opacity: .55; cursor: not-allowed; }
@@ -781,6 +796,21 @@ body.cdk-sin-scroll { overflow: hidden; }
     color: var(--cdk-texto-suave);
 }
 
+/* Una medida de la cuota: su etiqueta y su cifra, y debajo la barra contra la meta si
+   la hay. Varias seguidas, una por medida (venta, rentabilidad, unidades). */
+.cdk-medida { margin-top: 14px; }
+
+.cdk-medida__fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.cdk-medida__etiqueta { color: var(--cdk-texto-suave); }
+.cdk-medida__valor { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+
 .cdk-ficha-fila {
     display: flex;
     flex-direction: column;
@@ -872,8 +902,11 @@ body.cdk-sin-scroll { overflow: hidden; }
 .cdk-aviso__texto { margin: 0; }
 .cdk-aviso__texto strong { font-weight: 700; }
 
+/* Con wrap: una marca de la jefatura puede llevar tres acciones —dar, quitar,
+   dejar de trabajarla— y en 320px no caben en una linea. */
 .cdk-articulo__acciones {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 10px;
 }
@@ -1473,6 +1506,146 @@ select.cdk-entrada { padding-right: 8px; }
 }
 
 .cdk-acciones-fila { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ---------------------------------------------------------------------
+   Insignia
+
+   El numerito de lo que espera respuesta, en el enlace de un modulo del menu. Informa, no navega.
+   --------------------------------------------------------------------- */
+.cdk-insignia { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px;
+                padding: 0 5px; border-radius: 999px; background: var(--cdk-error); color: #fff;
+                font-size: 11px; font-weight: 700; line-height: 1; }
+.cdk-bottomnav__enlace .cdk-insignia { position: absolute; top: 6px; left: calc(50% + 6px); box-shadow: 0 0 0 2px var(--cdk-superficie); }
+.cdk-sidebar__enlace .cdk-insignia,
+.cdk-hoja__enlace .cdk-insignia { margin-left: auto; }
+
+/* ---------------------------------------------------------------------
+   Puesto
+
+   El numero de un ranking, delante del nombre: un circulo, con el primero en el color de la marca. El numero
+   va escrito, asi que no depende del color.
+   --------------------------------------------------------------------- */
+.cdk-puesto { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: 22px; height: 22px;
+              margin-right: 8px; border-radius: 50%; background: var(--cdk-primario-suave); color: var(--cdk-primario-fuerte);
+              font-size: 12px; font-weight: 700; line-height: 1; vertical-align: 1px; }
+.cdk-puesto--1 { background: var(--cdk-primario); color: #fff; }
+
+/* ---------------------------------------------------------------------
+   Pasos de un asistente
+
+   Donde va la persona dentro de un flujo corto: `1 Documento — 2 Revisa — 3 Enviado`.
+   Informa, no navega: no son botones.
+   --------------------------------------------------------------------- */
+.cdk-pasos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 14px;
+             font-size: 12px; color: var(--cdk-texto-suave); }
+.cdk-pasos__paso { display: inline-flex; align-items: center; gap: 5px; }
+.cdk-pasos__numero { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+                     border-radius: 50%; background: var(--cdk-borde); color: var(--cdk-texto-suave);
+                     font-size: 11px; font-weight: 700; }
+.cdk-pasos__paso--actual { color: var(--cdk-primario-fuerte); font-weight: 700; }
+.cdk-pasos__paso--actual .cdk-pasos__numero { background: var(--cdk-primario); color: #fff; }
+.cdk-pasos__paso--hecho .cdk-pasos__numero { background: var(--cdk-exito); color: #fff; }
+.cdk-pasos__raya { opacity: .4; }
+
+/* ---------------------------------------------------------------------
+   Pestañas
+
+   Elegir entre pocas vistas de lo mismo —los tres informes de una marca—.
+   Son botones y no enlaces: no cambian de pagina. Envuelven en dos lineas en
+   movil en vez de desplazarse, para que ninguna quede escondida.
+   --------------------------------------------------------------------- */
+.cdk-pestanas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+
+.cdk-pestana {
+    min-height: var(--cdk-tactil);
+    padding: 0 14px;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+    color: var(--cdk-texto);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.cdk-pestana:hover:not(:disabled) { border-color: var(--cdk-primario); }
+.cdk-pestana.es-activa {
+    border-color: var(--cdk-primario);
+    background: var(--cdk-primario-suave);
+    color: var(--cdk-primario-fuerte);
+}
+.cdk-pestana:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ---------------------------------------------------------------------
+   Tabla de datos
+
+   Para informes con muchas columnas, como los de Reportes: once en el de
+   stock, que no caben en un movil. Se desplaza en la propia caja, no en la
+   pagina, con el encabezado y la primera columna fijos para no perder de
+   que producto es cada cifra al ir hacia la derecha.
+
+   `max-height` acota la caja: con 700 filas, sin tope la pagina entera se
+   volveria una tabla y el boton de exportar quedaria a un kilometro.
+   --------------------------------------------------------------------- */
+.cdk-tabla-caja {
+    max-height: 70vh;
+    overflow: auto;
+    border: 1px solid var(--cdk-borde);
+    border-radius: var(--cdk-radio);
+    background: var(--cdk-superficie);
+}
+
+.cdk-tabla { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+
+.cdk-tabla th,
+.cdk-tabla td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--cdk-borde);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.cdk-tabla thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--cdk-fondo);
+    color: var(--cdk-texto-suave);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+.cdk-tabla tbody tr:last-child td { border-bottom: 0; }
+
+/* Primera columna fija. En la cabecera va por encima de las demas, que
+   tambien son fijas en vertical: sin esto la esquina se pisa al desplazar. */
+.cdk-tabla th:first-child,
+.cdk-tabla td:first-child { position: sticky; left: 0; z-index: 1; background: var(--cdk-superficie); }
+.cdk-tabla thead th:first-child { z-index: 3; background: var(--cdk-fondo); }
+
+.cdk-tabla tbody tr:hover td { background: var(--cdk-primario-suave); }
+
+.cdk-tabla .cdk-tabla__num { text-align: right; font-variant-numeric: tabular-nums; }
+/* El texto largo si envuelve; todo lo demas, no.
+
+   Acotado en movil: la primera columna es fija, y si es la descripcion y mide
+   220px se queda con casi todo el ancho de un telefono, dejando 100px para
+   desplazar el resto. En pantallas anchas si hay sitio y se deja respirar. */
+.cdk-tabla .cdk-tabla__texto { white-space: normal; min-width: 150px; max-width: 170px; }
+
+@media (min-width: 768px) {
+    .cdk-tabla .cdk-tabla__texto { min-width: 260px; max-width: none; }
+}
+.cdk-tabla .cdk-tabla__negativo { color: var(--cdk-error); font-weight: 600; }
+
+/* Guias: una guia ocupa tantas filas como productos lleve. La primera lleva una
+   linea mas marcada encima, y las celdas de la guia que se repiten en las demas se
+   atenuan: asi se lee donde acaba una y empieza otra sin tener que comparar numeros. */
+.cdk-tabla tbody tr.cdk-tabla__grupo td { border-top: 2px solid #d1d5db; }
+.cdk-tabla .cdk-tabla__repetido { color: var(--cdk-texto-suave); }
+.cdk-tabla .cdk-tabla__vacio { color: var(--cdk-texto-suave); }
 
 /* Archivo real, oculto pero accesible: lo dispara la zona de soltar */
 .cdk-archivo {

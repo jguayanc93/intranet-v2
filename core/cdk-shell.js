@@ -29,8 +29,15 @@
     /* ---------------------------------------------------------------
      * Utilidades
      * ------------------------------------------------------------- */
+    /** Cuantas solicitudes de ajuste esperan, o 0. Es lo que dice /vendedor; no se cuenta aqui. */
+    function ajustesPendientes() {
+        var u = CDK.sesion.usuario();
+        return u && typeof u.ajustesPendientes === "number" && u.ajustesPendientes > 0 ? u.ajustesPendientes : 0;
+    }
+
+    /* Los modulos y, ademas, el numerito: si cambia, el menu se repinta aunque los modulos sean los mismos. */
     function firma(claves) {
-        return claves.join("|");
+        return claves.join("|") + "#" + ajustesPendientes();
     }
 
     /** true si la pagina actual es el hub del modulo, no una tarea dentro de el. */
@@ -228,14 +235,27 @@
     function enlaceModulo(clave, activo, variante) {
         var meta = CDK.catalogo.modulo(clave);
 
+        var hijos = [
+            icono(meta.icono),
+            /* En la barra de abajo de un movil caben unas diez letras: un modulo con nombre largo trae `etiquetaCorta`. */
+            el("span", { clase: "cdk-" + variante + "__texto",
+                         texto: variante === "bottomnav" && meta.etiquetaCorta ? meta.etiquetaCorta : meta.etiqueta })
+        ];
+
+        /* El numerito de lo que espera respuesta: solo en Ajustes, y solo si hay algo. */
+        var pendientes = clave === "ajuste" ? ajustesPendientes() : 0;
+        if (pendientes) {
+            hijos.push(el("span", {
+                clase: "cdk-insignia", "aria-label": pendientes + (pendientes === 1 ? " pendiente" : " pendientes"),
+                texto: pendientes > 99 ? "99+" : String(pendientes)
+            }));
+        }
+
         var a = el("a", {
             href: CDK.catalogo.hub(clave),
             clase: "cdk-" + variante + "__enlace" + (activo ? " es-activo" : ""),
             title: meta.etiqueta
-        }, [
-            icono(meta.icono),
-            el("span", { clase: "cdk-" + variante + "__texto", texto: meta.etiqueta })
-        ]);
+        }, hijos);
 
         if (activo) a.setAttribute("aria-current", "page");
 
@@ -431,6 +451,17 @@
         titulo: function (texto) {
             var nodo = document.querySelector(".cdk-navbar__titulo");
             if (nodo) nodo.textContent = texto;
+        },
+
+        /**
+         * Vuelve a pedir los modulos y repinta el menu si algo cambio: hoy, el numerito de ajustes pendientes.
+         * Es para cuando la propia pagina lo cambia —responder una solicitud, enviar una—; si no, el numero
+         * se quedaria como estaba hasta la siguiente pagina. Es un adorno: si falla, el menu no se toca.
+         */
+        actualizarMenu: function () {
+            return CDK.permisos.modulos({ forzar: true })
+                .then(function (modulos) { pintarModulos(modulos); })
+                .catch(function () { /* el menu se queda como estaba */ });
         },
 
         /** Expuesto para paginas que pinten contenido propio tras cargar datos. */

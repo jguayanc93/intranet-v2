@@ -106,7 +106,7 @@ mecánico.
 | `data-modulo="cotizacion"` | Módulo al que pertenece. Marca el elemento activo del menú y decide el botón de volver. |
 | `data-titulo="…"` | Título en la barra superior. |
 | `data-shell="inicio"` | Panel principal y páginas que no son de módulo. |
-| `data-shell="none"` | Sin armazón y sin guard: inicio de sesión, registro, `dev/`. |
+| `data-shell="none"` | Sin armazón y sin guard: inicio de sesión, registro, `dev/`. Si la página usa los componentes de `cdk-shell.css`, añadir `class="cdk-suelta"` al `<body>`: el armazón da fuente y fondo a través de `[data-modulo]`, y aquí no hay. |
 | `data-volver="/main.html"` | Fuerza el destino del botón de volver. |
 
 ---
@@ -254,6 +254,11 @@ inventario: {
     }
 }
 ```
+
+**Un módulo que es una sola pantalla**, sin hub de acciones, se declara con `carpeta: ""` y
+`accesos: {}` y vive en la raíz (`reporte.html`, `marcas.html`). El hub pide `GET /<modulo>`
+para saber qué acciones pintar, y en `marcas` esa ruta no devuelve una lista de permisos sino
+el estado del mes: aplicarle el patrón la trataría como si lo fuera.
 
 `existe: false` en un acceso significa que el backend puede concederlo pero no se opera
 desde esta intranet. Se pinta sin enlace, en lugar de llevar a un 404.
