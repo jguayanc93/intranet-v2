@@ -26,8 +26,6 @@ const objprogramar={}
 let objfactura=[];///////VARIABLES PARA LA MODIFICACION DE LA FACTURA TEMPORAL Y SUS CAMPOS 0CODIGOCLIENTE 1FACTURA
 
 
-let marca_seleccionada="";///variable temporal para guardar la seleccion del usuario se reiniciara cada ves q entre
-
 //////VARIABLES PARA EL GUARDADO TEMPORAL DE LAS PROMOCIONES SELECCIONADAS EN LA ELIMINACION DE LA PROMOCION
 const promos_recojidas=[];
 ////VARIABLE TEMPORAL PARA EL GUARDADO DE MARCAS SEGUN ESPECIALISTA
