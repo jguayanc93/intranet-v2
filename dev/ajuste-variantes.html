@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Pedir ajuste, cuatro caminos</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 24px 16px 80px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco-pagina { max-width: 1500px; margin: 0 auto; }
+
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 14px; font-size: 14px; color: var(--cdk-texto-suave); line-height: 1.6; max-width: 76ch; }
+        .intro strong { color: var(--cdk-texto); }
+        .datos { margin: 0 0 22px; padding: 12px 16px 12px 30px; font-size: 13px; line-height: 1.6;
+                 background: var(--cdk-superficie); border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio);
+                 color: var(--cdk-texto-suave); max-width: 76ch; }
+        .datos strong { color: var(--cdk-texto); }
+
+        .rejilla { display: grid; gap: 34px 28px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); align-items: start; }
+
+        .caso { transition: opacity .15s; }
+        .caso.descartada { opacity: .32; }
+        .caso__titulo { font-size: 15px; font-weight: 700; margin: 0 0 2px; display: flex; gap: 8px; align-items: flex-start;
+                        flex-wrap: wrap; min-height: 2.9em; }
+        .caso__etiqueta { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+                          background: var(--cdk-primario-suave); color: var(--cdk-primario-fuerte); }
+        .caso__etiqueta--hoy { background: #f3f4f6; color: var(--cdk-texto-suave); }
+        .caso__nota { font-size: 12.5px; color: var(--cdk-texto-suave); margin: 0 0 12px; line-height: 1.55; min-height: 5em; }
+        .caso__coste { font-size: 12px; margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--cdk-borde);
+                       color: var(--cdk-texto-suave); line-height: 1.5; }
+        .caso__coste strong { color: var(--cdk-texto); }
+        .caso__coste--ojo { border-left-color: var(--cdk-aviso); }
+
+        /* El movil: ancho real, y alto fijo para que se vea una pantalla, no una pagina */
+        .movil { position: relative; width: 100%; max-width: 390px; height: 690px; overflow: hidden;
+                 background: var(--cdk-fondo); border: 1px solid var(--cdk-borde); border-radius: 18px;
+                 box-shadow: var(--cdk-sombra-alta); }
+        .movil > .mk-pantalla { height: 100%; overflow-y: auto; }
+
+        .mk-barra { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px;
+                    background: var(--cdk-superficie); border-bottom: 1px solid var(--cdk-borde); font-size: 15px; }
+        .mk-atras { cursor: pointer; font-size: 18px; line-height: 1; padding: 6px 8px 6px 0; }
+        .mk-cuerpo { padding: 14px; }
+        .mk-cuerpo > .cdk-seccion:first-child { margin-top: 0; }
+        .mk-sub { margin: 0 0 12px; font-size: 13px; color: var(--cdk-texto-suave); line-height: 1.5; }
+
+        .mk-fab { position: absolute; right: 14px; bottom: 14px; z-index: 3; box-shadow: var(--cdk-sombra-alta);
+                  border-radius: 999px; padding: 0 20px; }
+        .mk-velo { position: absolute; inset: 0; z-index: 4; background: rgba(17, 24, 39, .5); }
+        .mk-hoja { position: absolute; left: 0; right: 0; bottom: 0; top: 70px; z-index: 5; background: var(--cdk-superficie);
+                   border-radius: 18px 18px 0 0; box-shadow: var(--cdk-sombra-alta); display: flex; flex-direction: column; }
+        .mk-hoja__asa { width: 38px; height: 4px; border-radius: 4px; background: var(--cdk-borde); margin: 8px auto 4px; flex: none; }
+        .mk-hoja__cab { display: flex; justify-content: space-between; align-items: center; padding: 6px 16px 10px; flex: none; }
+        .mk-hoja__cab b { font-size: 16px; }
+        .mk-hoja__cuerpo { padding: 0 14px 14px; overflow-y: auto; flex: 1; }
+        .mk-cerrar { cursor: pointer; font-size: 18px; padding: 4px 8px; color: var(--cdk-texto-suave); }
+
+        .mk-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+        .mk-chip { border: 1px solid var(--cdk-borde); background: var(--cdk-superficie); border-radius: 999px; padding: 6px 12px;
+                   font: inherit; font-size: 12.5px; cursor: pointer; color: var(--cdk-texto); }
+        .mk-chip:hover { border-color: var(--cdk-primario); }
+
+        .mk-pasos { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--cdk-texto-suave); margin: 0 0 14px; flex-wrap: wrap; }
+        .mk-paso { display: inline-flex; align-items: center; gap: 5px; }
+        .mk-paso i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center;
+                     justify-content: center; font-size: 11px; font-weight: 700; background: var(--cdk-borde); color: var(--cdk-texto-suave); }
+        .mk-paso.es-actual { color: var(--cdk-primario-fuerte); font-weight: 700; }
+        .mk-paso.es-actual i { background: var(--cdk-primario); color: #fff; }
+        .mk-paso.es-hecho i { background: var(--cdk-exito); color: #fff; }
+
+        .mk-resumen { margin: 0 0 12px; }
+        .mk-resumen .cdk-articulo__cuerpo { padding-bottom: 2px; }
+        .mk-fila { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--cdk-borde); }
+        .mk-fila:first-child { border-top: 0; }
+        .mk-fila span:last-child { text-align: right; font-weight: 600; }
+        .mk-persona { padding: 10px 0; border-top: 1px solid var(--cdk-borde); font-size: 13px; }
+        .mk-persona:first-child { border-top: 0; }
+        .mk-persona b { display: block; font-size: 14px; }
+        .mk-persona small { color: var(--cdk-texto-suave); }
+
+        .mk-ok { text-align: center; padding: 6px 0 4px; }
+        .mk-ok span { display: inline-flex; width: 44px; height: 44px; border-radius: 50%; align-items: center; justify-content: center;
+                      background: #ecfdf5; color: var(--cdk-exito); font-size: 22px; font-weight: 700; }
+        .mk-ok h3 { margin: 8px 0 2px; font-size: 16px; }
+
+        .mk-modal { position: absolute; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); z-index: 6;
+                    background: var(--cdk-superficie); border-radius: 14px; padding: 18px; box-shadow: var(--cdk-sombra-alta); }
+        .mk-modal h3 { margin: 0 0 8px; font-size: 16px; }
+        .mk-modal p { margin: 0 0 14px; font-size: 13.5px; line-height: 1.5; color: var(--cdk-texto-suave); }
+
+        .mk-valida { margin: 6px 0 0; padding: 8px 10px; font-size: 12.5px; border-radius: 8px; background: #ecfdf5; color: #065f46; line-height: 1.45; }
+
+        .mk-marca { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+                    background: var(--cdk-primario); color: #fff; margin-left: 6px; vertical-align: middle; }
+
+        .pie { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: 390px; margin: 10px 0 0; font-size: 12px; color: var(--cdk-texto-suave); }
+        .pie button { border: 1px solid var(--cdk-borde); background: var(--cdk-superficie); border-radius: 8px; padding: 6px 12px;
+                      font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .pie button:disabled { opacity: .4; cursor: default; }
+        .pie .descartar { border-color: transparent; background: none; text-decoration: underline; color: var(--cdk-texto-suave); }
+    </style>
+</head>
+
+<body>
+<div class="marco-pagina">
+
+    <h1>Pedir ajuste · cuatro caminos</h1>
+    <p class="intro">
+        Cómo podría ser la acción de <strong>pedir un ajuste de precio</strong> del vendedor, dentro del módulo
+        Ajustes (no dentro de cotización ni de pedido). Los datos son inventados y <strong>el CSS es el real</strong>.
+        <strong>Todo se puede tocar</strong>: las tarjetas, los botones y el buscador. Debajo de cada móvil hay flechas
+        para ir y volver entre pasos.
+    </p>
+    <ul class="datos">
+        <li>Hoy el vendedor <strong>teclea de memoria el número con serie</strong> (<code>009-00969476</code>). Si falta la
+            serie, el backend responde «documento ambiguo».</li>
+        <li>La ruta que ya usa «Listas» trae, de cada cotización, <strong>número con serie, cliente, total, moneda y un
+            campo <code>editable</code></strong> que vale 1 justo cuando está abierta y sin aprobar, que es lo único
+            que acepta ajuste. Se puede <strong>elegir de una lista</strong> sin pedir nada nuevo al backend.</li>
+        <li><strong>Con los pedidos no pasa lo mismo</strong>: esa lista solo trae pedidos aprobados o atendidos, y ajuste
+            solo acepta los no aprobados. Para pedidos queda escribir el número (y es una pregunta para el backend).</li>
+        <li>Lo que más sorprende hoy se sabe <strong>después</strong> de enviar: a quién fue, qué líneas no iban a nadie y
+            cuántas promociones se pierden.</li>
+    </ul>
+
+    <div class="rejilla">
+
+        <!-- ================================================== HOY -->
+        <div class="caso" id="caso-H">
+            <p class="caso__titulo">Hoy <span class="caso__etiqueta caso__etiqueta--hoy">como está</span></p>
+            <p class="caso__nota">
+                El formulario actual: tipo, <strong>número con serie tecleado</strong> y mensaje. El aviso de las promociones
+                está arriba, y el resultado —a quién se envió, líneas sin responsable— llega después de enviar.
+            </p>
+            <div class="movil" id="marco-H"></div>
+            <div class="pie" id="pie-H"><span data-etiqueta>Pantalla actual</span><button type="button" class="descartar" data-descartar>no me interesa</button></div>
+            <p class="caso__coste">Sirve de referencia para comparar. Es lo que hay construido.</p>
+        </div>
+
+        <!-- ================================================== A -->
+        <div class="caso" id="caso-A">
+            <p class="caso__titulo">A · Lista para elegir, en una sola pantalla <span class="caso__etiqueta">mi recomendación</span></p>
+            <p class="caso__nota">
+                «Ajustes» se abre directo en <strong>tus solicitudes</strong> y un botón <strong>«＋ Pedir ajuste»</strong> abre
+                una hoja con tus cotizaciones abiertas, con buscador. Eliges, ves un resumen, escribes el mensaje y envías.
+                <strong>No hay que teclear ningún número.</strong>
+            </p>
+            <div class="movil" id="marco-A"></div>
+            <div class="pie" id="pie-A"><button type="button" data-prev>‹</button><span data-etiqueta></span><button type="button" data-next>›</button><button type="button" class="descartar" data-descartar>descartar</button></div>
+            <p class="caso__coste"><strong>Cuesta:</strong> leer la lista de cotizaciones que ya existe (sin tocar el módulo de Listas ni el backend). Un solo
+                lugar: el menú abre directo lo que importa y ya no hay hub de dos tarjetas.</p>
+            <p class="caso__coste caso__coste--ojo"><strong>Ojo:</strong> los pedidos se quedan con «Escribe su número», hasta que el
+                backend diga dónde está un pedido sin aprobar.</p>
+        </div>
+
+        <!-- ================================================== B -->
+        <div class="caso" id="caso-B">
+            <p class="caso__titulo">B · Lista para elegir, en dos pantallas</p>
+            <p class="caso__nota">
+                Se queda el <strong>hub con dos tarjetas</strong> («Pedir ajuste» y «Mis ajustes»). Lo que cambia es que
+                «Pedir ajuste» deja de ser un formulario y pasa a ser <strong>la lista de tus cotizaciones</strong> para elegir.
+            </p>
+            <div class="movil" id="marco-B"></div>
+            <div class="pie" id="pie-B"><button type="button" data-prev>‹</button><span data-etiqueta></span><button type="button" data-next>›</button><button type="button" class="descartar" data-descartar>descartar</button></div>
+            <p class="caso__coste"><strong>Cuesta:</strong> lo mismo que A, y menos cambio sobre lo construido. Es un toque más para llegar a
+                pedir, y «Mis ajustes» sigue en otra pantalla.</p>
+        </div>
+
+        <!-- ================================================== C -->
+        <div class="caso" id="caso-C">
+            <p class="caso__titulo">C · Asistente con vista previa</p>
+            <p class="caso__nota">
+                Tres pasos: <strong>elegir</strong>, <strong>revisar</strong> y <strong>enviado</strong>. El paso 2 dice,
+                <strong>antes de enviar</strong>, a quién irá cada línea, cuáles no irán a nadie y cuántas promociones se pierden.
+            </p>
+            <div class="movil" id="marco-C"></div>
+            <div class="pie" id="pie-C"><button type="button" data-prev>‹</button><span data-etiqueta></span><button type="button" data-next>›</button><button type="button" class="descartar" data-descartar>descartar</button></div>
+            <p class="caso__coste"><strong>Cuesta:</strong> es lo que más evita sorpresas.</p>
+            <p class="caso__coste caso__coste--ojo"><strong>Ojo:</strong> necesita que el backend ofrezca una <strong>vista previa</strong> (algo como
+                <code>POST /ajuste/previa</code>, que diga a quién iría cada línea sin crear nada). Hoy esa ruta no existe: el backend
+                solo cuenta esto después de enviar.</p>
+        </div>
+
+        <!-- ================================================== D -->
+        <div class="caso" id="caso-D">
+            <p class="caso__titulo">D · Formulario actual, pulido</p>
+            <p class="caso__nota">
+                El mismo formulario, con ayudas: <strong>tus últimas cotizaciones como atajos</strong>, el <strong>cliente y el total
+                que aparecen al escribir el número</strong> (para saber que es la correcta) y <strong>frases rápidas</strong> para el mensaje.
+            </p>
+            <div class="movil" id="marco-D"></div>
+            <div class="pie" id="pie-D"><button type="button" data-prev>‹</button><span data-etiqueta></span><button type="button" data-next>›</button><button type="button" class="descartar" data-descartar>descartar</button></div>
+            <p class="caso__coste"><strong>Cuesta:</strong> el cambio más pequeño. Lee la misma lista de cotizaciones para los atajos y para comprobar el número.</p>
+            <p class="caso__coste caso__coste--ojo"><strong>Ojo:</strong> sigue habiendo que escribir (o tocar un atajo) para decir cuál es.</p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    /* ---------------------------------------------------------------- datos inventados */
+    var DOCS = [
+        { tipo: "Cotización", cli: "DISTRIBUIDORA OK.COM S.A.C.", num: "009-00969476", fecha: "24/09/2026", total: "$ 699.95",   lineas: 7, promos: 1 },
+        { tipo: "Cotización", cli: "CORPORACION LIMA SUR S.A.C.", num: "009-00970001", fecha: "20/10/2026", total: "$ 2,103.40", lineas: 5, promos: 2 },
+        { tipo: "Cotización", cli: "COMERCIAL ANDINA S.A.C.",     num: "009-00969912", fecha: "15/10/2026", total: "S/ 5,420.00", lineas: 4, promos: 0 },
+        { tipo: "Cotización", cli: "INVERSIONES MEGAHARD E.I.R.L.", num: "009-00969450", fecha: "08/10/2026", total: "$ 1,288.10", lineas: 3, promos: 0 },
+        { tipo: "Pedido",     cli: "ABASTECEDORA DEL SUR S.A.C.", num: "009-00775010", fecha: "21/10/2026", total: "S/ 1,980.00", lineas: 3, promos: 0 }
+    ];
+    var PERSONAS = [
+        { n: "SAUÑE MANUEL",     rol: "Dueño de la marca EPSON",             l: 1 },
+        { n: "SAMUEL HUARANCCA", rol: "Dueño de EP_IMPRESORAS y TDK",         l: 2 },
+        { n: "COSSIO JOANNA",    rol: "Dueña de la marca ACER",               l: 1 }
+    ];
+    var FRASES = ["una ajustadita", "mejora el precio", "precio para cerrar hoy"];
+
+    var FLECHA = "›";
+
+    /* ---------------------------------------------------------------- piezas */
+    function barra(titulo, atras) {
+        return '<div class="mk-barra">' + (atras !== undefined ? '<span class="mk-atras" data-ir="' + atras + '">←</span>' : "") + "<b>" + titulo + "</b></div>";
+    }
+
+    function tarjetaDoc(d, i, ir) {
+        return '<li><button type="button" class="cdk-articulo cdk-articulo--pulsable" data-sel="' + i + '" data-ir="' + ir + '">' +
+            '<div class="cdk-articulo__cuerpo">' +
+            '<div class="cdk-articulo__cabecera"><div class="cdk-articulo__nombre">' + d.cli + '</div><div class="cdk-articulo__importe">' + d.total + '</div></div>' +
+            '<div class="cdk-articulo__detalle">' + d.tipo + " " + d.num + " · " + d.fecha + "</div>" +
+            '<div class="cdk-articulo__datos"><span class="cdk-dato">Líneas <span class="cdk-dato__valor">' + d.lineas + "</span></span>" +
+            (d.promos ? '<span class="cdk-dato cdk-dato--alerta">Promociones <span class="cdk-dato__valor">' + d.promos + "</span></span>" : "") +
+            "</div></div></button></li>";
+    }
+
+    /** La lista de cotizaciones abiertas, filtrada por lo que se escribio. El pedido no sale: esa lista no lo trae. */
+    function listaDocs(st, ir) {
+        var f = (st.filtro || "").toLowerCase();
+        var v = DOCS.map(function (d, i) { return { d: d, i: i }; })
+            .filter(function (x) { return x.d.tipo === "Cotización" && (!f || (x.d.cli + " " + x.d.num).toLowerCase().indexOf(f) !== -1); });
+
+        if (!v.length) return '<p class="mk-sub" style="margin:14px 0">Ninguna cotización abierta coincide.</p>';
+        return '<ul class="cdk-articulos">' + v.map(function (x) { return tarjetaDoc(x.d, x.i, ir); }).join("") + "</ul>";
+    }
+
+    function buscador(st, ir) {
+        return '<div class="cdk-campo"><input type="search" class="cdk-entrada" data-filtro placeholder="Buscar por cliente o número" value="' + (st.filtro || "") + '"></div>' +
+               '<p class="mk-sub" style="margin:2px 0 8px">Tus cotizaciones abiertas, sin aprobar.</p>' +
+               '<div data-lista>' + listaDocs(st, ir) + "</div>";
+    }
+
+    function resumenDoc(d) {
+        return '<div class="cdk-seccion mk-resumen" style="padding:12px 14px">' +
+            '<div style="font-weight:700;font-size:15px">' + d.tipo + " " + d.num + "</div>" +
+            '<div class="mk-sub" style="margin:2px 0 8px">' + d.cli + "</div>" +
+            '<div class="mk-fila"><span>Fecha</span><span>' + d.fecha + "</span></div>" +
+            '<div class="mk-fila"><span>Total con IGV</span><span>' + d.total + "</span></div>" +
+            '<div class="mk-fila"><span>Líneas</span><span>' + d.lineas + "</span></div>" +
+            (d.promos ? '<div class="mk-fila"><span>Promociones</span><span style="color:var(--cdk-error)">' + d.promos + "</span></div>" : "") +
+            "</div>";
+    }
+
+    function avisoFijo(d) {
+        var promos = d.promos
+            ? "Tiene " + d.promos + (d.promos === 1 ? " promoción: si el ajuste se confirma, la pierde." : " promociones: si el ajuste se confirma, las pierde todas.")
+            : "Si el ajuste se confirma, el documento pierde todas sus promociones.";
+        return '<div class="cdk-aviso" style="margin:0 0 12px"><div style="flex:1;min-width:0">' +
+            '<p class="cdk-aviso__texto" style="margin:0">' + promos + "</p>" +
+            '<p class="cdk-pista" style="margin:6px 0 0">Mientras esté pendiente no podrás modificarlo. Si nadie responde en 3 días, se libera.</p></div></div>';
+    }
+
+    function mensaje(st) {
+        return '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Mensaje (opcional)</label>' +
+            '<textarea class="cdk-entrada" rows="3" data-mensaje placeholder="Cuéntales qué buscas">' + (st.mensaje || "") + "</textarea>" +
+            '<div class="mk-chips">' + FRASES.map(function (f) { return '<button type="button" class="mk-chip" data-frase="' + f + '">' + f + "</button>"; }).join("") + "</div></div>";
+    }
+
+    function enviada(d, botones) {
+        return '<div class="cdk-seccion" style="padding:14px"><div class="mk-ok"><span>✓</span><h3>Enviada a ajuste</h3>' +
+            '<p class="mk-sub" style="margin:0">' + d.tipo + " " + d.num + " · " + d.cli + "</p></div>" +
+            '<p class="mk-sub" style="margin:12px 0 4px">Cada persona recibe solo las líneas de sus marcas y responde por su lado.</p>' +
+            PERSONAS.map(function (p) { return '<div class="mk-persona"><b>' + p.n + "</b><small>" + p.rol + " · " + p.l + (p.l === 1 ? " línea" : " líneas") + " · vence 24/10</small></div>"; }).join("") +
+            '<div class="cdk-aviso" style="margin:12px 0 0"><div style="flex:1;min-width:0"><p class="cdk-aviso__texto" style="margin:0">1 línea no se envió a nadie: no se va a ajustar.</p>' +
+            '<p class="cdk-pista" style="margin:4px 0 0">TARJETA DE VIDEO ZOTAC GT1030 (su marca no tiene dueño ni jefatura).</p></div></div>' +
+            '<div class="cdk-acciones-fila" style="margin-top:14px">' + botones + "</div></div>";
+    }
+
+    function solicitudesAjustes(st) {
+        function fila(nombre, cli, para, vence, nuevo) {
+            return '<li class="cdk-articulo' + (nuevo ? '" style="border-color:var(--cdk-primario);box-shadow:0 0 0 2px var(--cdk-primario-suave)' : "") + '"><div class="cdk-articulo__cuerpo">' +
+                '<div class="cdk-articulo__cabecera"><div class="cdk-articulo__nombre">' + nombre + '</div></div>' +
+                '<div class="cdk-articulo__detalle">' + cli + "</div>" +
+                '<div class="cdk-articulo__datos"><span class="cdk-dato">Para <span class="cdk-dato__valor">' + para + "</span></span>" +
+                '<span class="cdk-dato cdk-dato--alerta"><span class="cdk-dato__valor">Pendiente</span></span>' +
+                '<span class="cdk-dato cdk-dato--alerta">Vence <span class="cdk-dato__valor">' + vence + "</span></span>" +
+                (nuevo ? '<span class="cdk-dato cdk-dato--bien"><span class="cdk-dato__valor">Nueva</span></span>' : "") + "</div></div></li>";
+        }
+
+        var nuevas = "";
+        if (st.enviada) {
+            var d = DOCS[st.sel];
+            nuevas = PERSONAS.map(function (p) { return fila(d.tipo + " " + d.num, d.cli, p.n, "24/10/2026", true); }).join("");
+        }
+
+        return '<ul class="cdk-pestanas" role="tablist">' +
+            ["Pendientes", "Confirmadas", "Rechazadas", "Vencidas", "Cerradas"].map(function (t, i) {
+                return '<li><button type="button" class="cdk-pestana' + (i === 0 ? " es-activa" : "") + '">' + t + "</button></li>";
+            }).join("") + "</ul>" +
+            '<ul class="cdk-articulos">' + nuevas +
+            fila("Cotización 009-00969476", "DISTRIBUIDORA OK.COM S.A.C.", "SAMUEL HUARANCCA", "24/10/2026", false) +
+            fila("Cotización 009-00969476", "DISTRIBUIDORA OK.COM S.A.C.", "SAUÑE MANUEL", "24/10/2026", false) + "</ul>";
+    }
+
+    /* ---------------------------------------------------------------- las pantallas de cada camino */
+    var CAMINOS = {
+
+        /* ---- Hoy: lo que esta construido */
+        H: [
+            { titulo: "Pedir ajuste (hoy)", render: function () {
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo">' +
+                    '<section class="cdk-seccion"><h2 class="cdk-seccion__titulo">Pedir un ajuste de precio</h2>' +
+                    '<p class="cdk-seccion__sub">Envía una cotización o un pedido tuyo para que el dueño de la marca —o la jefatura de su familia— te ajuste el precio.</p>' +
+                    '<div class="cdk-aviso" style="margin-bottom:14px"><div style="flex:1;min-width:0"><p class="cdk-aviso__texto" style="margin:0">Si el ajuste se confirma, el documento pierde todas sus promociones.</p>' +
+                    '<p class="cdk-pista" style="margin:6px 0 0">Mientras haya una solicitud pendiente no podrás modificarlo. Si nadie responde en 3 días, se libera.</p></div></div>' +
+                    '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Qué quieres ajustar</label><select class="cdk-entrada"><option>Cotización</option><option>Pedido</option></select></div>' +
+                    '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Número, con su serie</label><input class="cdk-entrada" placeholder="009-00969476"><p class="cdk-campo__pista">Por ejemplo 009-00969476. Sin la serie, el número es ambiguo.</p></div>' +
+                    '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Mensaje (opcional)</label><textarea class="cdk-entrada" rows="3" placeholder="Opcional: «una ajustadita»"></textarea></div>' +
+                    '<div class="cdk-acciones-fila" style="margin-top:14px"><button type="button" class="cdk-boton cdk-boton--primario">Enviar a ajuste</button></div>' +
+                    "</section></div></div>";
+            } }
+        ],
+
+        /* ---- A: una sola pantalla, con hoja */
+        A: [
+            { titulo: "Ajustes", render: function (st) {
+                return '<div class="mk-pantalla">' + barra("Ajustes") + '<div class="mk-cuerpo"><section class="cdk-seccion" style="margin-top:0">' +
+                    solicitudesAjustes(st) + '</section></div></div>' +
+                    '<button type="button" class="cdk-boton cdk-boton--primario mk-fab" data-ir="1">＋ Pedir ajuste</button>';
+            } },
+            { titulo: "La hoja para elegir", render: function (st) {
+                return '<div class="mk-pantalla">' + barra("Ajustes") + '<div class="mk-cuerpo"><section class="cdk-seccion">' + solicitudesAjustes({}) + '</section></div></div>' +
+                    '<div class="mk-velo" data-ir="0"></div>' +
+                    '<div class="mk-hoja"><div class="mk-hoja__asa"></div><div class="mk-hoja__cab"><b>Pedir ajuste</b><span class="mk-cerrar" data-ir="0">✕</span></div>' +
+                    '<div class="mk-hoja__cuerpo">' + buscador(st, 2) +
+                    '<p class="mk-sub" style="margin:14px 0 0"><a href="#" data-sel="4" data-ir="2" onclick="return false" style="color:var(--cdk-primario-fuerte);font-weight:600">¿Es un pedido? Escribe su número ' + FLECHA + "</a></p>" +
+                    "</div></div>";
+            } },
+            { titulo: "Revisa y envía", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste", 1) + '<div class="mk-cuerpo">' + resumenDoc(d) + avisoFijo(d) + mensaje(st) +
+                    '<div class="cdk-acciones-fila" style="margin-top:14px"><button type="button" class="cdk-boton cdk-boton--primario" data-ir="3">Enviar a ajuste</button></div></div></div>';
+            } },
+            { titulo: "Enviada", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo">' +
+                    enviada(d, '<button type="button" class="cdk-boton cdk-boton--primario" data-enviar data-ir="0">Ver en Pendientes</button><button type="button" class="cdk-boton cdk-boton--suave" data-ir="1">Pedir otro</button>') +
+                    "</div></div>";
+            } }
+        ],
+
+        /* ---- B: hub + lista */
+        B: [
+            { titulo: "El hub de Ajustes", render: function () {
+                return '<div class="mk-pantalla">' + barra("Ajustes") + '<div class="mk-cuerpo">' +
+                    '<header class="cdk-cabecera"><h1 class="cdk-cabecera__titulo">Ajuste de precio</h1><p class="cdk-cabecera__sub">Pide o responde ajustes de precio de cotizaciones y pedidos</p></header>' +
+                    '<ul class="cdk-tarjetas">' +
+                    '<li><a class="cdk-tarjeta" href="#" onclick="return false" data-ir="1"><span class="cdk-tarjeta__titulo">Pedir ajuste</span><span class="cdk-tarjeta__texto">Pedir que ajusten el precio de una cotización o pedido</span><span class="cdk-tarjeta__pie">Abrir →</span></a></li>' +
+                    '<li><a class="cdk-tarjeta" href="#" onclick="return false"><span class="cdk-tarjeta__titulo">Mis ajustes</span><span class="cdk-tarjeta__texto">Lo que pediste y lo que respondieron</span><span class="cdk-tarjeta__pie">Abrir →</span></a></li>' +
+                    "</ul></div></div>";
+            } },
+            { titulo: "Elegir el documento", render: function (st) {
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste", 0) + '<div class="mk-cuerpo"><section class="cdk-seccion" style="margin-top:0">' +
+                    '<h2 class="cdk-seccion__titulo">¿Cuál quieres ajustar?</h2>' + buscador(st, 2) +
+                    '<p class="mk-sub" style="margin:14px 0 0"><a href="#" data-sel="4" data-ir="2" onclick="return false" style="color:var(--cdk-primario-fuerte);font-weight:600">¿Es un pedido? Escribe su número ' + FLECHA + "</a></p></section></div></div>";
+            } },
+            { titulo: "Revisa y envía", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste", 1) + '<div class="mk-cuerpo">' + resumenDoc(d) + avisoFijo(d) + mensaje(st) +
+                    '<div class="cdk-acciones-fila" style="margin-top:14px"><button type="button" class="cdk-boton cdk-boton--primario" data-ir="3">Enviar a ajuste</button></div></div></div>';
+            } },
+            { titulo: "Enviada", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo">' +
+                    enviada(d, '<button type="button" class="cdk-boton cdk-boton--primario" data-ir="0">Ver mis ajustes</button><button type="button" class="cdk-boton cdk-boton--suave" data-ir="1">Pedir otro</button>') +
+                    "</div></div>";
+            } }
+        ],
+
+        /* ---- C: asistente con vista previa */
+        C: [
+            { titulo: "1 · Documento", render: function (st) {
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo">' + pasos(1) +
+                    '<section class="cdk-seccion" style="margin-top:0"><h2 class="cdk-seccion__titulo">¿Cuál quieres ajustar?</h2>' + buscador(st, 1) +
+                    '<p class="mk-sub" style="margin:14px 0 0"><a href="#" data-sel="4" data-ir="1" onclick="return false" style="color:var(--cdk-primario-fuerte);font-weight:600">¿Es un pedido? Escribe su número ' + FLECHA + "</a></p></section></div></div>";
+            } },
+            { titulo: "2 · Revisa lo que se enviará", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste", 0) + '<div class="mk-cuerpo">' + pasos(2) + resumenDoc(d) +
+                    '<section class="cdk-seccion" style="padding:12px 14px;margin-bottom:12px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">Se enviará así</div>' +
+                    PERSONAS.map(function (p) { return '<div class="mk-persona"><b>' + p.n + "</b><small>" + p.rol + " · " + p.l + (p.l === 1 ? " línea" : " líneas") + "</small></div>"; }).join("") + "</section>" +
+                    '<div class="cdk-aviso" style="margin:0 0 12px"><div style="flex:1;min-width:0"><p class="cdk-aviso__texto" style="margin:0">1 línea NO se enviará a nadie</p>' +
+                    '<p class="cdk-pista" style="margin:4px 0 0">TARJETA DE VIDEO ZOTAC GT1030: su marca no tiene dueño ni jefatura. No se va a ajustar.</p></div></div>' +
+                    avisoFijo(d) + mensaje(st) +
+                    '<div class="cdk-acciones-fila" style="margin-top:14px"><button type="button" class="cdk-boton cdk-boton--primario" data-ir="2">Enviar a ajuste</button><button type="button" class="cdk-boton cdk-boton--suave" data-ir="0">Atrás</button></div></div></div>';
+            } },
+            { titulo: "3 · Enviado", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo">' + pasos(3) +
+                    enviada(d, '<button type="button" class="cdk-boton cdk-boton--primario" data-ir="0">Ver mis ajustes</button><button type="button" class="cdk-boton cdk-boton--suave" data-ir="0">Pedir otro</button>') + "</div></div>";
+            } }
+        ],
+
+        /* ---- D: el formulario, pulido */
+        D: [
+            { titulo: "El formulario", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo"><section class="cdk-seccion" style="margin-top:0">' +
+                    '<h2 class="cdk-seccion__titulo">Pedir un ajuste de precio</h2>' +
+                    '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Tus últimas cotizaciones</label><div class="mk-chips" style="margin-top:0">' +
+                    [1, 0, 2].map(function (i) { return '<button type="button" class="mk-chip" data-sel="' + i + '" data-ir="0">' + DOCS[i].num + "</button>"; }).join("") + "</div></div>" +
+                    '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Qué quieres ajustar</label><select class="cdk-entrada"><option>Cotización</option><option>Pedido</option></select></div>' +
+                    '<div class="cdk-campo"><label class="cdk-campo__etiqueta">Número, con su serie</label><input class="cdk-entrada" value="' + d.num + '">' +
+                    '<div class="mk-valida">✓ <strong>' + d.cli + "</strong><br>" + d.tipo + " abierta · " + d.fecha + " · " + d.total + (d.promos ? " · " + d.promos + (d.promos === 1 ? " promoción" : " promociones") : "") + "</div></div>" +
+                    mensaje(st) + avisoFijo(d) +
+                    '<div class="cdk-acciones-fila" style="margin-top:14px"><button type="button" class="cdk-boton cdk-boton--primario" data-ir="1">Enviar a ajuste</button></div></section></div></div>';
+            } },
+            { titulo: "Confirmación", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo"><section class="cdk-seccion" style="margin-top:0;height:420px"></section></div></div>' +
+                    '<div class="mk-velo"></div><div class="mk-modal"><h3>¿Enviar a ajuste?</h3>' +
+                    "<p>Si el ajuste se confirma, la cotización " + d.num + " pierde TODAS sus promociones. Mientras haya una solicitud pendiente no podrás modificarla, y si nadie responde en 3 días se libera.</p>" +
+                    '<div class="cdk-acciones-fila"><button type="button" class="cdk-boton cdk-boton--suave" data-ir="0">Cancelar</button><button type="button" class="cdk-boton cdk-boton--primario" data-ir="2">Enviar</button></div></div>';
+            } },
+            { titulo: "Enviada", render: function (st) {
+                var d = DOCS[st.sel];
+                return '<div class="mk-pantalla">' + barra("Pedir ajuste") + '<div class="mk-cuerpo">' +
+                    enviada(d, '<button type="button" class="cdk-boton cdk-boton--primario" data-ir="0">Ver mis ajustes</button><button type="button" class="cdk-boton cdk-boton--suave" data-ir="0">Pedir otro</button>') + "</div></div>";
+            } }
+        ]
+    };
+
+    function pasos(actual) {
+        var nombres = ["Documento", "Revisa", "Enviado"];
+        return '<div class="mk-pasos">' + nombres.map(function (n, i) {
+            var k = i + 1;
+            var clase = k === actual ? "es-actual" : k < actual ? "es-hecho" : "";
+            return '<span class="mk-paso ' + clase + '"><i>' + (k < actual ? "✓" : k) + "</i>" + n + "</span>" + (k < 3 ? '<span style="opacity:.4">—</span>' : "");
+        }).join("") + "</div>";
+    }
+
+    /* ---------------------------------------------------------------- el motor */
+    Object.keys(CAMINOS).forEach(function (id) {
+        var pasos_ = CAMINOS[id];
+        var marco = document.getElementById("marco-" + id);
+        var pie = document.getElementById("pie-" + id);
+        var caso = document.getElementById("caso-" + id);
+        var st = { paso: 0, sel: 1, filtro: "", mensaje: "", enviada: false };
+
+        function pintar() {
+            marco.innerHTML = pasos_[st.paso].render(st);
+            var etiqueta = pie.querySelector("[data-etiqueta]");
+            if (etiqueta) etiqueta.textContent = pasos_.length > 1
+                ? "Paso " + (st.paso + 1) + " de " + pasos_.length + " · " + pasos_[st.paso].titulo : "Pantalla actual";
+
+            var prev = pie.querySelector("[data-prev]"), next = pie.querySelector("[data-next]");
+            if (prev) prev.disabled = st.paso === 0;
+            if (next) next.disabled = st.paso === pasos_.length - 1;
+        }
+
+        marco.addEventListener("click", function (ev) {
+            var t = ev.target.closest("[data-sel],[data-ir],[data-frase]");
+            if (!t || !marco.contains(t)) return;
+
+            if (t.hasAttribute("data-frase")) {
+                var caja = marco.querySelector("[data-mensaje]");
+                if (caja) { caja.value = t.getAttribute("data-frase"); st.mensaje = caja.value; }
+                return;
+            }
+            if (t.hasAttribute("data-sel")) st.sel = Number(t.getAttribute("data-sel"));
+            if (t.hasAttribute("data-enviar")) st.enviada = true;
+            if (t.hasAttribute("data-ir")) { st.paso = Number(t.getAttribute("data-ir")); pintar(); }
+        });
+
+        marco.addEventListener("input", function (ev) {
+            var t = ev.target;
+            if (t.hasAttribute("data-filtro")) {
+                st.filtro = t.value;
+                var destino = marco.querySelector("[data-lista]");
+                var ir = Number(destino.querySelector("[data-ir]") ? destino.querySelector("[data-ir]").getAttribute("data-ir") : 1);
+                destino.innerHTML = listaDocs(st, ir);
+            }
+            if (t.hasAttribute("data-mensaje")) st.mensaje = t.value;
+        });
+
+        var prev = pie.querySelector("[data-prev]"), next = pie.querySelector("[data-next]");
+        if (prev) prev.addEventListener("click", function () { if (st.paso > 0) { st.paso--; pintar(); } });
+        if (next) next.addEventListener("click", function () { if (st.paso < pasos_.length - 1) { st.paso++; pintar(); } });
+
+        pie.querySelector("[data-descartar]").addEventListener("click", function () {
+            var d = caso.classList.toggle("descartada");
+            this.textContent = d ? "recuperar" : (id === "H" ? "no me interesa" : "descartar");
+        });
+
+        pintar();
+    });
+})();
+</script>
+</body>
+</html>

@@ -165,7 +165,10 @@
         ["Accesos · promoción",   "/promocion"],
         ["Accesos · cuota",       "/cuota"],
         ["Accesos · listados",    "/lista"],
-        ["Accesos · programador", "/programador"]
+        ["Accesos · programador", "/programador"],
+        // No es una lista de accesos: es el estado del mes. Solo el grupo 25;
+        // para cualquier otro responde 403.
+        ["Estado del mes · marcas", "/marcas"]
     ];
 
     document.getElementById("btn-probar").addEventListener("click", function () {

@@ -111,8 +111,51 @@ let cuotaRegistrada = null;
 
 
 
-// Cambia esto para probar otros escenarios (quita modulos, cambia el tipo...).
-const USUARIO = { nombre: "Juan Carlos", grupo: "VENTAS-JEFES DE PROD", tipo: "ESPECIALISTA" };
+/* Quien tiene la sesion. Se decide al entrar, con el campo «usuario» del login:
+   ver dev/usuarios-prueba.js, que dice cuales hay (nuevo25, jefatura25,
+   random25…). Cualquier otro nombre entra como un especialista ya registrado,
+   y con TIPO=JEFATURA node dev/servidor.js, como una jefatura.
+
+   Es UNA sesion para todo el servidor, no una por navegador: no hay galletas. */
+const perfiles = require("./usuarios-prueba");
+
+/* Marcas del mes y registro del grupo 25. Con estado: dueños, confirmaciones y
+   familia viven en memoria hasta reiniciar este proceso, y cada ingreso los deja
+   como al empezar. Lo comparte con dev/pruebas/probar-marcas.js, asi que es el
+   mismo contrato. */
+const marcasSim = require("./simulador-marcas");
+
+/* Reportes por marca. Lee de aqui las marcas que cada quien puede consultar, asi
+   que lo que se vea depende del usuario con el que se entre: `confirmado25` y
+   `jefatura25` tienen marcas; `especialista25`, ninguna. */
+const reportesSim = require("./simulador-reportes");
+
+/* Cuota por marca. Usa las mismas marcas que reportes y las metas viven en el
+   estado de marcas: cada ingreso las reinicia. Para fijar metas hace falta un
+   usuario CONFIRMADO (`confirmado25`); `pendiente25` ve el aviso de confirmar. */
+const cuotaSim = require("./simulador-cuota");
+const ajusteSim = require("./simulador-ajuste");
+
+/* Cobertura de clientes por marca (grupo 25), no la cuota de cobertura del grupo 20. Usa las mismas
+   marcas y los mismos meses que cuota y reportes. */
+const coberturaSim = require("./simulador-cobertura");
+
+/* Vendedor del mes (grupo 25): el top 3 de vendedores del grupo 20 de cada marca. Mismas marcas y mismos meses
+   que cuota y cobertura, pero solo el mes en curso y el anterior. */
+const vendedorMesSim = require("./simulador-vendedormes");
+
+let USUARIO = null;
+
+function entrar(cuenta) {
+    const p = perfiles.entrar(cuenta, marcasSim, { tipoPorDefecto: process.env.TIPO });
+    USUARIO = { nombre: p.nombre, grupo: p.grupo, tipo: p.tipo };
+    ajusteSim.reiniciar();
+    console.log("      sesion: " + p.nombre + " · " + p.clave + " · " +
+                (p.registrado ? "registrado como " + p.tipo
+                              : "SIN REGISTRAR (debe pasar por el alta)"));
+    return p;
+}
+entrar("");
 
 const MODULOS = {
     cotizacion:  "Crear, consultar y modificar cotizaciones",
@@ -122,8 +165,37 @@ const MODULOS = {
     cuota:       "Registro y avance de tu cuota mensual",
     listas:      "Listados de cotizaciones, pedidos, facturas y clientes",
     programador: "Programación de entregas en almacén",
-    reporte:     "Reportes de marcas, stock, tiempo y precios"
+    reporte:     "Reportes de marcas, stock, tiempo y precios",
+    marcas:      "Elige y administra tus marcas del mes",
+    cobertura:   "Revisa a que clientes se les vendio cada marca en el mes",
+    vendedormes: "Los 3 vendedores que mas venden cada una de tus marcas en el mes",
+    ajuste:      "Ajuste de precio de cotizaciones y pedidos"
 };
+
+/* Lo que recibe cada grupo en el menu (docs/marcas-grupo25.md, secc. 4: el 21/10 el backend lo fijo).
+   El grupo 25 recibe EXACTAMENTE estos siete, jefatura y especialista por igual: ni factura, ni promocion,
+   ni programador, ni pedido ni listas. El grupo 20, todo lo suyo mas Ajustes, pero no lo que es solo del 25:
+   las marcas del mes, los reportes por marca, la cobertura y el vendedor del mes (este ultimo, desde el 22/10). */
+const MENU_GRUPO_25 = ["marcas", "cuota", "reporte", "cobertura", "ajuste", "vendedormes", "cotizacion"];
+const SOLO_GRUPO_25 = ["marcas", "reporte", "cobertura", "vendedormes"];
+const esGrupo25 = (rol) => rol === "ESPECIALISTA" || rol === "JEFATURA";
+
+function modulosDe(rol) {
+    return Object.keys(MODULOS)
+        .filter((k) => (esGrupo25(rol) ? MENU_GRUPO_25.indexOf(k) !== -1 : SOLO_GRUPO_25.indexOf(k) === -1))
+        .reduce((o, k) => { o[k] = MODULOS[k]; return o; }, {});
+}
+
+/* El numerito del menu de Ajustes: lo que espera respuesta. Grupo 25: las solicitudes que le llegaron;
+   grupo 20: las que envio y aun no le responden. Lo cuenta el mismo simulacro que las listas, asi que baja
+   al responder. null si no se puede contar: el menu abre igual. */
+function ajustesPendientes() {
+    try {
+        const r = esGrupo25(marcasSim.estado.rol)
+            ? ajusteSim.recibidas({ estado: "PENDIENTE" }) : ajusteSim.enviadas({ estado: "PENDIENTE" });
+        return r.status === 200 ? r.cuerpo.data.solicitudes.length : null;
+    } catch (e) { return null; }
+}
 
 const ACCESOS = {
     "/v1/cotizacion":  ["crear", "leer", "update", "delete", "alm"],
@@ -146,6 +218,18 @@ function responder(res, cuerpo, estado = 200) {
         "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS"
     });
     res.end(JSON.stringify(JSON.stringify(cuerpo)));
+}
+
+/* /v1/marcas NO va doblemente codificada, a diferencia del resto. */
+function responderPlano(res, cuerpo, estado = 200) {
+    res.writeHead(estado, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": ORIGEN,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS"
+    });
+    res.end(JSON.stringify(cuerpo));
 }
 
 http.createServer((pet, res) => {
@@ -172,9 +256,159 @@ http.createServer((pet, res) => {
             if (/name="cuenta"[\s\S]{0,40}?malo/.test(cuerpo)) {
                 return responder(res, { status: "no cdk user", msg: "usuario no registrado" }, 401);
             }
+            // El campo «usuario» del formulario viaja como multipart.
+            const m = /name="cuenta"\r?\n\r?\n([^\r\n]*)/.exec(cuerpo);
+            // Cada ingreso deja al usuario y sus marcas como al empezar.
+            entrar(m ? m[1] : "");
+
+            /* Lo que ve el navegador al final del redirect a /login/identificador:
+               quien existe en el ERP pero no en la intranet recibe un 400. No es un
+               error de credenciales: es el camino al alta. */
+            if (!marcasSim.estado.yaRegistrado) {
+                return responder(res, { status: "no identificado", codigo: 2,
+                                        msg: "el user no esta registrado en la intranet" }, 400);
+            }
+
             responder(res, { msg: "sesion creada" });
         });
         return;
+    }
+
+    /* Reportes por marca (grupo 25). Ver dev/simulador-reportes.js.
+       Ojo: /v1/reporte/marca (la nueva, en singular) y /v1/reporte/marcas (la
+       antigua, en plural) se parecen; esta solo simula la nueva. */
+    if (ruta === "/v1/reporte/marca" || ruta.indexOf("/v1/reporte/marca/") === 0) {
+        return conCuerpo(pet, (d) => {
+            const tipo = ruta.slice("/v1/reporte/marca/".length);
+            const r = ruta === "/v1/reporte/marca" ? reportesSim.listar() : reportesSim.informe(tipo, d);
+
+            console.log(`      reporte${tipo ? "/" + tipo : ""}${d.formato ? " [" + d.formato + "]" : ""}: ${r.status}` +
+                        (r.cuerpo && r.cuerpo.status && r.cuerpo.status !== "ok" ? ` ${r.cuerpo.status}` : ""));
+
+            /* El Excel llega como archivo, con su nombre en Content-Disposition,
+               que el servidor expone por CORS para que el navegador lo pueda leer. */
+            if (r.archivo) {
+                res.writeHead(200, {
+                    "Content-Type": r.archivo.tipo,
+                    "Content-Disposition": `attachment; filename="${r.archivo.nombre}"`,
+                    "Access-Control-Allow-Origin": ORIGEN,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Expose-Headers": "Content-Disposition"
+                });
+                return res.end(r.archivo.contenido);
+            }
+
+            responderPlano(res, r.cuerpo, r.status);
+        });
+    }
+
+    /* Cobertura de clientes por marca (grupo 25). Ver dev/simulador-cobertura.js. */
+    if (ruta === "/v1/cobertura/marcas" || ruta === "/v1/cobertura/clientes") {
+        const q = new URL(pet.url, "http://x").searchParams;
+        const params = { codmar: q.get("codmar"), anno: q.get("anno"), mes: q.get("mes"), formato: q.get("formato") };
+
+        const r = ruta === "/v1/cobertura/marcas" ? coberturaSim.marcas(params) : coberturaSim.clientes(params);
+
+        console.log("      " + ruta.slice(4) + (params.codmar ? " " + params.codmar : "") +
+                    (params.anno || params.mes ? " " + params.anno + "-" + params.mes : "") +
+                    (params.formato ? " [" + params.formato + "]" : "") + ": " + r.status +
+                    (r.cuerpo && r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
+
+        /* El Excel llega como archivo, con su nombre en Content-Disposition (expuesta por CORS). */
+        if (r.archivo) {
+            res.writeHead(200, {
+                "Content-Type": r.archivo.tipo,
+                "Content-Disposition": `attachment; filename="${r.archivo.nombre}"`,
+                "Access-Control-Allow-Origin": ORIGEN,
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            });
+            return res.end(r.archivo.contenido);
+        }
+
+        return responderPlano(res, r.cuerpo, r.status);
+    }
+
+    /* Vendedor del mes (grupo 25). Ver dev/simulador-vendedormes.js. */
+    if (ruta === "/v1/vendedormes/top") {
+        const q = new URL(pet.url, "http://x").searchParams;
+        const params = { anno: q.get("anno"), mes: q.get("mes") };
+
+        const r = vendedorMesSim.top(params);
+
+        console.log("      vendedormes/top" + (params.anno || params.mes ? " " + params.anno + "-" + params.mes : "") + ": " + r.status +
+                    (r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
+        return responderPlano(res, r.cuerpo, r.status);
+    }
+
+    /* Cuota por marca (grupo 25). Ver dev/simulador-cuota.js. Las rutas antiguas
+       de cuota por marca (/cuota/especialista, /marcaupdate…) no se simulan: las
+       reemplaza esta. */
+    if (ruta === "/v1/cuota/marcas" || ruta === "/v1/cuota/marcas/meta") {
+        return conCuerpo(pet, (d) => {
+            /* `?anno=2026&mes=9`: un mes anterior (hasta dos atras). */
+            const q = new URL(pet.url, "http://x").searchParams;
+            const periodo = { anno: q.get("anno"), mes: q.get("mes") };
+
+            const r = ruta === "/v1/cuota/marcas" ? cuotaSim.ver(periodo) : cuotaSim.fijarMeta(d);
+
+            console.log(`      cuota/marcas${ruta.endsWith("/meta") ? "/meta" : ""}` +
+                        (periodo.anno || periodo.mes ? ` ${periodo.anno}-${periodo.mes}` : "") + `: ${r.status}` +
+                        (r.cuerpo.status && r.cuerpo.status !== "ok" ? ` ${r.cuerpo.status}` : ""));
+            responderPlano(res, r.cuerpo, r.status);
+        });
+    }
+
+    /* Las listas de cotizaciones y de pedidos, solo para el vendedor de la demo: son los mismos
+       documentos que los del ajuste, y de aqui se elige lo que se pide ajustar. La de pedidos trae
+       desde el 21/10 los sin aprobar (`editable` = 1). Para los demas roles siguen sin simularse,
+       como antes. Ver dev/simulador-ajuste.js. */
+    if ((ruta === "/v1/lista/cotis" || ruta === "/v1/lista/pedidos") && ["COBERTURA", "CARTERA"].includes(marcasSim.estado.rol)) {
+        return conCuerpo(pet, () => {
+            const pedidos = ruta === "/v1/lista/pedidos";
+            const r = pedidos ? ajusteSim.listaPedidos() : ajusteSim.listaCotizaciones();
+            console.log("      lista/" + (pedidos ? "pedidos" : "cotis") + " (vendedor): " + Object.keys(r.cuerpo).length + (pedidos ? " pedidos" : " cotizaciones"));
+            responder(res, r.cuerpo, r.status);
+        });
+    }
+
+    /* Ajuste de precios, las dos puntas. Ver dev/simulador-ajuste.js. */
+    if (/^\/v1\/ajuste\/(previa|enviar|enviadas|recibidas|solicitud|confirmar|rechazar)$/.test(ruta)) {
+        return conCuerpo(pet, (d) => {
+            const q = new URL(pet.url, "http://x").searchParams;
+            const params = { id: q.get("id"), estado: q.get("estado"), ndocu: q.get("ndocu"),
+                             desde: q.get("desde"), hasta: q.get("hasta") };
+            const que = ruta.slice("/v1/ajuste/".length);
+
+            const r = que === "previa" ? ajusteSim.previa(d)
+                    : que === "enviar" ? ajusteSim.enviar(d)
+                    : que === "enviadas" ? ajusteSim.enviadas(params)
+                    : que === "recibidas" ? ajusteSim.recibidas(params)
+                    : que === "solicitud" ? ajusteSim.solicitud(params)
+                    : que === "confirmar" ? ajusteSim.confirmar(d)
+                    : ajusteSim.rechazar(d);
+
+            console.log(`      ajuste/${que}: ${r.status}` +
+                        (r.cuerpo.status && r.cuerpo.status !== "ok" ? ` ${r.cuerpo.status}` : ""));
+            responderPlano(res, r.cuerpo, r.status);
+        });
+    }
+
+    /* Marcas del mes (grupo 25) y registro. Ver dev/simulador-marcas.js. */
+    if (ruta.indexOf("/v1/marcas") === 0 || ruta.indexOf("/v1/login/registro") === 0) {
+        return conCuerpo(pet, (d) => {
+            const esMarcas = ruta.indexOf("/v1/marcas") === 0;
+            const r = esMarcas
+                ? marcasSim.marcas(ruta.slice("/v1/marcas".length), d)
+                : marcasSim.registro(ruta.slice("/v1".length), d);
+
+            console.log(`      ${esMarcas ? "marcas" : "registro"}: ${r.status}` +
+                        (r.cuerpo.status && r.cuerpo.status !== "ok" ? ` ${r.cuerpo.status}` : ""));
+
+            // Las rutas de /login van doblemente codificadas, como las reales.
+            if (r.doble) return responder(res, r.cuerpo, r.status);
+            responderPlano(res, r.cuerpo, r.status);
+        });
     }
 
     // Detalle de cotización: respuesta REAL del backend, capturada tal cual.
@@ -416,9 +650,18 @@ http.createServer((pet, res) => {
     /* Modulos del usuario. El mapa va en `data` y los datos de usuario FUERA
        del sobre, al mismo nivel que `status`, tal como quedo el backend. */
     if (ruta === "/v1/vendedor") {
+        /* Sin alta no hay galleta `tip`, y el direccionador la necesita. */
+        if (!marcasSim.estado.yaRegistrado) {
+            return responder(res, { status: "falsa galleta", codigo: 3,
+                                    msg: "la galleta no existe en el frasco" }, 401);
+        }
+
+        /* El tipo sale del simulacro de marcas: tras registrarse como
+           jefatura, el menu tiene que decirlo. */
         return responder(res, Object.assign(
-            { status: "ok", codigo: 0, data: MODULOS },
-            USUARIO
+            { status: "ok", codigo: 0, data: modulosDe(marcasSim.estado.rol) },
+            USUARIO,
+            { tipo: marcasSim.estado.rol, ajustesPendientes: ajustesPendientes() }
         ));
     }
 
@@ -592,6 +835,12 @@ http.createServer((pet, res) => {
        para eso esta `/mostrar`. Se parecen en el nombre y confundirlas da el
        sintoma "registre la cuota y ahora no la puedo ver". */
     if (ruta === "/v1/cuota/revisar") {
+        /* Al grupo 25 le dice que su cuota se fija por marca. */
+        if (["ESPECIALISTA", "JEFATURA"].includes(marcasSim.estado.rol)) {
+            console.log("      cuota/revisar → cuota por marca");
+            return responder(res, cuotaSim.revisar().cuerpo);
+        }
+
         console.log(`      puede registrar: ${cuotaRegistrada ? "no, ya tiene" : "si"}`);
         return responder(res, cuotaRegistrada
             ? { status: "ok", codigo: 0, simple: "cuota existe",
@@ -601,6 +850,20 @@ http.createServer((pet, res) => {
     }
 
     if (ruta === "/v1/cuota/mostrar") {
+        /* El direccionador cubre ahora al grupo 25: especialista y jefatura van a
+           /cuota/marcas, igual que cobertura y cartera van a las suyas. Es un
+           redireccionamiento de verdad, para que el navegador lo siga y se vea
+           que la pantalla no depende del tipo. Ver docs/cuota-grupo25.md, secc. 5. */
+        if (["ESPECIALISTA", "JEFATURA"].includes(marcasSim.estado.rol)) {
+            console.log("      cuota/mostrar → /cuota/marcas");
+            res.writeHead(302, {
+                "Location": "/v1/cuota/marcas",
+                "Access-Control-Allow-Origin": ORIGEN,
+                "Access-Control-Allow-Credentials": "true"
+            });
+            return res.end();
+        }
+
         console.log(`      cuota: ${cuotaRegistrada ? "registrada" : "sin registrar"}`);
 
         /* A jefatura, zona y hp la cuota no les toca: en toda la historia de
@@ -1374,15 +1637,39 @@ http.createServer((pet, res) => {
         if (pet.url.indexOf("falla=1") >= 0) {
             return responder(res, { status: "falsa galleta", codigo: 3, data: null }, 401);
         }
+        /* Sin alta no hay diferenciador que reponer. */
+        if (!marcasSim.estado.yaRegistrado) {
+            return responder(res, { status: "no identificado", codigo: 2,
+                                    msg: "el user no esta registrado en la intranet" }, 400);
+        }
         console.log("      identificador: repone tip");
         // Doble codificado, como el backend real en esta ruta.
-        return responder(res, JSON.stringify({ correcto: "ESPECIALISTA" }));
+        return responder(res, JSON.stringify({ correcto: marcasSim.estado.rol }));
     }
 
     if (ruta === "/v1/logout")    return responder(res, { msg: "sesion terminada" });
+
+    /* El grupo 25 no registra una cuota de un solo monto: sin `crear`, y con los
+       dos permisos de las rutas por marca. Cobertura y cartera siguen con `crear`. */
+    /* Los accesos de ajuste: cada grupo, los suyos. Supuesto nuestro: el backend aun no dijo
+       como se piden. Es lo que usan los demas modulos. Ver docs/respuesta-ajuste-precios.md. */
+    if (ruta === "/v1/ajuste") {
+        return responder(res, { status: "ok", codigo: 0,
+            data: esGrupo25(marcasSim.estado.rol) ? ["recibidas"] : ["enviar", "enviadas"] });
+    }
+
+    if (ruta === "/v1/cuota" && ["ESPECIALISTA", "JEFATURA"].includes(marcasSim.estado.rol)) {
+        return responder(res, { status: "ok", codigo: 0, data: ["leer", "marcas", "meta marca"] });
+    }
+
     if (ACCESOS[ruta])            return responder(res, { status: "ok", codigo: 0, data: ACCESOS[ruta] });
 
     responder(res, { msg: "endpoint no simulado: " + ruta }, 404);
 }).listen(3000, "0.0.0.0", () => {
     console.log(`[api] simulada en http://127.0.0.1:3000/v1  (y en la IP de red)`);
+    console.log(``);
+    console.log(`      usuarios de prueba (contraseña: la que quieras, de 4 o mas)`);
+    perfiles.lista().forEach(([c, nota]) => console.log(`        ${c.padEnd(15)} ${nota}`));
+    console.log(`        cualquier otro  especialista ya registrado`);
+    console.log(`        malo            contraseña incorrecta`);
 });
