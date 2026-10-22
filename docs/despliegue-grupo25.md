@@ -67,6 +67,25 @@ de las pantallas nuevas, y un backend nuevo con el frontend viejo deja sin rutas
 **La vuelta atrás también es de los dos lados a la vez.** El grupo 20 (cobertura y cartera) no cambia, salvo que ahora tiene la tarjeta de
 Ajustes.
 
+### Volver a la versión anterior
+
+El grupo 25 entra en `main` con **un solo commit de merge** («Grupo 25: …»), así que deshacerlo es **un comando**, sin reescribir la
+historia ni perder nada:
+
+```
+git log --merges -1 --format=%h       # el hash del commit de merge del grupo 25
+git revert -m 1 <ese hash>            # un commit nuevo que deja main como estaba antes
+git push origin main
+```
+
+- La etiqueta **`pre-grupo25`** marca lo que había en GitHub justo antes (`fe36cf4`). Sirve para comparar (`git diff pre-grupo25 main`) o para ver
+  esa versión (`git switch --detach pre-grupo25`); **no hace falta moverla** para volver atrás.
+- **No usar `git reset` ni `push --force` sobre `main`**: reescriben una historia que otros ya pueden haber bajado.
+- Si luego se quiere volver a subir el grupo 25, hay que **deshacer el `revert`** (`git revert <hash del revert>`) y no volver a hacer el merge: git
+  cree que esos cambios ya están y no los traería.
+- **El backend vuelve a la vez.** Con el frontend viejo y el backend nuevo, la cuota por marca y los reportes del grupo 25 quedan sin rutas
+  (sección 3).
+
 ---
 
 ## 4 · Después de subir: el recorrido
@@ -88,7 +107,6 @@ puede volver a responder: se hacen con los documentos que prepara el backend.
 
 ## 5 · Lo que este repositorio no dice
 
-- **Cómo llega el código a producción** (quién lo copia, desde dónde, a qué carpeta). Aquí solo está que `dev/` se excluye. Antes de
-  subir hay que saber si la subida toma una rama concreta del repositorio de GitHub o se hace a mano, y **no empujar a `main` sin
-  saberlo**: es lo que se ve de producción.
+- **Cómo llega el código de `main` al servidor** (quién lo copia, desde dónde, a qué carpeta). Aquí solo está que `dev/` se excluye. El código
+  se sube **empujando a `main`** (decisión del 22/10/2026), con el plan de vuelta atrás de la sección 3 y backend y frontend el mismo día.
 - **La dirección del servidor de prueba y las claves** (las pasa quien coordina).
