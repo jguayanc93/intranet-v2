@@ -133,7 +133,10 @@
 
                         <!-- Enlaces adicionales -->
                         <div class="text-center text-sm text-gray-600">
-                            <p>¿Primera vez aquí? <a href="registro.html" class="text-indigo-600 hover:text-indigo-700 font-medium transition-colors">Crear cuenta</a></p>
+                            <!-- No hay enlace a un registro: el formulario necesita la sesión
+                                 que se abre aquí, así que un enlace directo devolvía al login.
+                                 Quien aún no figura en la intranet pasa al alta solo, al entrar. -->
+                            <p>¿Primera vez aquí? Entra con tu usuario y contraseña del sistema y, si aún no estás registrado, te llevaremos al registro.</p>
                         </div>
                     </form>
 

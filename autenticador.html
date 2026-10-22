@@ -1,465 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <title>autenticar usuario</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Registro - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Registro</title>
 </head>
-<body>
-  <div class="my-4 mx-16">
-    <a href="registro.html" class="flex items-center justify-center rounded-lg border border-transparent bg-indigo-600 px-6 py-3 text-xl 
-    font-semibold text-white tracking-[.3em] shadow-xs hover:bg-indigo-700">MENU</a>
-  </div>
-  <!-- PASO 1 PARA LA BUSQUEDA DE UN CLIENTE -->
-  <!-- <div class="mx-6">
-    <div class="flex flex-row space-x-2">
-      <label for="busqueda" class="block text-sm/6 font-medium text-gray-900">Paso 1:</label>
-      <label id="nomcli" class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900">CUOTA</label>
-    </div>
-    
-    <div class="mt-2">
-      <div class="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
-        
-        <input type="number" name="busqueda" id="busqueda" class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6" placeholder="digitar...">
-        
-      </div>
-    </div>
-  </div> -->
-  <div id="insertador-tipo" class="mx-6"></div>
-  <!-- ESTO ES PARA EL NUEVO PASO 2 -->
-   <!-- <div id="insertador-tipo" class="mx-6">
-    <div class="flex flex-row space-x-2">
-      <label for="busqueda" class="block text-sm/6 font-medium text-gray-900">Paso 2:</label>
-      <label id="nomcli" class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900">Tipo de Vendedor</label>
-    </div>    
-    <div class="mt-2">
-      <div class="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
-        
-        <div class="grid shrink-0 w-full focus-within:relative">
-          <select id="alm" name="alm" aria-label="Currency" class="col-start-1 row-start-1 w-full appearance-none rounded-md py-1.5 pr-7 pl-3 text-base text-gray-500 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-            <option value="1">COBERTURA</option>
-            <option value="2">CARTERA</option>
-            <option value="3">ESPECIALISTA</option>
-          </select>
-          <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
-            <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div> -->
-  <div id="buscador-marcas" class="mx-6"></div>
 
+<!-- Sin armazón y sin guard de sesión: quien llega aquí tiene la galleta `cdk`
+     pero todavía no figura en la intranet, así que /vendedor no le contesta y
+     un 401 no significa "sesión vencida". Los componentes sí se usan. -->
+<body data-shell="none" class="cdk-suelta">
 
-  <div class="relative" id="recorrer-marcas"></div>
+<div class="cdk-pagina" style="max-width:680px">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Registro</h1>
+        <p class="cdk-cabecera__sub">Es tu primera vez en la intranet. Completa tu perfil para entrar.</p>
+    </header>
 
-  <div class="mx-6">
-    <div class="flex flex-row space-x-2">
-      <label for="busqueda" class="block text-sm/6 font-medium text-gray-900">Paso 3:</label>
-      <label id="nomcli" class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900">Marcas</label>
-    </div>
-  </div>
+    <div id="estado"></div>
 
-  <div id="agrupador-marcas-seleccionadas" class="mx-6">
-    <div class="flex flex-row space-x-2">
-      <label id="marcas-nom" class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900"></label>
-    </div>
-  </div>   
-    
-      <!-- obsoleto esta parte -->
+    <form id="form-registro" class="hidden" novalidate>
 
-  <!-- PASO 2 PARA LA BUSQUEDA DE UN CLIENTE -->
-  <div id="paso2" class="mx-6 my-4 hidden">
-    <div class="flex flex-row space-x-2">
-      <label for="producto" class="block text-sm/6 font-medium text-gray-900">Paso 2:</label>
-      <label class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900">Productos</label>
-    </div>
-    <div class="mt-2">
-      <div class="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
-        <!-- <div class="shrink-0 text-base text-gray-500 select-none sm:text-sm/6">
-          <button id="voz" disabled>presionar</button>
-        </div> -->
-        <!-- <div class="grid shrink-0 grid-cols-1 focus-within:relative">
-          <button class="hover:bg-sky-700">presionar</button>
-        </div> -->
-        <!-- AGREGAR AQUI EL CAMBIO DE BUSCADOR SEGUN ELECCION DE BUSQUEDA -->
-        <!-- BUSUQEDA DE PRODUCTO POR DESCRIPCION -->
-        <input type="search" name="producto" id="producto" class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6" placeholder="buscar por...">
-        <!-- BUSUQEDA DE PRODUCTO POR PARTNUMBER -->
-        <input type="search" name="productof" id="productof" class="block min-w-0 grow py-1.5 pr-3 pl-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none sm:text-sm/6 hidden" placeholder="buscar por...">
-        <!-- FIN DE DIFERENCIARLOS BIEN -->
-        <div class="grid shrink-0 grid-cols-1 focus-within:relative">
-          <select id="currency2" name="currency2" aria-label="Currency" class="col-start-1 row-start-1 w-full appearance-none rounded-md py-1.5 pr-7 pl-3 text-base text-gray-500 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
-            <option value="1">nombre</option>
-            <option value="2">partnumber</option>
-          </select>
-          <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-500 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
-            <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-<!-- FIN DEL PASO 2 -->
-<div id="modal-aceptacion" class="relative z-10" aria-labelledby="modal-title" role="dialog" aria-modal="true"></div>
-<div class="relative" id="recorrer-productos"></div>
+        <section class="cdk-seccion">
+            <h2 class="cdk-seccion__titulo">Tipo de vendedor</h2>
+            <div class="cdk-campo">
+                <label class="cdk-campo__etiqueta" for="tipo">¿Cómo trabajas?</label>
+                <select id="tipo" class="cdk-entrada"></select>
+                <p id="tipo-leyenda" class="cdk-campo__ayuda"></p>
+            </div>
+        </section>
 
-        <!-- <h2>paso 2: busca tu producto para cotizar</h2>
-        <div>
-            <input type="search" id="producto">
-        </div> -->
-        <!-- <h2>pase 3: selecciona un producto de la lista para añadirlo a tu coti</h2> -->
-        <!-- <div id="encontrar">
-            <div class="relative" id="recorrer-productos"></div>
-        </div> -->
+        <!-- Solo el grupo 25 (jefaturas y especialistas). Elegir marcas aquí es
+             la confirmación del mes, y por eso se avisa. -->
+        <section class="cdk-seccion hidden" id="seccion-marcas">
+            <h2 class="cdk-seccion__titulo">Marcas a tu cargo <span class="cdk-campo__pista">(opcional)</span></h2>
+            <p class="cdk-seccion__sub">
+                Si eliges marcas aquí, <strong>quedan confirmadas</strong>: no podrás sumar, quitar ni
+                cambiar marcas hasta el mes siguiente, porque tu cuota se calcula sobre ellas. Si
+                prefieres decidirlo con calma, déjalo vacío y elígelas después en el módulo Marcas.
+            </p>
+            <div id="editor-marcas"></div>
+        </section>
 
+        <section class="cdk-seccion">
+            <h2 class="cdk-seccion__titulo">Antes de guardar</h2>
+            <p class="cdk-seccion__sub" style="margin-bottom:16px">
+                No podrás cambiar tu tipo de vendedor después del registro.
+            </p>
+            <button type="submit" id="btn-registrar" class="cdk-boton cdk-boton--primario">
+                Guardar y entrar
+            </button>
+        </section>
+    </form>
 
-
-
-<div class="mx-6 my-4">
-  <div class="flex flex-row space-x-2">
-    <label for="producto" class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900">Leyenda</label>
-  </div>
-  <div class="mt-2">
-    <p id="info-leyenda" class="font-mono text-base"></p>
-  </div>
+    <div id="resultado" class="hidden"></div>
 </div>
-    
 
-    <!-- PASO 6 PARA LA TABLA DE BUSQUEDA PRODUCTOS -->
-<div class="mx-6 my-4">
-  <div class="flex flex-row space-x-2">
-    <label for="producto" class="block text-sm/6 font-medium text-gray-900">Paso 3:</label>
-    <label for="producto" class="block text-sm/6 font-medium underline underline-offset-4 text-gray-900">Advertencia</label>
-  </div>
-  <div class="mt-2">
-    <p class="font-mono text-base">no podra cambiar y/o alterar su informacion despues del registro</p>
-    <!-- <a id="creacion" class="flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-xs hover:bg-indigo-700">CREAR</a> -->
-  </div>
-</div>
-  
-  <div class="my-4 mx-16">
-    <a id="creacion" 
-    class="flex items-center justify-center rounded-lg border border-transparent bg-rose-500 px-6 py-3 text-xl 
-    font-semibold text-white tracking-[.3em] shadow-xs hover:bg-indigo-700" onclick="guardar_diferenciador()">GUARDAR</a>
-  </div>
-<!-- FIN DEL PASO 6 -->
+<!-- Núcleo mínimo: esta página no monta el armazón. El catálogo hace falta
+     porque cdk-ui.js dibuja los iconos desde él, y los tipos de vendedor que
+     se ofrecen salen de ahí. -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-ui.js"></script>
 
-<script src="/caminos/rutas.js"></script>
-<script src="/js/global/variables.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded",function(){
-    if(document.getElementById("recorrer-productos")){
-      manejar_diferenciar_opciones();
-    }
-  })
-
-  function manejar_diferenciar_opciones(){
-
-    let peticion = new Request(rutaloginregistro,{ method:"GET",mode:"cors",credentials:"include"})
-
-    fetch(peticion)
-    .then(resultado=>{
-      if(!resultado.ok){
-        throw new Error("error en el llamado de las galleta");
-      }
-      return resultado.json();
-    })
-    .then(resultado=>{
-      let decodificar = JSON.parse(resultado);
-      console.log("se trajo esta respuesta correcta",decodificar)
-      insertar_opciones_usuario(decodificar.grupo);
-    })
-    .catch(err=>{
-      console.log(err);
-      // insertar_opciones_usuario("VENTAS-EJECUTIVOS");
-    })
-  }
-
-  function insertar_opciones_usuario(grupo){
-    
-    let estilo_tipo = document.getElementById("insertador-tipo");
-    estilo_tipo.innerHTML="";
-
-    /////crea su estilo de tipo
-    let contenedor_principal1=document.createElement("div");
-    let princiapl1_label1=document.createElement("label");
-    princiapl1_label1.className="block text-sm/6 font-medium text-gray-900";
-    princiapl1_label1.textContent="Paso 1:";
-    let princiapl1_label2=document.createElement("label");
-    princiapl1_label2.className="block text-sm/6 font-medium underline underline-offset-4 text-gray-900";
-    princiapl1_label2.textContent="Tipo de Vendedor";
-    contenedor_principal1.appendChild(princiapl1_label1);
-    contenedor_principal1.appendChild(princiapl1_label2);
-    ///////contenedor 2
-    let contenedor_principal2=document.createElement("div");
-    contenedor_principal2.className="mt-2";
-    let contenedor_principal2_contenedor1=document.createElement("div");
-    contenedor_principal2_contenedor1.className="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600"
-    let contenedor_principal2_contenedor2=document.createElement("div");
-    contenedor_principal2_contenedor2.className="grid shrink-0 w-full focus-within:relative";
-
-    let selector_tipos=document.createElement("select");
-    selector_tipos.id="vend-tipos"
-    selector_tipos.ariaLabel="Currency"
-    selector_tipos.className="col-start-1 row-start-1 w-full appearance-none rounded-md py-1.5 pr-7 pl-3 text-base text-gray-500 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6";
-    selector_tipos.addEventListener("change",informacion_tipo)
-    let option1;
-    let option2;
-    switch (grupo) {
-      case "VENTAS-EJECUTIVOS":
-        option1 = document.createElement("option")
-        option1.value="COBERTURA";
-        option1.textContent="COBERTURA";
-        option2 = document.createElement("option")
-        option2.value="CARTERA";
-        option2.textContent="CARTERA";
-        break;
-
-      case "VENTAS-JEFES DE PROD":
-        option1 = document.createElement("option")
-        option1.value="JEFATURA";
-        option1.textContent="JEFATURA";
-        option2 = document.createElement("option")
-        option2.value="ESPECIALISTA";
-        option2.textContent="ESPECIALISTA";
-        break;
-
-      case "VENTAS-JEFES DE ZONA":
-        option1 = document.createElement("option")
-        option1.value="ZONA";
-        option1.textContent="ZONA"
-        option2 = document.createElement("option")
-        option2.value="WEB";
-        option2.textContent="WEB";
-        break;
-
-      case "VENTAS-JEFE DE PRODU":
-        option1 = document.createElement("option")
-        option1.value="TIO GASEOSA";
-        option1.textContent="TIO GASEOSA"
-        option2 = document.createElement("option")
-        option2.value="CHAKAL";
-        option2.textContent="CHAKAL";
-        break;
-    
-      default:
-        option1 = document.createElement("option")
-        option1.value="extraño";
-        option1.textContent="extraño"
-        option2 = document.createElement("option")
-        option2.value="nulo";
-        option2.textContent="nulo";
-        break;
-    }
-
-    selector_tipos.appendChild(option1);
-    selector_tipos.appendChild(option2);
-
-    contenedor_principal2_contenedor2.appendChild(selector_tipos);
-
-    contenedor_principal2_contenedor1.appendChild(contenedor_principal2_contenedor2);
-    
-    contenedor_principal2.appendChild(contenedor_principal2_contenedor1);
-
-    estilo_tipo.appendChild(contenedor_principal1)
-    estilo_tipo.appendChild(contenedor_principal2)
-
-    if(grupo==='VENTAS-JEFES DE PROD'){plantilla_especial();}
-
-  }
-
-  function informacion_tipo(ev){
-    let opcion = document.getElementById("info-leyenda")
-    switch (ev.target.value) {
-      case "COBERTURA":
-        opcion.textContent="Vendedor de tipo cobertura";
-        break;
-
-      case "CARTERA":
-        opcion.textContent="Vendedor de tipo cartera";
-        break;
-
-      case "JEFATURA":
-        opcion.textContent="Vendedor jefe de linea";
-        break;
-
-      case "ESPECIALISTA":
-        opcion.textContent="Vendedor jefe de una marca en especifico";
-        break;
-
-      case "TIO GASEOSA":
-        opcion.textContent="Jefe de hp y de las gaseosas";
-        break;
-
-      case "CHAKAL":
-        opcion.textContent="Chakal del tio gaseosa";
-        break;
-    
-      default:
-        opcion.textContent="no pertenece a ningun grupo";        
-        break;
-    }
-
-  }
-
-  function plantilla_especial(){
-     let estilo_tipo = document.getElementById("buscador-marcas");
-    estilo_tipo.innerHTML="";
-
-    /////crea su estilo de tipo
-    let contenedor_principal1=document.createElement("div");
-    let princiapl1_label1=document.createElement("label");
-    princiapl1_label1.className="block text-sm/6 font-medium text-gray-900";
-    princiapl1_label1.textContent="Paso 2:";
-    let princiapl1_label2=document.createElement("label");
-    princiapl1_label2.className="block text-sm/6 font-medium underline underline-offset-4 text-gray-900";
-    princiapl1_label2.textContent="Marcas a Cargo";
-    contenedor_principal1.appendChild(princiapl1_label1);
-    contenedor_principal1.appendChild(princiapl1_label2);
-    ///////contenedor 2
-    let contenedor_principal2=document.createElement("div");
-    contenedor_principal2.className="mt-2";
-    let contenedor_principal2_contenedor1=document.createElement("div");
-    contenedor_principal2_contenedor1.className="flex items-center rounded-md bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600"
-    let contenedor_principal2_contenedor2=document.createElement("div");
-    contenedor_principal2_contenedor2.className="grid shrink-0 w-full focus-within:relative";
-
-    let selector_marcas=document.createElement("input");
-    selector_marcas.id="buscador"
-    selector_marcas.type="text";
-    selector_marcas.className="col-start-1 row-start-1 w-full appearance-none rounded-md py-1.5 pr-7 pl-3 text-base text-gray-500 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6";    
-    selector_marcas.addEventListener("input",(ev)=>{
-      console.log("ecribiendo en el buscador de marcas")
-      let busqueda= ev.target.value;
-      let busqueda_anterior = document.getElementById("recorrer-marcas");
-      busqueda_anterior.innerHTML="";
-      busqueda=='' ? busqueda_anterior.innerHTML="" : buscar_marcas2(busqueda);
-    })
-
-    contenedor_principal2_contenedor2.appendChild(selector_marcas);
-
-    contenedor_principal2_contenedor1.appendChild(contenedor_principal2_contenedor2);
-    
-    contenedor_principal2.appendChild(contenedor_principal2_contenedor1);
-
-    estilo_tipo.appendChild(contenedor_principal1)
-    estilo_tipo.appendChild(contenedor_principal2)
-  }
-
-  async function buscar_marcas2(busqueda){
-    let dataenviar=new Object();
-    dataenviar.sugerencia=busqueda;
-    let fetchobj = new Object();
-    fetchobj.method="POST";
-    fetchobj.headers={"Content-Type":"application/json"};
-    fetchobj.mode="cors";
-    fetchobj.credentials="include";
-    fetchobj.body=JSON.stringify(dataenviar);
-    try{
-        let paso1= await fetch(rutaproductobuscarmarcas,fetchobj)
-        let paso2= await paso1.json();
-        let paso3= await JSON.parse(paso2);
-        console.log("segundo veamos el paso3",paso3)
-
-        let contenedor_general=document.createElement('div');
-        contenedor_general.className="absolute left-1/2 z-10 mt-5 flex w-screen max-w-max -translate-x-1/2 px-4";
-
-        let contenedor_general1=document.createElement('div');
-        contenedor_general1.className="w-screen max-w-md flex-auto overflow-hidden rounded-3xl bg-white text-sm/6 ring-1 shadow-lg ring-gray-900/5";
-
-        let contenedor_general2=document.createElement('div');
-        contenedor_general2.className="p-4";
-
-        for(let indice in paso3){
-
-            let contenedor_general3=document.createElement('div')
-            contenedor_general3.className="group relative flex gap-x-6 rounded-lg p-4 hover:bg-gray-50";
-
-            let contenedor1=document.createElement('div');
-            let enlace_descripcion_titulo=document.createElement('a');
-            enlace_descripcion_titulo.href="#";
-            enlace_descripcion_titulo.className="font-semibold text-gray-900";
-            enlace_descripcion_titulo.textContent="SUGERENCIA";
-            let spamcito=document.createElement('span');
-            spamcito.className="absolute inset-0";
-            enlace_descripcion_titulo.appendChild(spamcito)          
-            let parrafo_descripcion_data=document.createElement('p')
-            parrafo_descripcion_data.className="mt-1 text-gray-600";
-            parrafo_descripcion_data.textContent=paso3[indice][1];
-
-            contenedor1.appendChild(enlace_descripcion_titulo);
-            contenedor1.appendChild(parrafo_descripcion_data);
-            contenedor1.addEventListener("click",()=>{
-              // let acumulado_temporal=document.getElementById("marcas-nom").textContent;
-              // let formato_temporal=acumulado_temporal+"/"+paso3[indice][1];
-              document.getElementById("buscador").value="";
-              document.getElementById("recorrer-marcas").innerHTML="";
-              // document.getElementById("marcas-nom").textContent=formato_temporal;
-              marcas_seleccionadas(paso3[indice][0],paso3[indice][1],paso3[indice][2])
-            })
-
-            contenedor_general3.appendChild(contenedor1);
-            contenedor_general2.appendChild(contenedor_general3);
-        }
-
-        contenedor_general1.appendChild(contenedor_general2);
-        contenedor_general.appendChild(contenedor_general1);
-
-        document.getElementById("recorrer-marcas").appendChild(contenedor_general);
-        
-    }
-    catch(err){
-        console.log(err);
-    }
-  }
-
-  function marcas_seleccionadas(codigo,nombre,abreviatura){
-    marcas_recojidas.push([codigo,abreviatura,nombre]);
-    document.getElementById("agrupador-marcas-seleccionadas").innerHTML="";
-    for(const marca of marcas_recojidas){
-      let contenedor_pequeño=document.createElement("div");
-      contenedor_pequeño.className="flex flex-row space-x-2";
-      let parrafo_pequeño=document.createElement("label");
-      parrafo_pequeño.className="block text-sm/6 font-medium underline underline-offset-4 text-gray-900";
-      parrafo_pequeño.textContent=marca[2];
-      contenedor_pequeño.appendChild(parrafo_pequeño);
-      document.getElementById("agrupador-marcas-seleccionadas").appendChild(contenedor_pequeño);
-    }
-    console.log(marcas_recojidas)
-  }
-
-  function guardar_diferenciador(){
-
-    let diferenciador = document.getElementById("vend-tipos");
-      console.log("este es el seleccionado: ",diferenciador.value);
-
-      const cuerpo={
-        'diferenciador':diferenciador.value,
-        'marcas':marcas_recojidas
-      }
-      const bodystring=JSON.stringify(cuerpo);
-
-      let peticion = new Request(rutaloginregistrocompletado,{ method:"POST",headers:{'Content-Type':'application/json'},body:bodystring,mode:"cors",credentials:"include"})
-
-      fetch(peticion)
-      .then(resultado=>{
-        if(!resultado.ok){
-          throw new Error("fallo en la redireccion hacia el menu despues del registro");
-        }
-        return resultado.json();
-      })
-      .then(resultado=>{
-        let decodificar = JSON.parse(resultado);
-        console.log(decodificar)
-        //console.log("que sucedera? con la redireccion");
-        window.location.replace("https://landing.compudiskett.com.pe/main.html")
-      })
-      .catch(err=>{
-        console.log(err);
-      })
-  }
-</script>
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/marcas/editor.js"></script>
+<script src="/js/login/registro.js"></script>
 </body>
 </html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Marcas del mes - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Marcas del mes</title>
+</head>
+
+<!-- Una sola pantalla, no un hub: `GET /v1/marcas` devuelve el estado del mes,
+     no una lista de acciones. Por eso vive en la raíz, como reporte.html. -->
+<body data-modulo="marcas" data-titulo="Marcas del mes">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Marcas del mes</h1>
+        <p class="cdk-cabecera__sub" id="periodo">Elige y administra tus marcas</p>
+    </header>
+
+    <!-- Fuera de #contenido a propósito: lo que no se pudo asignar se dice justo
+         después de repintar, y dentro se borraría antes de poder leerlo. -->
+    <div id="avisos"></div>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/marcas/editor.js"></script>
+<script src="/js/marcas/familia.js"></script>
+<script src="/js/marcas/marcas.js"></script>
+</body>
+</html>

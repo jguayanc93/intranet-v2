@@ -38,11 +38,24 @@
         // expirada". Sin esto, el guard mandaría al login estando ya en el login.
         CDK.http.post(CDK.rutas.api("/login"), new FormData(formulario), { sin401: true })
             .then(function () {
+                olvidarMenu();
                 // No se quita el indicador: la página está a punto de cambiar y
                 // devolver el botón a su estado normal produce un parpadeo.
                 location.replace(CDK.rutas.inicio());
             })
             .catch(function (err) {
+                /* Una cuenta válida que aún no figura en la intranet no es un
+                   error de credenciales: el backend lo dice con `no
+                   identificado` y el camino es el alta. Se comprueba ANTES de
+                   pintar nada: antes salía un instante «usuario y/o contraseña
+                   incorrectos» y recién después se redirigía, que a quien
+                   acertó su contraseña le dice justo lo contrario de lo que
+                   pasa. Tampoco se quita el indicador: la página va a cambiar. */
+                if (err.detalles && err.detalles.status === "no identificado") {
+                    location.assign(CDK.rutas.registro());
+                    return;
+                }
+
                 cargando(false);
 
                 document.getElementById("user").value = "";
@@ -60,16 +73,30 @@
     });
 
     /**
+     * El menú de módulos se guarda en sessionStorage y se revalida al abrir el
+     * panel, pero hasta entonces se pinta el guardado. Si quien entra no es
+     * quien lo guardó —un equipo compartido donde nadie cerró sesión—, vería un
+     * instante el menú y el nombre de otra persona. Cerrar sesión ya lo borra;
+     * esto cubre entrar sin haber cerrado.
+     *
+     * Se borran todas las claves `cdk.modulos.*` en vez de una concreta: la
+     * clave lleva la versión de la caché (core/cdk-permisos.js), y este archivo
+     * no carga ese módulo.
+     */
+    function olvidarMenu() {
+        try {
+            Object.keys(sessionStorage)
+                .filter(function (clave) { return clave.indexOf("cdk.modulos.") === 0; })
+                .forEach(function (clave) { sessionStorage.removeItem(clave); });
+        } catch (e) { /* almacenamiento no disponible: no había nada que borrar */ }
+    }
+
+    /**
      * El backend acompaña el error de un campo `status` con texto propio, que no
      * es el código HTTP.
      */
     function manejarDetalle(detalle) {
         switch (detalle.status) {
-            case "no identificado":
-                // Cuenta válida que aún no ha completado su registro.
-                location.assign(CDK.rutas.registro());
-                break;
-
             case "no cdk user":
                 error("Esta cuenta no está registrada en el sistema.");
                 break;
