@@ -55,10 +55,10 @@ CDK.listo(function () {
         ruta:         "/lista/pedidos",
         rutaDia:      "/lista/pedidosxdia",
         campos:       CDK.listas.CAMPOS.pedido
-        /* Sin `estadoNormal` a propósito: un pedido solo puede estar
-           `aprobado` o `atendido`, y la diferencia entre los dos es
-           justamente lo que el vendedor viene a mirar. Ocultar uno de ellos
-           por «normal» escondería la mitad de la información. */
+        /* Sin `estadoNormal` a propósito: un pedido puede estar `sin aprobar`,
+           `aprobado` o `atendido`, y la diferencia entre ellos es justamente lo
+           que el vendedor viene a mirar. Ocultar uno por «normal» escondería
+           parte de la información. */
     });
 });
 </script>

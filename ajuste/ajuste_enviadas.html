@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mis ajustes de precio - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Mis ajustes</title>
+</head>
+
+<!-- Grupo 20: las solicitudes que el vendedor envió y lo que respondieron. -->
+<body data-modulo="ajuste" data-titulo="Mis ajustes">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Mis ajustes</h1>
+        <p class="cdk-cabecera__sub">Lo que pediste y lo que respondieron</p>
+    </header>
+
+    <div class="cdk-acciones-fila" style="margin-bottom:12px">
+        <a href="#" id="ajuste-pedir" class="cdk-boton cdk-boton--primario">Pedir un ajuste</a>
+    </div>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas la lectura de los errores del backend y el nombre de una marca. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/ajuste/datos.js"></script>
+<script src="/js/ajuste/lista.js"></script>
+<script src="/js/ajuste/enviadas.js"></script>
+</body>
+</html>
