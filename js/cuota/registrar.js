@@ -29,7 +29,40 @@
 
     if (!formulario) return;
 
-    revisar();
+    iniciar();
+
+    /**
+     * Esta pantalla registra UNA cuota mensual: es la de cobertura y cartera.
+     * Especialistas y jefaturas no la tienen: fijan una meta por marca, desde
+     * «Ver mi cuota». Si llegan aqui —ya no por el hub, que no les da `crear`, pero
+     * si por un enlace guardado— se les dice, en vez de ofrecerles un formulario que
+     * no corresponde.
+     *
+     * Lo dice el backend: `/cuota/revisar` responde `status: "cuota por marca"` al
+     * grupo 25. No se mira el tipo de /vendedor.
+     */
+    function iniciar() {
+        revisar();
+    }
+
+    function porMarca() {
+        estado.innerHTML = "";
+        formulario.classList.add("hidden");
+
+        estado.appendChild(el("div", { clase: "cdk-aviso", id: "cuota-por-marca-aviso" }, [
+            el("p", { clase: "cdk-aviso__texto", texto: "Tu cuota se fija por marca, no con un solo monto." }),
+            el("p", { clase: "cdk-pista",
+                      texto: "Fija la meta de cada una de tus marcas desde «Ver mi cuota». Antes tienes que " +
+                             "haber confirmado tus marcas del mes." })
+        ]));
+
+        estado.appendChild(el("a", {
+            href: CDK.rutas.app("/cuota/cuota_observar.html"),
+            clase: "cdk-boton cdk-boton--primario",
+            style: "margin-top:12px",
+            texto: "Ver mi cuota"
+        }));
+    }
 
     /* ===============================================================
      * ¿Ya la registró?
@@ -45,6 +78,9 @@
         CDK.http.get(CDK.rutas.api("/cuota/revisar"))
             .then(function (respuesta) {
                 var d = (respuesta && respuesta.data) || respuesta || {};
+
+                /* El grupo 25 no registra una cuota de un solo monto: la fija por marca. */
+                if (d.status === "cuota por marca") return porMarca();
 
                 /* Lo que manda es `puedeRegistrar`. Antes esta ruta
                    respondía 403 cuando la cuota ya existía —que no es un

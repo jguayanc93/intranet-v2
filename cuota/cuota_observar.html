@@ -12,6 +12,11 @@
 
 <div class="cdk-pagina">
 
+    <!-- ============ CUOTA POR MARCA (grupo 25) ============ -->
+    <!-- Especialistas y jefaturas no tienen UNA cuota sino una meta por marca: js/cuota/avance.js
+         oculta la seccion de abajo y pinta esto en su lugar. Ver docs/cuota-grupo25.md. -->
+    <div id="por-marca" class="hidden"></div>
+
     <!-- ============ EL AVANCE DEL MES ============ -->
     <!-- Segmento 1. Es el que importa y el único que se conserva: los otros
          dos se retiraron y en su sitio van los cuatro bloques de abajo. -->
@@ -56,6 +61,10 @@
 <script src="/core/cdk-formato.js"></script>
 <script src="/core/cdk-shell.js"></script>
 
+<!-- Comparte con Marcas el nombre del periodo y la lectura de los errores. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/cuota/marcas-datos.js"></script>
+<script src="/js/cuota/marcas.js"></script>
 <script src="/js/cuota/avance.js"></script>
 </body>
 </html>
