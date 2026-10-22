@@ -78,6 +78,9 @@ git revert -m 1 <ese hash>            # un commit nuevo que deja main como estab
 git push origin main
 ```
 
+Probado en un clon descartable: tras el `revert`, `main` queda **idéntico** a como estaba antes del merge. Eso es `pre-grupo25` **más el commit
+`c1aec2b`** (12/10, «Retira tres archivos que nadie cargaba»), que estaba solo en local y se sube en el mismo `push`.
+
 - La etiqueta **`pre-grupo25`** marca lo que había en GitHub justo antes (`fe36cf4`). Sirve para comparar (`git diff pre-grupo25 main`) o para ver
   esa versión (`git switch --detach pre-grupo25`); **no hace falta moverla** para volver atrás.
 - **No usar `git reset` ni `push --force` sobre `main`**: reescriben una historia que otros ya pueden haber bajado.
