@@ -108,7 +108,37 @@ puede volver a responder: se hacen con los documentos que prepara el backend.
 
 ---
 
-## 5 · Lo que este repositorio no dice
+## 5 · Lo que suma el grupo 34 (jefe de zona, 22/10/2026)
+
+El jefe de zona se prueba y se sube igual, y se puede deshacer por separado: va en **su propio merge** (rama `zona34`). Lo que el frontend llama ahora, y que el backend
+tiene que tener el mismo día:
+
+| el frontend llama | para qué |
+|---|---|
+| `GET /v1/zona/avance` (con `?anno=&mes=` para un mes anterior) | el avance de todos los vendedores del grupo 20 |
+| `GET /v1/zona/probabilidad?codusu=` | la probabilidad de uno |
+| `GET /v1/vendedor` con tipo `ZONA` | el menú de tres módulos (`cotizacion`, `avance`, `probabilidad`) |
+| `403 usuario sin acceso` en el login y en cualquier ruta | el 297: el frontend lo lleva al login |
+
+Cuentas para el recorrido: el **126** (entra) y el **297** (`403`). Los casos están en [respuesta-zona.md](respuesta-zona.md), sección 3.
+
+### Volver atrás del grupo 34
+
+Entra en `main` con **su propio commit de merge** («Jefe de zona (grupo 34): …»), encima del del grupo 25, así que se deshace igual y por separado:
+
+```
+git log --merges -2 --format="%h %s"     # el de arriba es el del grupo 34
+git revert -m 1 <hash del merge del grupo 34>
+git push origin main
+```
+
+- La etiqueta **`pre-grupo34`** marca lo que había justo antes (el merge del grupo 25, `79dac94`).
+- **Para deshacer el grupo 25 con el 34 ya subido, hay que deshacer primero el 34**: el 34 toca archivos que el 25 también tocó (el catálogo, el cliente
+  HTTP, los estilos y el login), y revertir el 25 con el 34 encima da conflictos. En ese orden, cada `revert` sale limpio.
+
+---
+
+## 6 · Lo que este repositorio no dice
 
 - **Cómo llega el código de `main` al servidor** (quién lo copia, desde dónde, a qué carpeta). Aquí solo está que `dev/` se excluye. El código
   se sube **empujando a `main`** (decisión del 22/10/2026), con el plan de vuelta atrás de la sección 3 y backend y frontend el mismo día.

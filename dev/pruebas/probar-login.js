@@ -69,6 +69,11 @@ function responder(url, opciones) {
 
         perfil = usuarios.entrar(cuenta, sim, { azar: azar });
 
+        /* Un usuario del grupo 34 que aun no puede entrar (el 297): acerto su contraseña, pero el login le responde 403 y sin sesion. */
+        if (sim.estado.sinAcceso) {
+            return respuesta({ status: "usuario sin acceso", codigo: 3, msg: "este usuario todavia no tiene acceso a la intranet" }, 403);
+        }
+
         /* Lo que el navegador ve al final del redirect a /login/identificador. */
         if (!sim.estado.yaRegistrado) return respuesta(NO_IDENTIFICADO, 400, true);
         return respuesta({ msg: "sesion creada" }, 200, true);
@@ -337,6 +342,19 @@ const jefaturaSinMarcas = (p) => !!p.doc.getElementById("marcas-familia");
     console.log("\n— cualquier otro nombre —");
     p = await entrarComo("juan.perez");
     ok("entra como especialista ya registrado", [p.destinos, perfil.tipo], [["/main.html"], "ESPECIALISTA"]);
+    /* ---------------------------------------------------- el jefe de zona (grupo 34) */
+    console.log("\n— jefe de zona: quien puede entrar y quien no —");
+    p = await entrarComo("zona126");
+    ok("el usuario 126 entra y va al panel, como ZONA", [p.destinos, perfil.tipo, perfil.grupo], [["/main.html"], "ZONA", "VENTAS-JEFES DE ZONA"]);
+
+    p = await entrarComo("zona297", "clave1234");
+    ok("el 297 no sale de la pagina: no recibe sesion", p.destinos, []);
+    ok("se le dice que todavia no tiene acceso —acerto su contraseña—, no que sea incorrecta",
+       [p.doc.getElementById("respuesta").classList.contains("hidden"), p.doc.getElementById("respuesta").textContent.trim()],
+       [false, "Tu usuario todavía no tiene acceso a la intranet. Consulta con tu jefatura o con sistemas."]);
+    ok("y los campos quedan vacios", [p.doc.getElementById("user").value, p.doc.getElementById("pass").value], ["", ""]);
+    ok("el menu cacheado de quien estuvo antes no se toca: no entro nadie", p.w.sessionStorage.length, 0);
+
     const jefe = usuarios.entrar("otro", sim, { tipoPorDefecto: "jefatura" });
     ok("y con TIPO=JEFATURA, como jefatura", [jefe.tipo, sim.estado.rol, sim.estado.cargadoComoJefatura], ["JEFATURA", "JEFATURA", true]);
 

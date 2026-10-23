@@ -35,6 +35,10 @@
         cobertura:   'M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z',
         /* Un trofeo: el que mas vendio. */
         vendedormes: 'M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0',
+        /* Un grafico con una linea que sube: el avance. */
+        avance:      'M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6',
+        /* Una flecha que sube: hacia donde va, y con que probabilidad. */
+        probabilidad: 'M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941',
         marcas:      'M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3ZM6 6h.008v.008H6V6Z',
 
         ajuste:      'M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75',
@@ -270,6 +274,31 @@
             accesos: {}
         },
 
+        /* Solo lo devuelve el grupo 34 (jefe de zona, desde el 22/10/2026): el avance de la cuota de TODOS los
+           vendedores del grupo 20. Como reporte, marcas y cobertura, es una pantalla y no un hub: no hay
+           `GET /avance` con accesos, asi que el patron de permisos dinamicos no aplica y avance.html vive en la
+           raiz. Ojo con el nombre: no es el avance de la cuota PROPIA del vendedor (js/cuota/avance.js, en el
+           modulo `cuota`), sino el de todos. Prioridades 11 y 12: el menu de zona son tres modulos, asi que
+           caben todos en la barra de abajo de un movil. Ver docs/zona-grupo34.md. */
+        avance: {
+            etiqueta: "Avance",
+            icono: ICONOS.avance,
+            prioridad: 11,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* La probabilidad de que UN vendedor del grupo 20 llegue a su cuota, comparada con los tres meses anteriores a
+           esta misma altura del mes. Pantalla unica; se llega desde el menu o desde una fila del avance
+           (`probabilidad.html?codusu=196`). */
+        probabilidad: {
+            etiqueta: "Probabilidad",
+            icono: ICONOS.probabilidad,
+            prioridad: 12,
+            carpeta: "",
+            accesos: {}
+        },
+
         /* El vendedor (grupo 20) envia una cotizacion o pedido para que el especialista
            o la jefatura de la marca (grupo 25) le ajuste el precio, y se lo devuelven.
            Un hub, como los demas: `GET /ajuste` dira que acciones tiene cada uno. Son dos
@@ -340,8 +369,8 @@
      *
      *   vigente   — el negocio lo sigue usando.
      *   operativo — ya tiene modulos y tareas definidas en la intranet.
-     *               ZONA y HP son vigentes pero todavia no operativos:
-     *               estan reconocidos, sin modulos asignados aun.
+     *               HP es vigente pero todavia no operativo: esta reconocido,
+     *               sin modulos asignados aun. ZONA ya lo es (22/10/2026).
      *
      *   pideMarcas — el registro deja elegir marcas (solo el grupo 25). Elegir
      *               alguna en el registro es la confirmacion del mes.
@@ -354,7 +383,9 @@
         "ESPECIALISTA": { etiqueta: "Especialista", descripcion: "Jefe de una marca específica",          grupo: "VENTAS-JEFES DE PROD", nivel: 2, vigente: true,  operativo: true, pideMarcas: true },
 
         // Jefe de jefatura y especialista, pero en otro grupo.
-        "ZONA":         { etiqueta: "Zona",         descripcion: "Jefe de zona",                          grupo: "VENTAS-JEFES DE ZONA", nivel: 3, vigente: true,  operativo: false },
+        /* Operativo desde el 22/10/2026: su menu es cotizacion, avance y probabilidad (docs/zona-grupo34.md). Hoy entra
+           solo el usuario 126; el otro del grupo recibe `403 usuario sin acceso` hasta que se decida. */
+        "ZONA":         { etiqueta: "Zona",         descripcion: "Jefe de zona",                          grupo: "VENTAS-JEFES DE ZONA", nivel: 3, vigente: true,  operativo: true },
 
         /* Antes figuraba como "TIO GASEOSA", que es como lo llamaba la pantalla
            vieja pero no como lo guarda el backend: el diferenciador es `HP`.
