@@ -105,6 +105,13 @@ function conCuerpo(pet, manejar) {
 /* Correlativo de las cotizaciones creadas en esta sesion. */
 let contadorCoti = 36;
 
+/* El tipo de cambio de VENTA de hoy (tbl01tca.tcvta), el que llega en /vendedor como `tipoCambio`. Con el usuario `sintc20` no hay
+   ninguno cargado: llega null y /pegar responde `tipcambio no registrado`. Ver docs/cotizacion-moneda.md. */
+const TIPO_CAMBIO_DEMO = 3.45;
+
+/* Redondeo del ERP: la mitad hacia arriba, sin los errores de la coma flotante. */
+const redondear = (n, d) => Number(Math.round(Number(n + "e" + d)) + "e-" + d);
+
 /* La cuota del mes: null hasta que se registre. Se guarda en memoria para
    poder probar los dos estados sin reiniciar nada. */
 let cuotaRegistrada = null;
@@ -466,8 +473,11 @@ http.createServer((pet, res) => {
                     msg: "la cotizacion no existe o no pertenece a este vendedor"
                 }, 403);
             }
+            /* La 098-00000070 es una cotizacion en soles, grabada como la graba el ERP: todo en soles, la moneda de la linea
+               en "D" y el tipo de cambio de ese dia (docs/cotizacion-moneda.md, seccion 2). */
+            const enSoles = /00000070$/.test(String(d.ncoti || ""));
             responder(res, JSON.parse(
-                fs.readFileSync(path.join(__dirname, "cotizacion-ejemplo.json"), "utf8")
+                fs.readFileSync(path.join(__dirname, enSoles ? "cotizacion-soles-ejemplo.json" : "cotizacion-ejemplo.json"), "utf8")
             ));
         });
     }
@@ -666,20 +676,49 @@ http.createServer((pet, res) => {
                 }, 400);
             }
 
-            // Importes en dolares, como los manda la pantalla.
-            const tota = items.reduce((a, it) => a + (Number(it.preciosinIGV) || 0), 0);
-            const toti = Math.round(tota * 0.18 * 100) / 100;
+            /* Sin tipo de cambio de hoy no se graba nada, en ninguna moneda (docs/cotizacion-moneda.md, seccion 3). */
+            if (marcasSim.estado.sinTipoCambio) {
+                return responder(res, { status: "tipcambio no registrado", codigo: 2, data: null,
+                                        msg: "no hay tipo de cambio registrado para hoy" }, 400);
+            }
+
+            const soles = d.moneda === "S";
+            let tota, toti, totn;
+
+            if (soles) {
+                /* La regla del ERP (docs/cotizacion-moneda.md, seccion 2), con enteros exactos como el backend: los precios LLEGAN
+                   en dolares y se convierten —precio unitario a 3 decimales; precio con descuento a 2 decimales; la linea es ese
+                   precio por la cantidad—, y los totales salen de la suma, sin pasar por el total en dolares. */
+                const mitad = (num, den) => Math.floor((2 * num + den) / (2 * den));      // num / den, la mitad hacia arriba
+                const tcM = Math.round(TIPO_CAMBIO_DEMO * 1000);
+                let sumaC = 0;
+                items.forEach((it) => {
+                    const precioC = Math.round((Number(it.precioUnitario) || 0) * 100);                    // centavos de dolar
+                    const dsctC = Math.round(Math.min(Math.max(Number(it.descuento) || 0, 0), 100) * 100);  // centesimas de %
+                    const preuM = mitad(precioC * tcM, 100);                                                // milesimas de sol
+                    const conDsctC = mitad(preuM * (10000 - dsctC), 100000);                                // centavos de sol
+                    sumaC += conDsctC * (parseInt(it.cantidad, 10) || 0);
+                });
+                tota = sumaC / 100;
+                toti = mitad(sumaC * 18, 100) / 100;
+                totn = (sumaC + mitad(sumaC * 18, 100)) / 100;
+            } else {
+                // Importes en dolares, como los manda la pantalla.
+                const bruta = items.reduce((a, it) => a + (Number(it.preciosinIGV) || 0), 0);
+                toti = Math.round(bruta * 0.18 * 100) / 100;
+                tota = Math.round(bruta * 100) / 100;
+                totn = Math.round((bruta + toti) * 100) / 100;
+            }
 
             contadorCoti++;
+            /* `moneda` y `tcam` son los dos campos nuevos; `totales` va en la moneda del documento. */
             responder(res, {
                 status: "ok", codigo: 0,
                 documento: "098-" + String(contadorCoti).padStart(8, "0"),
                 lineas: items.length,
-                totales: {
-                    tota: Math.round(tota * 100) / 100,
-                    toti: toti,
-                    totn: Math.round((tota + toti) * 100) / 100
-                }
+                moneda: soles ? "S" : "D",
+                tcam: TIPO_CAMBIO_DEMO,
+                totales: { tota: tota, toti: toti, totn: totn }
             });
         });
     }
@@ -698,7 +737,9 @@ http.createServer((pet, res) => {
         return responder(res, Object.assign(
             { status: "ok", codigo: 0, data: modulosDe(marcasSim.estado.rol) },
             USUARIO,
-            { tipo: marcasSim.estado.rol, ajustesPendientes: ajustesPendientes() }
+            { tipo: marcasSim.estado.rol, ajustesPendientes: ajustesPendientes(),
+              /* null cuando hoy no hay tipo de cambio cargado: sin el no se cotiza en soles. */
+              tipoCambio: marcasSim.estado.sinTipoCambio ? null : TIPO_CAMBIO_DEMO }
         ));
     }
 
@@ -1065,7 +1106,9 @@ http.createServer((pet, res) => {
         // Abierta y en dolares, pero sin promociones que le toquen.
         "009-00971042": { moneda: "D", aplican: [], yaAplicada: [], puestas: [] },
         // En soles: las promociones no se le aplican, y eso NO es un error.
-        "009-00970988": { moneda: "S", aplican: [], yaAplicada: [], puestas: [] }
+        "009-00970988": { moneda: "S", aplican: [], yaAplicada: [], puestas: [] },
+        // La que se hizo desde la intranet en soles (098-00000070): igual.
+        "098-00000070": { moneda: "S", aplican: [], yaAplicada: [], puestas: [] }
     };
 
     // Lo que cada promocion pondria si se aplicara.
@@ -1655,6 +1698,9 @@ http.createServer((pet, res) => {
                   3: 1645.01, 4: "D", 5: hoy.replace(/\//g, "-") + " 13:57:38", 6: "cotizado",  7: 1 },
                 { 0: hoy,  1: "009-00971042", 2: "PC SUMINISTROS & SISTEMAS INFORMATICOS S.A.C.",
                   3: 892.40,  4: "D", 5: hoy.replace(/\//g, "-") + " 11:12:04", 6: "cotizado",  7: 1 },
+                /* Una cotizacion en soles creada hoy desde la intranet: para modificarla con su propio tipo de cambio. */
+                { 0: hoy,  1: "098-00000070", 2: "DISTRIBUIDORA TECNOLOGICA ANDINA S.A.C.",
+                  3: 858.63, 4: "S", 5: hoy.replace(/\//g, "-") + " 12:30:00", 6: "cotizado",  7: 1 },
                 { 0: hoy,  1: "009-00969917", 2: "APROBADA S.A.C. (rotulada cotizado)",
                   3: 450.00,  4: "D", 5: hoy.replace(/\//g, "-") + " 10:05:11", 6: "cotizado",  7: 0 },
                 { 0: ayer, 1: "009-00970988", 2: "DISTRIBUIDORA TECNOLOGICA ANDINA S.A.C.",

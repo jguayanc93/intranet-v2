@@ -201,7 +201,8 @@
 
         var datos = [
             { etiqueta: "Cant.", valor: linea.cantidad + (linea.unidad ? " " + linea.unidad : "") },
-            { etiqueta: "P. unit.", valor: CDK.formato.moneda(linea.precioUnitario, moneda) }
+            /* En soles el precio unitario esta grabado con 3 decimales (27.497): a 2 se veria 27.50 y 18 × 27.50 no daria el importe. */
+            { etiqueta: "P. unit.", valor: CDK.coti.formatoPrecio(linea.precioUnitario, moneda) }
         ];
 
         // El descuento solo se muestra si lo hay: una fila con "Dscto. 0 %" en
@@ -293,7 +294,9 @@
      * cambiar de vista se repinta sin volver a pedir nada al backend.
      */
     function pintar(doc, numero) {
-        var moneda = doc.cabecera.monedaLinea || doc.cabecera.moneda;
+        /* La del DOCUMENTO (`mone`), no la de la linea (`moneitm`): en una cotizacion en soles hecha en el ERP la linea queda
+           en "D" —es la moneda de origen del producto— y los importes ya estan en soles (docs/cotizacion-moneda.md, seccion 2). */
+        var moneda = doc.cabecera.moneda === "S" ? "S" : "D";
 
         var lista = CDK.el("ul", { clase: "cdk-articulos" });
         doc.lineas.forEach(function (linea) {

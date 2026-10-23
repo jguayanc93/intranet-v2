@@ -138,6 +138,12 @@
                cero de relleno, como en el formato original. */
             var conDescuento = Math.round(precio * (1 - descuento / 100) * 100) / 100;
 
+            /* En soles es el valor EXACTO con el que el ERP calcula la linea (docs/cotizacion-moneda.md, seccion 8): cantidad × este
+               precio da el total de la linea. Con coma flotante, 8.5 con 1 % (8.415 exacto) se imprimiria 8.41 en vez de 8.42. */
+            if (moneda === "S" && CDK.coti.precioConDescuentoEnSoles) {
+                conDescuento = CDK.coti.precioConDescuentoEnSoles(precio, descuento);
+            }
+
             cuerpo.appendChild(el("tr", {}, [
                 celda(i + 1, "num"),
                 celda(texto(linea.partnumber) || texto(linea.codigo)),

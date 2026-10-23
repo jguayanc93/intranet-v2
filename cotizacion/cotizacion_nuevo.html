@@ -40,6 +40,11 @@
         </select>
       </div>
 
+      <!-- Sin tipo de cambio de hoy no se cotiza en soles (js/cotizacion/moneda.js). -->
+      <div id="aviso-soles" class="cdk-aviso hidden" role="status" style="margin-top:8px">
+        <p class="cdk-aviso__texto" style="margin:0">Hoy no hay tipo de cambio cargado: solo se puede cotizar en dólares.</p>
+      </div>
+
       <!-- El RUC va aquí a propósito: con razones sociales tan parecidas
            entre sí, es lo único que confirma que es el cliente correcto.
            El círculo indicará si el cliente tiene línea de crédito
@@ -222,6 +227,9 @@
           Buscar promociones
         </button>
       </div>
+      <p id="aviso-promos-soles" class="cdk-pista hidden" style="margin:6px 0 0">
+        Las promociones solo se aplican a cotizaciones en dólares.
+      </p>
     </section>
 
     <!-- ============ PANEL DE EDITAR PRODUCTO ============ -->

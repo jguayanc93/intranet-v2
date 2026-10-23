@@ -141,8 +141,15 @@ function pintarLineasCarrito(items, moneda) {
 
         /* El codigo interno no ayuda a revisar; lo que importa es que producto
            es, cuantos van y a cuanto sale. */
-        let detalle = linea.cantidad + " × " +
-            CDK.formato.moneda(CDK.coti.convertir(linea.precioUnitario, "D"), moneda);
+        /* En soles, la regla del ERP: el precio unitario a 3 decimales y el importe desde ahi. */
+        const enMoneda = CDK.coti.lineaEnMoneda({
+            precio: producto.precioUnitario,
+            cantidad: producto.cantidad,
+            descuento: producto.descuento,
+            tope: producto.descuentoMaximo
+        }, moneda);
+
+        let detalle = linea.cantidad + " × " + CDK.coti.formatoPrecio(enMoneda.precioUnitario, moneda);
         if (linea.descuentoAplicado > 0) {
             detalle += "  ·  desc. " + linea.descuentoAplicado.toFixed(2) + "%";
         }
@@ -150,7 +157,7 @@ function pintarLineasCarrito(items, moneda) {
         lista.appendChild(CDK.articulo({
             nombre: producto.descripcion,
             detalle: detalle,
-            importe: CDK.formato.moneda(CDK.coti.convertir(linea.importe, "D"), moneda),
+            importe: CDK.formato.moneda(enMoneda.importe, moneda),
             // La fila entera es el objetivo: en un movil se acierta mucho mejor
             // que en un enlace pequeno dentro de ella.
             alPulsar: () => abrirModalEditarProducto(indice, producto)
@@ -179,41 +186,39 @@ function pintarTotalesCarrito(items, moneda) {
     totalesCarrito.innerHTML = "";
     if (!items.length) return;
 
-    // Todo el calculo en dolares, como el backend; se convierte al mostrar.
-    let productos = 0;
-    items.forEach(([, producto]) => {
-        productos += CDK.coti.calcularLinea({
-            precio: producto.precioUnitario,
-            cantidad: producto.cantidad,
-            descuento: producto.descuento,
-            tope: producto.descuentoMaximo
-        }).importe;
-    });
+    /* Cada linea en la moneda del documento y los totales desde ahi: en dolares, como siempre; en soles, la regla del ERP
+       (CDK.coti.totalesEnMoneda), que NO es multiplicar por el tipo de cambio un total ya redondeado en dolares: asi lo
+       que se ve coincide al centimo con lo que el backend graba. */
+    const importes = items.map(([, producto]) => CDK.coti.lineaEnMoneda({
+        precio: producto.precioUnitario,
+        cantidad: producto.cantidad,
+        descuento: producto.descuento,
+        tope: producto.descuentoMaximo
+    }, moneda).importe);
 
+    /* Las promociones solo existen en dolares, asi que en soles no hay ninguna (se retiran al elegir soles). */
     const promos = CDK.coti.promocionesAplicadas ? CDK.coti.promocionesAplicadas() : [];
     let descuentoPromo = 0;
     promos.forEach((promo) => { descuentoPromo += promo.totalDescuento; });
 
-    const base = productos - descuentoPromo;
-    const igv = base * 0.18;
+    const t = CDK.coti.totalesEnMoneda(importes, moneda, descuentoPromo);
 
-    function fila(etiqueta, dolares, clase, signo) {
+    function fila(etiqueta, valor, clase, signo) {
         return CDK.el("div", { clase: "cdk-total" + (clase ? " " + clase : "") }, [
             CDK.el("span", { clase: "cdk-total__etiqueta", texto: etiqueta }),
-            CDK.el("span", { clase: "cdk-total__valor",
-                texto: (signo || "") + CDK.formato.moneda(CDK.coti.convertir(dolares, "D"), moneda) })
+            CDK.el("span", { clase: "cdk-total__valor", texto: (signo || "") + CDK.formato.moneda(valor, moneda) })
         ]);
     }
 
     // El desglose de la promocion solo aparece si hay alguna que descuente.
-    if (descuentoPromo > 0) {
-        totalesCarrito.appendChild(fila("Productos", productos));
-        totalesCarrito.appendChild(fila("Promociones", descuentoPromo, "cdk-total--bien", "−"));
+    if (t.promociones > 0) {
+        totalesCarrito.appendChild(fila("Productos", t.productos));
+        totalesCarrito.appendChild(fila("Promociones", t.promociones, "cdk-total--bien", "−"));
     }
 
-    totalesCarrito.appendChild(fila("Sin IGV", base));
-    totalesCarrito.appendChild(fila("IGV 18 %", igv));
-    totalesCarrito.appendChild(fila("Total", base + igv, "cdk-total--principal"));
+    totalesCarrito.appendChild(fila("Sin IGV", t.sinIgv));
+    totalesCarrito.appendChild(fila("IGV 18 %", t.igv));
+    totalesCarrito.appendChild(fila("Total", t.total, "cdk-total--principal"));
 }
 
 // ========================================
@@ -284,8 +289,13 @@ function recalcularValorVentaEdicion() {
         tope: productoEnEdicion.descuentoMaximo
     });
 
-    // Se muestra en la moneda elegida...
-    editValorVenta.textContent = CDK.coti.convertir(linea.importe, "D").toFixed(2);
+    // Se muestra en la moneda elegida (en soles, con la regla del ERP)...
+    editValorVenta.textContent = CDK.coti.lineaEnMoneda({
+        precio: productoEnEdicion.precioUnitario,
+        cantidad: editCantidad.value,
+        descuento: editDescuento.value,
+        tope: productoEnEdicion.descuentoMaximo
+    }).importe.toFixed(2);
     if (editMonedaVenta) editMonedaVenta.textContent = CDK.coti.codigoMoneda(CDK.coti.moneda());
 
     /* ...pero se guarda en dolares, junto a un precioUnitario que tambien lo

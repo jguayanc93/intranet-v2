@@ -15,6 +15,7 @@ function crearEntorno(hostname, srcScript, puerto) {
         body: { getAttribute: () => null, classList: { add() {}, remove() {} }, appendChild() {} },
         addEventListener: (tipo, fn) => oyentes.push([tipo, fn]),
         removeEventListener() {},
+        dispatchEvent: (ev) => { oyentes.filter(([tipo]) => tipo === ev.type).forEach(([, fn]) => fn(ev)); return true; },
         getElementById: () => null,
         querySelector: () => null,
         querySelectorAll: () => [],
@@ -32,6 +33,7 @@ function crearEntorno(hostname, srcScript, puerto) {
         setTimeout, clearTimeout,
         URL, AbortController, Promise, Intl, Date, JSON, Object, Array, Math, isFinite, parseFloat, String, Number,
         FormData: class {}, Blob: class {}, URLSearchParams: class {},
+        CustomEvent: class { constructor(tipo, init) { this.type = tipo; this.detail = init && init.detail; } },
         sessionStorage: {
             getItem: (k) => (k in almacen ? almacen[k] : null),
             setItem: (k, v) => { almacen[k] = String(v); },
@@ -184,6 +186,13 @@ const f = CDK.formato;
 
 ok("moneda en dolares",         f.moneda(1234.5, "D").replace(/\u00a0/g, " "), "$ 1,234.50");
 ok("moneda en soles",           f.moneda(1234.5, "S").replace(/\u00a0/g, " "), "S/ 1,234.50");
+
+/* El precio unitario de una cotizacion en soles lleva 3 decimales (27.497): el ultimo cero se ve, porque es el que esta grabado. */
+ok("moneda con 3 decimales",     f.moneda(143.244, "S", 3).replace(/\u00a0/g, " "), "S/ 143.244");
+ok("el tercer decimal en cero se ve", f.moneda(27.5, "S", 3).replace(/\u00a0/g, " "), "S/ 27.500");
+ok("3 decimales tambien en dolares",  f.moneda(1234.5, "D", 3).replace(/\u00a0/g, " "), "$ 1,234.500");
+ok("0 decimales",                f.moneda(1234.5, "D", 0).replace(/\u00a0/g, " "), "$ 1,235");
+ok("sin decimales pedidos, 2",   f.moneda(7.9, "D").replace(/\u00a0/g, " "), "$ 7.90");
 ok("moneda desde texto",        f.moneda("1234.5", "D").replace(/\u00a0/g, " "), "$ 1,234.50");
 ok("moneda con basura",         f.moneda(undefined, "D").replace(/\u00a0/g, " "), "$ 0.00");
 ok("numero con decimales",      f.numero(1234.567, 2), "1,234.57");
@@ -397,7 +406,8 @@ console.log("\n— margen —");
 console.log("\n— moneda —");
 {
     const ventana = crearEntorno("127.0.0.1", "http://127.0.0.1/core/cdk.js");
-    const selectSimulado = { value: "D", addEventListener() {} };
+    const opcionSoles = { disabled: false };
+    const selectSimulado = { value: "D", addEventListener() {}, querySelector: () => opcionSoles };
     ventana.document.getElementById = (id) => (id === "alm" ? selectSimulado : null);
     ventana.almc_id = "D";
 
@@ -406,33 +416,45 @@ console.log("\n— moneda —");
     ok("moneda por defecto",     C.coti.moneda(), "D");
     ok("codigo USD",             C.coti.codigoMoneda("D"), "USD");
     ok("codigo PEN",             C.coti.codigoMoneda("S"), "PEN");
-    ok("tipo de cambio fijo",    C.coti.tipoCambio(), 3.408);
-    ok("avisa que es fijo",      C.coti.tipoCambioEsFijo(), true);
+
+    /* Sin usuario —y sin tipo de cambio de hoy— NO hay soles. Antes habia uno fijo de reserva (3.408) que se usaba en silencio:
+       el vendedor veia un precio en soles y el sistema registraba otro. */
+    ok("sin usuario no hay tipo de cambio",  C.coti.tipoCambio(), null);
+    ok("ni soles",                           C.coti.haySoles(), false);
+    ok("el tipo de cambio fijo ya no existe", typeof C.coti.tipoCambioEsFijo, "undefined");
+    ok("la opcion soles arranca desactivada", opcionSoles.disabled, true);
 
     // En dolares no convierte.
     ok("misma moneda",           C.coti.convertir(100, "D"), 100);
     ok("NaN da 0",               C.coti.convertir("x", "D"), 0);
     ok("null da 0",              C.coti.convertir(null, "D"), 0);
 
-    // Cambiando a soles.
+    /* El navegador restaura la ultima eleccion al recargar: el selector puede decir soles sin que haya con que convertir.
+       Se trabaja en dolares, y convertir no inventa un cambio. */
     selectSimulado.value = "S";
+    ok("soles sin tipo de cambio: dolares",  C.coti.moneda(), "D");
+    ok("convertir sin tipo de cambio",       C.coti.convertir(100, "D"), 100);
+
+    // El tipo de cambio llega con el usuario (/vendedor): desde ahi hay soles.
+    C.sesion.fijarUsuario({ nombre: "Juan", tipoCambio: 3.45 });
+    ok("usa el del backend",     C.coti.tipoCambio(), 3.45);
+    ok("hay soles",              C.coti.haySoles(), true);
+    ok("al llegar se activa la opcion", opcionSoles.disabled, false);
+
+    // Cambiando a soles.
     ok("moneda cambiada",        C.coti.moneda(), "S");
-    ok("USD -> PEN",             Number(C.coti.convertir(100, "D").toFixed(4)), 340.8);
+    ok("USD -> PEN",             Number(C.coti.convertir(100, "D").toFixed(4)), 345);
     ok("PEN -> PEN",             C.coti.convertir(100, "S"), 100);
 
     selectSimulado.value = "D";
-    ok("PEN -> USD",             Number(C.coti.convertir(340.8, "S").toFixed(2)), 100);
+    ok("PEN -> USD",             Number(C.coti.convertir(345, "S").toFixed(2)), 100);
 
     // Los puentes que usan part2, part3 y part4.
     ok("puente moneda",          ventana.obtenerMonedaSeleccionada(), "D");
     ok("puente simbolo",         ventana.obtenerSímboloMoneda("S"), "PEN");
     ok("puente convertir",       ventana.convertirMoneda(100, "D"), 100);
 
-    // El dia que /vendedor traiga tipoCambio, se usa sin tocar nada mas.
     C.sesion.fijarUsuario({ nombre: "Juan", tipoCambio: 3.362 });
-    ok("usa el del backend",     C.coti.tipoCambio(), 3.362);
-    ok("ya no es fijo",          C.coti.tipoCambioEsFijo(), false);
-
     selectSimulado.value = "S";
     ok("convierte con el real",  Number(C.coti.convertir(100, "D").toFixed(2)), 336.2);
 }
@@ -508,6 +530,7 @@ console.log("\n— calculo de linea —");
        Durante un tiempo convertia aqui dentro, y entonces con soles elegidos
        el carrito mandaba preciosinIGV en soles junto a un precioUnitario en
        dolares: los dos campos del mismo objeto con 3.4x de diferencia. */
+    C.sesion.fijarUsuario({ nombre: "X", tipoCambio: 3.408 });     // sin tipo de cambio no hay soles
     sel.value = "S";
     l = calc({ precio: 7.97, cantidad: 10, descuento: 0 });
     ok("soles en pantalla, calculo en dolares", l.importe, 79.70);
@@ -516,11 +539,9 @@ console.log("\n— calculo de linea —");
     l = calc({ precio: 7.97, cantidad: 10, descuento: 2 });
     ok("con dscto, sigue en dolares",           l.importe, 78.11);
 
-    /* Y la conversion, cuando toca mostrar.
-       Da 266.20 donde antes salia 266.19: convertir al final redondea una vez
-       en lugar de dos (antes se redondeaba el precio unitario a 27.16 y se
-       multiplicaba). El centimo solo afecta a lo que se ensena en soles; el
-       numero que viaja al backend es el de dolares, y ese no cambia. */
+    /* Y la conversion simple, que ya NO se usa para una linea ni para un total —eso sigue la regla del ERP: convierte el precio
+       unitario y recalcula, ver "cotizacion en soles" mas abajo— sino para lo que no es una linea (el descuento de una promocion).
+       El numero que viaja al backend es siempre el de dolares. */
     ok("convertir() para mostrar",  C.coti.convertir(l.importe, "D").toFixed(2), "266.20");
 
     sel.value = "D";
@@ -779,6 +800,7 @@ console.log("\n— promociones —");
     ok("texto descuento en dolares", C.promo.textoBeneficio(d2.lineas[0], "D"), "$ 238.39");
     ok("texto regalo: sin moneda",   C.promo.textoBeneficio(d4.lineas[0], "D"), "3 obsequios");
 
+    C.sesion.fijarUsuario({ nombre: "X", tipoCambio: 3.408 });
     sel.value = "S";
     ok("texto descuento en soles",   C.promo.textoBeneficio(d2.lineas[0], "S"), "S/ 812.43");
     /* Un regalo NO se convierte aunque monedaDescuento diga "D": son 3 piezas,
@@ -930,18 +952,21 @@ console.log("\n— tipo de cambio —");
     ventana.document.getElementById = (id) => (id === "alm" ? sel : null);
     const C = cargar(ventana, ARCHIVOS.concat(["js/cotizacion/campos.js"]));
 
-    ok("sin usuario usa el fijo",     C.coti.tipoCambio(), 3.408);
-    ok("y lo dice",                   C.coti.tipoCambioEsFijo(), true);
+    ok("sin usuario no hay tipo de cambio", C.coti.tipoCambio(), null);
 
     C.sesion.fijarUsuario({ nombre: "X", tipoCambio: 3.437 });
     ok("usa el del backend",          C.coti.tipoCambio(), 3.437);
-    ok("ya no es el fijo",            C.coti.tipoCambioEsFijo(), false);
+    ok("como numero, si llega texto", (C.sesion.fijarUsuario({ nombre: "X", tipoCambio: "3.45" }), C.coti.tipoCambio()), 3.45);
 
-    /* Llega null cuando no hay tipo de cambio cargado para hoy. */
+    /* Llega null cuando no hay tipo de cambio cargado para hoy: NO se inventa uno (antes volvia a un 3.408 fijo, y la pantalla
+       ensenaba soles con un cambio que el backend no iba a usar; el backend responde `tipcambio no registrado`). */
     C.sesion.fijarUsuario({ nombre: "X", tipoCambio: null });
-    ok("null vuelve al fijo",         C.coti.tipoCambio(), 3.408);
+    ok("null: sin tipo de cambio",    C.coti.tipoCambio(), null);
+    ok("null: sin soles",             C.coti.haySoles(), false);
     C.sesion.fijarUsuario({ nombre: "X", tipoCambio: 0 });
-    ok("cero vuelve al fijo",         C.coti.tipoCambio(), 3.408);
+    ok("cero: sin tipo de cambio",    C.coti.tipoCambio(), null);
+    C.sesion.fijarUsuario({ nombre: "X", tipoCambio: -3 });
+    ok("negativo: sin tipo de cambio", C.coti.tipoCambio(), null);
 }
 
 /* === Almacenes =================================================== */

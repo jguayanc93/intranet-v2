@@ -32,10 +32,14 @@
          * Importe con su simbolo.
          *   CDK.formato.moneda(1234.5, "D")  -> "$ 1,234.50"
          *   CDK.formato.moneda(1234.5, "S")  -> "S/ 1,234.50"
+         *
+         * `decimales` (2 por defecto) es para lo que el ERP guarda con mas: el precio unitario de una
+         * cotizacion en soles lleva 3 (143.244), y enseñarlo a 2 deja que 143.24 × 100 no cuadre con el total.
          */
-        moneda: function (valor, moneda) {
+        moneda: function (valor, moneda, decimales) {
             var m = MONEDAS[moneda] || MONEDAS.D;
             var n = aNumero(valor);
+            var d = decimales === undefined ? 2 : decimales;
 
             // narrowSymbol da "$" y "S/". Sin el, es-PE escribe "USD 1,234.50"
             // para desambiguar del sol, y el proyecto usa "$" en todas partes.
@@ -44,12 +48,12 @@
                     style: "currency",
                     currency: m.codigo,
                     currencyDisplay: "narrowSymbol",
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    minimumFractionDigits: d,
+                    maximumFractionDigits: d
                 }).format(n);
             } catch (e) {
                 // narrowSymbol no existe en navegadores antiguos.
-                return m.simbolo + " " + CDK.formato.numero(n, 2);
+                return m.simbolo + " " + CDK.formato.numero(n, d);
             }
         },
 

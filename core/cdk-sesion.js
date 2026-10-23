@@ -64,6 +64,10 @@
                 // conversiones a soles tiran de un valor fijo en el código.
                 tipoCambio: Number(datos.tipoCambio) || null
             };
+
+            /* El tipo de cambio llega con el usuario, y hay pantallas que lo necesitan para saber si pueden cotizar en soles:
+               la cotizacion nueva se carga antes de que `/vendedor` responda. Se avisa para que se vuelvan a mirar. */
+            try { document.dispatchEvent(new global.CustomEvent("cdk:usuario")); } catch (e) { /* sin DOM: no hay quien escuche */ }
         },
 
         /** Tipo de vendedor, o null si el backend aun no lo ha informado. */
