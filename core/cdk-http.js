@@ -182,6 +182,13 @@
                     return rendirse();
                 }
 
+                /* `403 usuario sin acceso`: del grupo 34, el usuario que aun no puede entrar. El backend se lo dice en el login
+                   y en CUALQUIER ruta (tambien `/vendedor`), y no hay sesion que conservar: se vuelve al login. Fuera del shell
+                   (en el propio login) `expirar` no hace nada, asi que no hay un bucle. */
+                if (respuesta.status === 403 && datos && datos.status === "usuario sin acceso") {
+                    if (CDK.sesion && CDK.sesion.expirar) CDK.sesion.expirar("usuario sin acceso");
+                }
+
                 if (!respuesta.ok) {
                     throw HttpError(
                         "HTTP " + respuesta.status + " " + respuesta.statusText,

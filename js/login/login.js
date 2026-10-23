@@ -101,6 +101,12 @@
                 error("Esta cuenta no está registrada en el sistema.");
                 break;
 
+            /* Del grupo 34: el backend deja entrar solo a un usuario hasta que se decida, y a los demas les responde 403. No es
+               un error de credenciales —acertaron— ni algo que reintentar: se dice que todavia no tiene acceso. */
+            case "usuario sin acceso":
+                error("Tu usuario todavía no tiene acceso a la intranet. Consulta con tu jefatura o con sistemas.");
+                break;
+
             case "falsa galleta":
                 error("Tu sesión anterior quedó en mal estado. Vuelve a intentarlo.");
                 break;

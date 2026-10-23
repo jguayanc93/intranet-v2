@@ -1520,6 +1520,27 @@ select.cdk-entrada { padding-right: 8px; }
 .cdk-hoja__enlace .cdk-insignia { margin-left: auto; }
 
 /* ---------------------------------------------------------------------
+   Ritmo y semaforo
+
+   `.cdk-ritmo` es una barra de progreso con una marca: cuanto del mes ya paso. Quien va por delante de la marca va bien, y
+   quien va por detras, atrasado. `.cdk-semaforo` dice el estado con TEXTO —el color solo acompaña—: logrado, adelantado,
+   justo o atrasado.
+   --------------------------------------------------------------------- */
+.cdk-ritmo { position: relative; padding: 4px 0; }
+.cdk-ritmo .cdk-progreso { margin: 0; }
+.cdk-ritmo__marca { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; border-radius: 1px;
+                    background: var(--cdk-texto); opacity: .7; pointer-events: none; }
+
+.cdk-semaforo { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px;
+                font-size: 12px; font-weight: 600; line-height: 1.5; white-space: nowrap;
+                background: var(--cdk-borde); color: var(--cdk-texto); }
+.cdk-semaforo::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.cdk-semaforo--logrado    { background: var(--cdk-primario-suave); color: var(--cdk-primario-fuerte); }
+.cdk-semaforo--adelantado { background: #d1fae5; color: #065f46; }
+.cdk-semaforo--justo      { background: #fef3c7; color: #92400e; }
+.cdk-semaforo--atrasado   { background: #fee2e2; color: #991b1b; }
+
+/* ---------------------------------------------------------------------
    Puesto
 
    El numero de un ranking, delante del nombre: un circulo, con el primero en el color de la marca. El numero
