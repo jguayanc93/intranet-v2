@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Avance de cuota de los vendedores - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Avance de cuota</title>
+</head>
+
+<!-- Una sola pantalla, no un hub: el módulo `avance` no tiene acciones que listar. Es del jefe de zona (grupo 34) y
+     muestra el avance de TODOS los vendedores del grupo 20; no es el avance de la cuota propia de un vendedor (eso es
+     cuota/cuota_observar.html, en el módulo `cuota`). -->
+<body data-modulo="avance" data-titulo="Avance de cuota">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Avance de cuota</h1>
+        <p class="cdk-cabecera__sub" id="periodo">De todos los vendedores del grupo 20</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas el nombre del periodo y la lectura de los errores. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/zona/datos.js"></script>
+<script src="/js/zona/avance.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Probabilidad de que un vendedor llegue a su cuota - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Probabilidad</title>
+</head>
+
+<!-- Una sola pantalla: sin vendedor elegido, la lista para elegirlo; con `?codusu=196` (o desde una fila del avance), la
+     probabilidad de ese vendedor y como iba en los 3 meses anteriores a esta misma altura del mes. -->
+<body data-modulo="probabilidad" data-titulo="Probabilidad">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Probabilidad</h1>
+        <p class="cdk-cabecera__sub" id="periodo">De que un vendedor llegue a su cuota</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas el nombre del periodo y la lectura de los errores. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/zona/datos.js"></script>
+<script src="/js/zona/probabilidad.js"></script>
+</body>
+</html>
