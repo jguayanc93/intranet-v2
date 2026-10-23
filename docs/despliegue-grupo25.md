@@ -143,3 +143,43 @@ git push origin main
 - **Cómo llega el código de `main` al servidor** (quién lo copia, desde dónde, a qué carpeta). Aquí solo está que `dev/` se excluye. El código
   se sube **empujando a `main`** (decisión del 22/10/2026), con el plan de vuelta atrás de la sección 3 y backend y frontend el mismo día.
 - **La dirección del servidor de prueba y las claves** (las pasa quien coordina).
+
+---
+
+## 7 · Lo que suma la cotización en soles (23/10/2026)
+
+Va en **su propio merge** (rama `cotizacion-soles`), encima del del grupo 34, y se puede deshacer por separado. No agrega rutas: cambia **lo que la
+pantalla muestra y lo que manda a `/cotizacion/update`**. El detalle y las preguntas, en [respuesta-cotizacion-moneda.md](respuesta-cotizacion-moneda.md).
+
+| cambia en el backend (ya hecho y probado en bdnava08) | y el frontend |
+|---|---|
+| `POST /cotizacion/pegar` convierte a soles y responde `moneda`, `tcam` y `totales` | sigue mandando **dólares** con `moneda`; enseña lo mismo que se graba y los `totales` que devuelve |
+| `POST /cotizacion/update` toma `mone` y `tcam` de **la cabecera** | las líneas nuevas de una cotización en soles van **en soles**, con el `tcam` de esa cotización |
+| `POST /promocion/acoplar` rechaza las cotizaciones en soles (`409 promocion en soles`) | en soles no hay promociones |
+
+**Hay un orden que importa:** `/pegar` puede salir antes o después, pero **el cambio de `/update` del backend sale el mismo día que este frontend**. El
+frontend de antes manda las líneas nuevas **en dólares** a una cotización en soles, y con el cambio del backend quedarían montos en dólares bajo una cabecera en soles.
+**La vuelta atrás de `/update` también es de los dos lados a la vez.**
+
+Tras subir, con un usuario que tenga `tipoCambio` en `/vendedor`:
+
+- **Crear** una cotización en soles y comparar el aviso de «Cotización generada» (lo que devolvió el backend) con lo que se veía en el carrito: tienen que ser iguales
+  al céntimo. Repetir en dólares.
+- **Sin tipo de cambio** (`tipoCambio: null`): la opción PEN queda desactivada con su aviso.
+- **«Ver» y «Modificar»** con la 098-00000052 (soles) y la 098-00000053 (dólares) que dejó el backend: la de soles se ve en soles, con «Soles · T.C. …», y agregar un
+  producto graba `preu` y `cost` en soles.
+
+### Volver atrás de la cotización en soles
+
+```
+git log --merges -3 --format="%h %s"     # el de arriba es el de la cotización en soles
+git revert -m 1 <hash del merge de la cotización en soles>
+git push origin main
+```
+
+- La etiqueta **`pre-cotizacion-soles`** marca lo que había justo antes (el merge del grupo 34, `d3a72e2`). Probado en un clon descartable: tras el `revert`,
+  `main` queda **idéntico** a `pre-cotizacion-soles`.
+- **Orden con los otros dos: de arriba abajo.** Para deshacer el grupo 34 con este ya subido hay que **deshacer primero este**: revertir el 34 con este encima
+  da conflicto (en `README.md`, y en lo que los dos tocaron). En ese orden, cada `revert` sale limpio, y tras el segundo queda el merge del grupo 25.
+- Queda abierto, **como entrega aparte**, aplicar la misma regla a las cotizaciones en **dólares** (en los dos lados el mismo día): ver la sección 2 de
+  [respuesta-cotizacion-moneda.md](respuesta-cotizacion-moneda.md).
