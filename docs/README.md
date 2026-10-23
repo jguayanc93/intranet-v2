@@ -188,6 +188,13 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de
   `ventasHasta`**, ya reflejadas (queda solo la del `?top=`, que va en su próxima versión) y los casos que recorreremos contra
   bdnava08.
+- **[cotizacion-moneda.md](cotizacion-moneda.md)** — Del backend: **una cotización creada en soles se grababa con los importes en
+  dólares**, la regla del ERP para soles, qué tipo de cambio usar y la propuesta ruta por ruta (`/pegar`, `/update`, promociones).
+- **[respuesta-cotizacion-moneda.md](respuesta-cotizacion-moneda.md)** — Para el backend: **lo que cambió con su corrección de la
+  regla de la línea** (precio con descuento a 2 decimales, por la cantidad), dos afirmaciones nuestras anteriores que **retiramos**, sus
+  cinco preguntas contestadas (qué tipo de cambio usaba la pantalla, que `/pegar` sigue recibiendo dólares, qué manda `/update` en una
+  línea nueva en soles, que al editar no hay selector, que sin `tipoCambio` no hay soles), su propuesta de alinear los **dólares**
+  (con dos cosas por mirar: las promociones y el IGV) y el orden de salida.
 - **[respuesta-cobertura.md](respuesta-cobertura.md)** — Para el backend: **cómo leímos la cobertura de clientes**
   (una sola pantalla, sin hub; que el total de clientes son distintos y la pantalla lo explica; quien solo devolvió o
   quedó en cero; los 100 primeros y «Mostrar los N restantes»; **exportar a Excel**), **sus respuestas a las tres

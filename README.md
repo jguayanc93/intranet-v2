@@ -60,6 +60,7 @@ lista.
 | `pendiente25` | Especialista con una marca que le dio la jefatura y sin confirmar: en Reportes la ve, pero en Cuota **no le deja fijar la meta** y le lleva a Marcas. |
 | `jefatura25` | Jefatura registrada: ve el panel de su familia. En Reportes ve las suyas y las de sus especialistas de su familia. En Ajustes recibe, además de lo suyo, lo de las marcas sin dueño de su familia. |
 | `vendedor20` | **Del grupo 20**, no del 25: un vendedor que pide ajustes de precio y ve sus respuestas. Sin marcas ni reportes. Sirve para ver el otro lado de Ajustes: puede enviar la cotización `009-00970001` (tres responsables, una línea sin dueño y dos promociones) o el pedido `009-00775010`, en soles. |
+| `sintc20` | **Del grupo 20**, vendedor **sin tipo de cambio hoy** (`/vendedor` trae `tipoCambio: null`): la cotización nueva no deja elegir soles y dice por qué, y `/pegar` responde `tipcambio no registrado`. |
 | `zona126` | **Del grupo 34**, jefe de zona (el usuario 126): su menú es solo Cotización, **Avance** y **Probabilidad**; ve el avance de la cuota de todo el grupo 20 y la probabilidad de cada vendedor. |
 | `zona297` | Jefe de zona **sin acceso** (el usuario 297): el login responde 403 `usuario sin acceso` y no entra. |
 | `random25` | Uno de los seis anteriores, al azar, con un nombre inventado. |
@@ -246,6 +247,17 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   y cómo iba, a esta misma altura, en los 3 meses anteriores). Su menú es exactamente `cotizacion`, `avance` y `probabilidad`, y solo
   entra el usuario 126: el 297 recibe `403 usuario sin acceso`, en el login y en cualquier ruta (el cliente HTTP lo lleva al login). El
   contrato es [docs/zona-grupo34.md](docs/zona-grupo34.md); **el backend ya contestó todas las preguntas** ([docs/respuesta-zona.md](docs/respuesta-zona.md); los montos de la probabilidad son con IGV, como la pantalla ya decía) y solo falta el servidor de prueba.
+- **La cotización en soles (23/10) está construida y falta recorrerla contra bdnava08.** Una cotización hecha en soles se grababa
+  con los importes en dólares. La pantalla ahora sigue **la regla del ERP** —precio unitario a 3 decimales, **precio con descuento a 2 decimales y ese por la
+  cantidad** (el backend corrigió esta regla el 23/10), IGV y total sobre la suma—, con aritmética decimal exacta (en coma flotante
+  difería en el 5 % de los carritos); **los precios siguen yendo
+  a `/cotizacion/pegar` en dólares** y el backend convierte; sin tipo de cambio de hoy **no hay soles** (se acabó el 3.408 fijo);
+  **en soles no hay promociones**; «Modificar» una cotización en soles convierte las líneas nuevas con **su** tipo de cambio; y «Ver»
+  y «Modificar» ya leen la moneda del **documento**, no la de la línea. Está en la rama `cotizacion-soles`, sin fusionar. El contrato
+  es [docs/cotizacion-moneda.md](docs/cotizacion-moneda.md) (**el backend ya contestó y está hecho y probado en bdnava08**); nuestra
+  respuesta en [docs/respuesta-cotizacion-moneda.md](docs/respuesta-cotizacion-moneda.md). Queda propuesto, como entrega aparte, aplicar
+  la misma regla a las cotizaciones en **dólares** (ahí `preciosinIGV` difiere hasta 8 céntimos en el 20 % de las líneas de la serie 098 y
+  alimenta los umbrales de promoción).
 - **El menú del grupo 25 ya es el que fijó el backend**: `marcas`, `cuota`, `reporte`, `cobertura`, `ajuste`, `vendedormes` y `cotizacion`.
   Las rutas antiguas de cuota por marca y de reportes se retiraron el 21/10 (responden 404) y el frontend ya no las nombra.
 - **Sin marcas en el mes no hay reportes**, ni los del mes pasado: es una regla de negocio

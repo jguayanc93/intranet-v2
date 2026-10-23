@@ -69,6 +69,13 @@ const PERFILES = {
         nota: "jefe de zona SIN acceso (usuario 297): el login responde 403 usuario sin acceso"
     },
 
+    /* Hoy no hay tipo de cambio cargado: /vendedor lo manda en null. No deja cotizar en soles, y /pegar (en cualquier moneda)
+       responderia `tipcambio no registrado` (docs/cotizacion-moneda.md, seccion 3). */
+    sintc20: {
+        nombre: "Mario Quispe", grupo: GRUPO_20, registrado: true, tipo: "COBERTURA", sinTipoCambio: true,
+        nota: "vendedor SIN tipo de cambio hoy: la cotizacion nueva no deja elegir soles y avisa por que"
+    },
+
     /* Del grupo 20, no del 25: para ver el otro lado del ajuste de precios. Las marcas de su
        alrededor tienen dueño, asi que lo que envie le llega a tres responsables. */
     vendedor20: {
@@ -135,6 +142,8 @@ function entrar(cuenta, sim, opciones) {
     S.yaRegistrado = perfil.registrado;
     /* Quien no puede entrar: el login le responde 403 y, con una sesion de antes, tambien cualquier otra ruta. */
     S.sinAcceso = !!perfil.sinAcceso;
+    /* Quien llega con `tipoCambio: null` en /vendedor, porque hoy no esta cargado. */
+    S.sinTipoCambio = !!perfil.sinTipoCambio;
 
     if (perfil.preparar) perfil.preparar(sim);
     return perfil;

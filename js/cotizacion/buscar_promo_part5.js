@@ -43,7 +43,12 @@ function limpiarEstadoDespuesDeCreacion() {
         cliente_data = [];
     }
 
+    /* La moneda vuelve a dolares TAMBIEN en el selector: antes solo se cambiaba la global, y el selector se quedaba en soles.
+       La siguiente cotizacion se veia en soles pero se mandaba en dolares. */
+    const selectorMoneda = document.getElementById("alm");
+    if (selectorMoneda) selectorMoneda.value = "D";
     almc_id = "D";
+    if (CDK.coti.sincronizarMoneda) CDK.coti.sincronizarMoneda();
 
     if (typeof promos_insertadas === "object" && promos_insertadas !== null) {
         promos_insertadas = {};
@@ -126,6 +131,25 @@ window.vaciarCarritoCotizacion = function () {
 /** Cuántos productos hay en el carrito. */
 window.contarProductosCarrito = obtenerCantidadProductosCarrito;
 
+/**
+ * Los totales que devuelve /pegar, en la moneda del documento, en una linea de texto. `null` si la respuesta no trae `moneda` y `totales`
+ * (el backend aun no los manda): no se calcula nada por su cuenta.
+ */
+function resumenDeTotales(respuesta) {
+    const t = respuesta && respuesta.totales;
+    const moneda = respuesta && respuesta.moneda;
+    if (!t || (moneda !== "S" && moneda !== "D")) return null;
+
+    const lineas = [
+        "Total sin IGV: " + CDK.formato.moneda(t.tota, moneda),
+        "IGV: " + CDK.formato.moneda(t.toti, moneda),
+        "Total: " + CDK.formato.moneda(t.totn, moneda)
+    ];
+    if (moneda === "S" && Number(respuesta.tcam) > 0) lineas.push("Tipo de cambio: " + CDK.formato.numero(respuesta.tcam, 3));
+
+    return lineas.join(" · ");
+}
+
 window.crearCotizacion = async function () {
     const boton = document.getElementById("creacion");
     if (!boton || boton.disabled) return;
@@ -140,9 +164,10 @@ window.crearCotizacion = async function () {
         const respuesta = await CDK.http.post(CDK.rutas.api("/cotizacion/pegar"), {
             cliente: cliente_data,
             productos: window.productosSeleccionados || {},
-            // Solo se registra en la cabecera. El backend quito la conversion
-            // que hacia antes, asi que los importes van siempre en dolares.
-            moneda: almc_id
+            /* Los precios van SIEMPRE en dolares, este como este el selector: si la moneda es soles, el backend los convierte con
+               el tipo de cambio del dia y la regla del ERP (docs/cotizacion-moneda.md). La moneda sale de la misma fuente que los
+               importes de la pantalla. */
+            moneda: CDK.coti.moneda()
         });
 
         /* Antes habia que adivinar el exito entre siete campos distintos
@@ -155,9 +180,14 @@ window.crearCotizacion = async function () {
         if (esValida) {
             // El numero llega con serie (098-00000037), que es como lo exige
             // /promocion/acoplar y como hay que ensenarselo al vendedor.
-            const texto = documento
+            let texto = documento
                 ? `Cotización ${documento} generada correctamente.`
                 : "La cotización se generó correctamente.";
+
+            /* Lo que el backend grabo, en la moneda del documento: el vendedor ve ahi si coincide con lo que tenia en pantalla.
+               Solo si responde `moneda`: mientras no lo haga (o con un backend anterior) no se inventa nada. */
+            const resumen = resumenDeTotales(respuesta);
+            if (resumen) texto += " " + resumen;
 
             await acoplarPromociones(documento);
 

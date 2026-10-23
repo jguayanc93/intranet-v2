@@ -61,6 +61,12 @@ const promoMonedasSpan = [
 
 // ========================================
 function abrirModalPromociones() {
+    /* Las promociones solo existen en dolares. El boton ya esta desactivado en soles; esto es por si algo lo invoca igual. */
+    if (CDK.coti.moneda() === "S") {
+        CDK.toast("Las promociones solo se aplican a cotizaciones en dólares.", "aviso");
+        return;
+    }
+
     // 1) Resetear estado inicial al abrir el modal.
     //    Borrar resultados previos y mostrar el loader.
     // Solo los resultados: lo aceptado sigue en pie hasta que se acepte otra
@@ -115,7 +121,7 @@ modalBackdropPromociones.addEventListener("click", cerrarModalPromociones);
  * dos llamadas por pulsación. Se olvida, se avisa, y el vendedor vuelve a abrir
  * promociones cuando haya terminado de armar el carrito.
  */
-CDK.coti.invalidarPromociones = function (motivo) {
+CDK.coti.invalidarPromociones = function (motivo, opciones) {
     const habia = promocionesAplicadas.length > 0 || promocionesExitosas.length > 0;
 
     promocionesExitosas = [];
@@ -134,8 +140,9 @@ CDK.coti.invalidarPromociones = function (motivo) {
     // Solo se avisa si de verdad habia algo que perder.
     if (habia) {
         CDK.toast(
-            `Se retiraron las promociones porque ${motivo || "cambió el carrito"}. ` +
-            "Vuelve a consultarlas cuando termines.",
+            `Se retiraron las promociones porque ${motivo || "cambió el carrito"}.` +
+            /* Salvo que sea definitivo (soles): ahi no hay nada que volver a consultar. */
+            (opciones && opciones.definitivo ? "" : " Vuelve a consultarlas cuando termines."),
             "aviso"
         );
     }

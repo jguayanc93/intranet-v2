@@ -184,8 +184,19 @@
      * Las líneas
      * ============================================================= */
 
+    /**
+     * La moneda del DOCUMENTO (`mone`, posicion 6 de /read), no la de la linea (`moneitm`, la 7): en una cotizacion en soles
+     * hecha en el ERP la linea queda en "D" —es la moneda de origen del producto— y los importes ya estan en soles. Y no hay
+     * selector: la moneda de una cotizacion no cambia despues de crearla (docs/cotizacion-moneda.md, seccion 4).
+     */
     function moneda() {
-        return cabecera && (cabecera.monedaLinea || cabecera.moneda) === "S" ? "S" : "D";
+        return cabecera && cabecera.moneda === "S" ? "S" : "D";
+    }
+
+    /** El tipo de cambio DE ESTA COTIZACION (el que dio /read), nunca el del dia. `null` si no vino. */
+    function tipoCambioDelDocumento() {
+        var tc = cabecera ? Number(cabecera.tipoCambio) : 0;
+        return tc > 0 ? tc : null;
     }
 
     function pintarCliente() {
@@ -193,6 +204,12 @@
         if (cabecera.razonSocial) partes.push(cabecera.razonSocial);
         else if (cabecera.codcliente) partes.push(cabecera.codcliente);
         if (cabecera.fecha) partes.push(CDK.formato.fecha(cabecera.fecha));
+
+        /* En soles se dice con que tipo de cambio: es el de ESA cotizacion, y el que se usara para convertir lo que se agregue. */
+        if (moneda() === "S") {
+            var tc = tipoCambioDelDocumento();
+            partes.push("Soles" + (tc ? " · T.C. " + CDK.formato.numero(tc, 3) : ""));
+        }
         datosCliente.textContent = partes.join("  ·  ");
     }
 
@@ -215,7 +232,8 @@
         codigos.forEach(function (codigo) {
             var l = lineas[codigo];
 
-            var datos = [{ etiqueta: "P. unit.", valor: CDK.formato.moneda(l.precioUnitario, moneda()) }];
+            /* En soles el precio unitario lleva 3 decimales, como esta grabado: a 2, precio × cantidad no daria el importe. */
+            var datos = [{ etiqueta: "P. unit.", valor: CDK.coti.formatoPrecio(l.precioUnitario, moneda()) }];
             if (Number(l.descuento) > 0) {
                 datos.push({ etiqueta: "Dscto.", valor: CDK.formato.porcentaje(l.descuento) });
             }
@@ -315,6 +333,14 @@
            no de sumar el importe con IGV de cada línea. El trigger del ERP hace
            eso mismo y sumarlo línea a línea se desvía por céntimos. */
         var igv = Math.round(subtotal * 0.18 * 100) / 100;
+
+        /* En soles es la regla del ERP, la misma de la cotizacion nueva: un solo sitio. */
+        if (moneda() === "S") {
+            var enSoles = CDK.coti.totalesEnMoneda(
+                Object.keys(lineas).map(function (c) { return lineas[c].importe; }), "S");
+            subtotal = enSoles.sinIgv;
+            igv = enSoles.igv;
+        }
 
         function fila(etiqueta, valor, clase) {
             return el("div", { clase: "cdk-total" + (clase ? " " + clase : "") }, [
@@ -423,15 +449,21 @@
         var l = lineas[codigo];
         if (!l) return;
 
-        var calculo = CDK.coti.calcularLinea({
-            precio: l.precioUnitario,
-            cantidad: cantidad,
-            descuento: l.descuento
-        });
-
         l.cantidad = cantidad;
-        l.importe = calculo.importe;
-        l.importeConIgv = Math.round(calculo.importe * 1.18 * 100) / 100;
+
+        if (moneda() === "S") {
+            /* El precio unitario ya esta en soles (3 decimales): el importe se recalcula desde ahi, sin pasar por dolares. */
+            l.importe = CDK.coti.importeEnSoles(l.precioUnitario, cantidad, l.descuento);
+            l.importeConIgv = CDK.coti.productoRedondeado([l.importe, 1.18], 2);
+        } else {
+            var calculo = CDK.coti.calcularLinea({
+                precio: l.precioUnitario,
+                cantidad: cantidad,
+                descuento: l.descuento
+            });
+            l.importe = calculo.importe;
+            l.importeConIgv = Math.round(calculo.importe * 1.18 * 100) / 100;
+        }
 
         huboCambios = true;
         pintarLineas();
@@ -594,6 +626,12 @@
      * /cotizacion/read: así la línea nueva queda igual que las que ya estaban.
      */
     function traerProducto(codigo, cantidad) {
+        /* Una linea nueva en soles se convierte con el tipo de cambio de la cotizacion: sin el no se puede ni empezar. */
+        if (moneda() === "S" && !tipoCambioDelDocumento()) {
+            CDK.toast("Esta cotización está en soles y no trae su tipo de cambio: no se puede agregar un producto.", "error", 0);
+            return;
+        }
+
         CDK.toast("Agregando el producto…", "info", 1500);
 
         CDK.http.post(CDK.rutas.api("/producto/encontrado"), {
@@ -607,12 +645,29 @@
                     return;
                 }
 
-                var precio = Number(p[8]) || 0;
+                var precio = Number(p[8]) || 0;       // dolares: asi los da /producto/encontrado
                 var descuento = Number(p[9]) || 0;
+                var coste = Number(p[10]) || 0;
 
                 var calculo = CDK.coti.calcularLinea({
                     precio: precio, cantidad: cantidad, descuento: descuento
                 });
+                var importe = calculo.importe;
+                var importeConIgv = Math.round(calculo.importe * 1.18 * 100) / 100;
+
+                /* En una cotizacion en soles la linea nueva va en soles, con el tipo de cambio DE ESA cotizacion (nunca el del
+                   dia) y la regla del ERP: `preu` y `cost` a 3 decimales y el importe desde ahi. El backend toma `mone` y `tcam`
+                   de la cabecera; lo que mande esta linea en esas dos posiciones no cuenta. */
+                if (moneda() === "S") {
+                    var nueva = CDK.coti.lineaNuevaEnSoles({
+                        precio: precio, coste: coste, cantidad: cantidad, descuento: descuento,
+                        tcam: tipoCambioDelDocumento()
+                    });
+                    precio = nueva.precioUnitario;
+                    coste = nueva.coste;
+                    importe = nueva.importe;
+                    importeConIgv = nueva.importeConIgv;
+                }
 
                 lineas[p[2]] = {
                     afectoIgv: p[0],
@@ -624,11 +679,11 @@
                     descripcion: p[6],
                     cantidad: cantidad,
                     precioUnitario: precio,
-                    importe: calculo.importe,
+                    importe: importe,
                     descuento: descuento,
-                    importeConIgv: Math.round(calculo.importe * 1.18 * 100) / 100,
+                    importeConIgv: importeConIgv,
                     almacen: cabecera.almacen,
-                    coste: Number(p[10]) || 0,
+                    coste: coste,
                     extra: p[11]
                 };
 

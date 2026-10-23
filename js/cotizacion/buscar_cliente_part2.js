@@ -305,7 +305,8 @@ function pintarResultados() {
             nombre: terminoBusqueda && !porPartNumber
                 ? CDK.resaltar(p.descripcion, terminoBusqueda)
                 : p.descripcion,
-            importe: CDK.formato.moneda(CDK.coti.convertir(p.precioUnitario, "D"), CDK.coti.moneda()),
+            /* En soles, el precio unitario del ERP (3 decimales): el mismo que se grabara. */
+            importe: CDK.coti.formatoPrecio(CDK.coti.precioEnMoneda(p.precioUnitario), CDK.coti.moneda()),
             datos: datos,
             alerta: p.stockTotal === 0,
             // Lo que ya esta en el carrito no se reabre: se edita en el paso 3.
@@ -389,12 +390,17 @@ function configuradorProducto(p) {
         const linea = calcular();
         const moneda = CDK.coti.moneda();
 
-        // calcularLinea devuelve dolares, que es como los guarda el carrito.
-        // La conversion es solo para ensenarlo en la moneda elegida.
-        valorUnitario.textContent =
-            CDK.formato.moneda(CDK.coti.convertir(linea.precioUnitario, "D"), moneda);
-        valorImporte.textContent =
-            CDK.formato.moneda(CDK.coti.convertir(linea.importe, "D"), moneda);
+        /* `linea` esta en dolares, que es como se guarda y se manda. En soles se ensena la regla del ERP —precio unitario a 3
+           decimales y el importe desde ahi—, no el importe en dolares multiplicado: asi coincide al centimo con lo que se graba. */
+        const enMoneda = CDK.coti.lineaEnMoneda({
+            precio: p.precioUnitario,
+            cantidad: edicion.cantidad,
+            descuento: edicion.descuento,
+            tope: p.descuentoMaximo
+        }, moneda);
+
+        valorUnitario.textContent = CDK.coti.formatoPrecio(enMoneda.precioUnitario, moneda);
+        valorImporte.textContent = CDK.formato.moneda(enMoneda.importe, moneda);
 
         /* El tope lo decide calcularLinea, no una comparacion escrita aqui:
            repetirla es como se llego a tener cuatro topes distintos conviviendo. */
