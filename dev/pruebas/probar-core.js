@@ -131,7 +131,8 @@ ok("desconocidos al final",     CDK.catalogo.ordenar(["zzz", "cotizacion"]), ["c
 
 ok("tipos de un grupo",         CDK.catalogo.tipos("VENTAS-EJECUTIVOS").map(t => t.clave), ["COBERTURA", "CARTERA"]);
 ok("WEB fuera de uso",          CDK.catalogo.tipos("VENTAS-JEFES DE ZONA").map(t => t.clave), ["ZONA"]);
-ok("solo operativos",           CDK.catalogo.tipos(null, {soloOperativos:true}).map(t => t.clave), ["COBERTURA","CARTERA","JEFATURA","ESPECIALISTA"]);
+/* ZONA es operativo desde el 22/10/2026: su menu es cotizacion, avance y probabilidad. HP, todavia no. */
+ok("solo operativos",           CDK.catalogo.tipos(null, {soloOperativos:true}).map(t => t.clave), ["COBERTURA","CARTERA","JEFATURA","ESPECIALISTA","ZONA"]);
 ok("zona es nivel 3",           CDK.catalogo.tipo("ZONA").nivel, 3);
 ok("especialista pide marcas",  CDK.catalogo.tipo("ESPECIALISTA").pideMarcas, true);
 ok("jefatura tambien",          CDK.catalogo.tipo("JEFATURA").pideMarcas, true);
@@ -152,6 +153,14 @@ ok("y vive en la raiz",         CDK.catalogo.hub("marcas"), "/demo1/marcas.html"
 ok("en el menu del grupo 25, marcas va segundo",
    CDK.catalogo.ordenar(["reporte", "cuota", "promocion", "marcas", "factura", "cotizacion"]),
    ["cotizacion", "marcas", "factura", "promocion", "cuota", "reporte"]);
+
+/* avance y probabilidad (grupo 34, jefe de zona): dos pantallas en la raiz, y el menu de zona son esos dos mas cotizacion. */
+ok("avance y probabilidad son modulos conocidos", [CDK.catalogo.conocido("avance"), CDK.catalogo.conocido("probabilidad")], [true, true]);
+ok("viven en la raiz",              [CDK.catalogo.hub("avance"), CDK.catalogo.hub("probabilidad")], ["/demo1/avance.html", "/demo1/probabilidad.html"]);
+ok("sin acciones: no son hubs",     [Object.keys(CDK.catalogo.modulo("avance").accesos), Object.keys(CDK.catalogo.modulo("probabilidad").accesos)], [[], []]);
+ok("el menu de zona: cotizacion, avance y probabilidad, en ese orden",
+   CDK.catalogo.ordenar(["probabilidad", "avance", "cotizacion"]), ["cotizacion", "avance", "probabilidad"]);
+ok("zona ya es operativo",          CDK.catalogo.tipo("ZONA").operativo, true);
 
 /* cobertura (grupo 25): otra pantalla en la raiz. No es la cobertura del grupo 20, que es un tipo de vendedor. */
 ok("cobertura es modulo conocido", CDK.catalogo.conocido("cobertura"), true);
@@ -1041,6 +1050,31 @@ async function probarRenovacion() {
         ok("sin401 no renueva",       e.llamadas.length, 1);
         ok("sin401 no cierra sesion", e.expirada(), false);
         ok("el detalle llega",        hubo.detalles.status, "no cdk user");
+    }
+
+    /* --- `403 usuario sin acceso` (grupo 34): no hay sesion que conservar, y se vuelve al login --- */
+    {
+        const e = conGuion([{ status: 403, cuerpo: JSON.stringify({ status: "usuario sin acceso", codigo: 3, msg: "sin acceso" }) }]);
+
+        let hubo = null;
+        try { await e.C.http.get(e.C.rutas.api("/vendedor")); }
+        catch (err) { hubo = err; }
+
+        ok("el 403 llega como error, con su detalle", [hubo && hubo.status, hubo && hubo.detalles.status], [403, "usuario sin acceso"]);
+        ok("no se reintenta: no es una sesion que renovar", e.llamadas.length, 1);
+        ok("la sesion SE cierra: en cualquier ruta, tambien en /vendedor", e.expirada(), true);
+    }
+
+    /* --- otro 403 no cierra la sesion: es un permiso, no un usuario sin acceso --- */
+    {
+        const e = conGuion([{ status: 403, cuerpo: JSON.stringify({ status: "sin permiso", codigo: 3, msg: "otro grupo" }) }]);
+
+        let hubo = null;
+        try { await e.C.http.get(e.C.rutas.api("/zona/avance")); }
+        catch (err) { hubo = err; }
+
+        ok("un 403 `sin permiso` llega como error", [hubo && hubo.status, hubo && hubo.detalles.status], [403, "sin permiso"]);
+        ok("y NO cierra la sesion", e.expirada(), false);
     }
 
     /* --- un POST tambien se reintenta: el 401 ocurre antes de ejecutar nada --- */

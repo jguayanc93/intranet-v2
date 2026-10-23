@@ -16,6 +16,7 @@
 
 const GRUPO_25 = "VENTAS-JEFES DE PROD";
 const GRUPO_20 = "VENTAS-EJECUTIVOS";
+const GRUPO_34 = "VENTAS-JEFES DE ZONA";
 
 /**
  * `registrado: false` es el caso de quien existe en el ERP pero no figura en la
@@ -57,6 +58,17 @@ const PERFILES = {
         nombre: "Joanna Cossio", grupo: GRUPO_25, registrado: true, tipo: "JEFATURA",
         nota: "jefatura registrada, con el panel de su familia"
     },
+    /* Grupo 34, jefe de zona. Hoy el backend deja entrar solo al usuario 126; el 297 recibe 403 `usuario sin acceso` en el
+       login y en cualquier ruta, hasta que se decida (docs/zona-grupo34.md, seccion 1). */
+    zona126: {
+        nombre: "Cristhiam Vaca", grupo: GRUPO_34, registrado: true, tipo: "ZONA",
+        nota: "jefe de zona (usuario 126): ve el avance de la cuota de todo el grupo 20 y la probabilidad de cada vendedor"
+    },
+    zona297: {
+        nombre: "Diego Moscoso", grupo: GRUPO_34, registrado: true, tipo: "ZONA", sinAcceso: true,
+        nota: "jefe de zona SIN acceso (usuario 297): el login responde 403 usuario sin acceso"
+    },
+
     /* Del grupo 20, no del 25: para ver el otro lado del ajuste de precios. Las marcas de su
        alrededor tienen dueño, asi que lo que envie le llega a tres responsables. */
     vendedor20: {
@@ -115,12 +127,14 @@ function entrar(cuenta, sim, opciones) {
     perfil.cargadoComoJefatura = !!perfil.cargadoComoJefatura || perfil.tipo === "JEFATURA";
 
     /* Reiniciar ANTES de preparar: reiniciar() deja todo como al empezar. */
-    sim.reiniciar(["JEFATURA", "COBERTURA", "CARTERA"].indexOf(perfil.tipo) !== -1 ? perfil.tipo : "ESPECIALISTA");
+    sim.reiniciar(["JEFATURA", "COBERTURA", "CARTERA", "ZONA"].indexOf(perfil.tipo) !== -1 ? perfil.tipo : "ESPECIALISTA");
 
     const S = sim.estado;
     S.grupoRegistro = perfil.grupo;
     S.cargadoComoJefatura = perfil.cargadoComoJefatura;
     S.yaRegistrado = perfil.registrado;
+    /* Quien no puede entrar: el login le responde 403 y, con una sesion de antes, tambien cualquier otra ruta. */
+    S.sinAcceso = !!perfil.sinAcceso;
 
     if (perfil.preparar) perfil.preparar(sim);
     return perfil;

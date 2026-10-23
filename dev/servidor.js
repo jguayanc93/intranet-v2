@@ -144,6 +144,9 @@ const coberturaSim = require("./simulador-cobertura");
    que cuota y cobertura, pero solo el mes en curso y el anterior. */
 const vendedorMesSim = require("./simulador-vendedormes");
 
+/* Jefe de zona (grupo 34): el avance de la cuota de todos los vendedores del grupo 20 y la probabilidad de cada uno. */
+const zonaSim = require("./simulador-zona");
+
 let USUARIO = null;
 
 function entrar(cuenta) {
@@ -169,6 +172,8 @@ const MODULOS = {
     marcas:      "Elige y administra tus marcas del mes",
     cobertura:   "Revisa a que clientes se les vendio cada marca en el mes",
     vendedormes: "Los 3 vendedores que mas venden cada una de tus marcas en el mes",
+    avance:      "Avance de cuota de todos los vendedores del grupo 20",
+    probabilidad: "Probabilidad de que un vendedor llegue a su cuota, comparada con meses anteriores",
     ajuste:      "Ajuste de precio de cotizaciones y pedidos"
 };
 
@@ -180,9 +185,15 @@ const MENU_GRUPO_25 = ["marcas", "cuota", "reporte", "cobertura", "ajuste", "ven
 const SOLO_GRUPO_25 = ["marcas", "reporte", "cobertura", "vendedormes"];
 const esGrupo25 = (rol) => rol === "ESPECIALISTA" || rol === "JEFATURA";
 
+/* El jefe de zona (grupo 34), desde el 22/10: EXACTAMENTE estos tres. Antes tenia el menu de un vendedor. */
+const MENU_ZONA = ["cotizacion", "avance", "probabilidad"];
+const SOLO_ZONA = ["avance", "probabilidad"];
+
 function modulosDe(rol) {
     return Object.keys(MODULOS)
-        .filter((k) => (esGrupo25(rol) ? MENU_GRUPO_25.indexOf(k) !== -1 : SOLO_GRUPO_25.indexOf(k) === -1))
+        .filter((k) => rol === "ZONA" ? MENU_ZONA.indexOf(k) !== -1
+                     : esGrupo25(rol) ? MENU_GRUPO_25.indexOf(k) !== -1
+                     : SOLO_GRUPO_25.concat(SOLO_ZONA).indexOf(k) === -1)
         .reduce((o, k) => { o[k] = MODULOS[k]; return o; }, {});
 }
 
@@ -247,6 +258,13 @@ http.createServer((pet, res) => {
 
     console.log(`[api] ${pet.method} ${ruta}`);
 
+    /* Un usuario del grupo 34 que aun no puede entrar (el 297): cualquier ruta le responde 403, salvo el login, que ya le dijo lo
+       mismo, y el logout, para poder salir. docs/zona-grupo34.md, seccion 1. */
+    if (marcasSim.estado.sinAcceso && ruta !== "/v1/login" && ruta !== "/v1/logout") {
+        return responder(res, { status: "usuario sin acceso", codigo: 3,
+                                msg: "este usuario todavia no tiene acceso a la intranet" }, 403);
+    }
+
     // Login simulado: cualquier usuario entra salvo "malo", que sirve para
     // probar el camino de error sin tocar el backend real.
     if (ruta === "/v1/login") {
@@ -260,6 +278,12 @@ http.createServer((pet, res) => {
             const m = /name="cuenta"\r?\n\r?\n([^\r\n]*)/.exec(cuerpo);
             // Cada ingreso deja al usuario y sus marcas como al empezar.
             entrar(m ? m[1] : "");
+
+            /* El 297 acerto su contrasena, pero no entra: 403 y sin sesion. */
+            if (marcasSim.estado.sinAcceso) {
+                return responder(res, { status: "usuario sin acceso", codigo: 3,
+                                        msg: "este usuario todavia no tiene acceso a la intranet" }, 403);
+            }
 
             /* Lo que ve el navegador al final del redirect a /login/identificador:
                quien existe en el ERP pero no en la intranet recibe un 400. No es un
@@ -326,6 +350,19 @@ http.createServer((pet, res) => {
             return res.end(r.archivo.contenido);
         }
 
+        return responderPlano(res, r.cuerpo, r.status);
+    }
+
+    /* Jefe de zona (grupo 34): el avance de todos y la probabilidad de uno. Ver dev/simulador-zona.js. */
+    if (ruta === "/v1/zona/avance" || ruta === "/v1/zona/probabilidad") {
+        const q = new URL(pet.url, "http://x").searchParams;
+        const params = { anno: q.get("anno"), mes: q.get("mes"), codusu: q.get("codusu") };
+
+        const r = ruta === "/v1/zona/avance" ? zonaSim.avance(params) : zonaSim.probabilidad(params);
+
+        console.log("      " + ruta.slice(4) + (params.codusu ? " " + params.codusu : "") +
+                    (params.anno || params.mes ? " " + params.anno + "-" + params.mes : "") + ": " + r.status +
+                    (r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
         return responderPlano(res, r.cuerpo, r.status);
     }
 
