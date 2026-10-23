@@ -8,6 +8,9 @@ solo lectura.
 > **Actualizado el 22/10/2026:** la lista de avance trae ahora la **venta de hoy**, el **semaforo**
 > (`estado`), la **proyeccion al cierre**, **como cerro el mes anterior** y la lista de los que **no
 > registraron cuota**. Todo en la seccion 3.
+>
+> **Y en respuesta a [respuesta-zona.md](respuesta-zona.md):** todos los montos de los dos modulos son
+> **con IGV** (seccion 2). Respuestas en la seccion 7.
 
 ---
 
@@ -45,7 +48,10 @@ pantalla de cotizacion puede seguir usando las rutas de pedido o promocion que n
 - **Tiempo real:** cada llamada se calcula en el momento; una factura emitida ya cuenta en la
   siguiente lectura. **Recomendacion: refrescar cada 2 a 5 minutos**, o con un boton. No mas seguido:
   no cambia tan rapido y cada lectura recorre las facturas del mes.
-- Montos en US$, redondeados a 2 decimales. Porcentajes con 1 decimal.
+- **Todos los montos de los dos modulos son en US$ y con IGV**, con esa misma regla: en el avance
+  (`meta`, `avance`, `falta`, `hoy`, `proyeccion`, `mesAnterior`, `sinCuota`) y en la probabilidad
+  (`meta`, `avance`, `falta`, `ritmo`, `escenarios`, `cierre`). Salen todos de la misma suma.
+- Montos redondeados a 2 decimales. Porcentajes con 1 decimal.
 
 ---
 
@@ -248,3 +254,20 @@ interesa es *«este mes, a esta altura, voy mejor o peor que los anteriores»*.
 En bdnava08 las facturas llegan hasta el **09/10/2026**: el avance de octubre y su probabilidad son
 de esos dias (por eso el 196 sale con 0 %). Para ver probabilidades con sentido, miren los meses
 anteriores de la probabilidad.
+
+---
+
+## 7 · Respuestas a [respuesta-zona.md](respuesta-zona.md)
+
+| pregunta | respuesta |
+|---|---|
+| 1 · ¿Los montos de la probabilidad tambien son con IGV? | **Si.** El `avance`, el `ritmo` (`necesario` y `habitual`), los `escenarios` y el `cierre` de cada mes salen de la misma suma que el avance: el total de la factura, en dolares y con IGV. *«Todo en dolares y con IGV»* esta bien rotulado. Lo agregamos a la seccion 2 para las dos pantallas |
+| Sugerencia · el texto del 297 | **Quedense con su texto.** Lo estable es el `status` (`usuario sin acceso`): decidan por el. El `msg` de hoy (*«este usuario todavia no tiene acceso a la intranet»*) es generico y no esta pensado para mostrarse tal cual. Si un dia el 297 entra, simplemente deja de recibir ese 403: el texto no tiene que cambiar |
+
+Su lectura del documento es correcta en todo. Algunas confirmaciones:
+
+- **La probabilidad se puede pedir de cualquier vendedor del grupo 20**, tambien de los de `sinCuota`: sus meses vienen como `sin cuota`, pero con lo que facturaron, sus `escenarios` y su cierre.
+- **Volver al login con el 403 `usuario sin acceso`** desde el cliente HTTP es lo correcto, y **no** con `sin permiso`: son dos `status` distintos a proposito.
+- **Refrescar cada 3 minutos, solo en el mes en curso y con la pantalla a la vista** es justo lo que buscabamos.
+- **Nada se calcula en pantalla:** de acuerdo. Si algo no cuadra entre si (por ejemplo, una `proyeccion` bajo la meta con `probabilidad` alta), es a proposito y esta explicado en las secciones 3 y 4.
+

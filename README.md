@@ -245,7 +245,7 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   el mes anterior y los que no registraron cuota; se actualiza sola cada 3 minutos) y **Probabilidad** (`probabilidad.html`: la de un vendedor
   y cómo iba, a esta misma altura, en los 3 meses anteriores). Su menú es exactamente `cotizacion`, `avance` y `probabilidad`, y solo
   entra el usuario 126: el 297 recibe `403 usuario sin acceso`, en el login y en cualquier ruta (el cliente HTTP lo lleva al login). El
-  contrato es [docs/zona-grupo34.md](docs/zona-grupo34.md); queda **una pregunta pequeña** ([docs/respuesta-zona.md](docs/respuesta-zona.md)).
+  contrato es [docs/zona-grupo34.md](docs/zona-grupo34.md); **el backend ya contestó todas las preguntas** ([docs/respuesta-zona.md](docs/respuesta-zona.md); los montos de la probabilidad son con IGV, como la pantalla ya decía) y solo falta el servidor de prueba.
 - **El menú del grupo 25 ya es el que fijó el backend**: `marcas`, `cuota`, `reporte`, `cobertura`, `ajuste`, `vendedormes` y `cotizacion`.
   Las rutas antiguas de cuota por marca y de reportes se retiraron el 21/10 (responden 404) y el frontend ya no las nombra.
 - **Sin marcas en el mes no hay reportes**, ni los del mes pasado: es una regla de negocio

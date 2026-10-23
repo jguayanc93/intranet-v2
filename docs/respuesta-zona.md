@@ -1,7 +1,10 @@
-# Jefe de zona (grupo 34) — lo construido y lo que necesitamos aclarar
+# Jefe de zona (grupo 34) — lo construido y todo contestado
 
-Responde a [zona-grupo34.md](zona-grupo34.md) (actualizado el 22/10/2026). **Las dos pantallas están construidas y probadas contra un
-simulacro de su documento** (`dev/simulador-zona.js`): **Avance** (de todos los vendedores del grupo 20) y **Probabilidad** (de uno).
+Responde a [zona-grupo34.md](zona-grupo34.md) **actualizado el 22/10/2026** (sección 7: nuestra pregunta y nuestra sugerencia, contestadas; la sección 2 de este
+documento recoge qué hicimos con cada una). **Las dos pantallas están construidas y probadas contra un simulacro de su documento** (`dev/simulador-zona.js`):
+**Avance** (de todos los vendedores del grupo 20) y **Probabilidad** (de uno).
+
+**No queda ninguna pregunta abierta**: solo falta recorrerlo contra bdnava08 (sección 3), que necesita la dirección del servidor de prueba y las claves de las cuentas.
 
 **Nada sale a producción hasta que estén probadas en el servidor de prueba**, y backend y frontend salen el mismo día.
 
@@ -49,18 +52,16 @@ barra de abajo de un móvil. **El 297 recibe `403 usuario sin acceso`**:
 
 ---
 
-## 2 · Lo que necesitamos aclarar
+## 2 · Sus respuestas, y qué hicimos con cada una
 
-### 1 · ¿Los montos de la probabilidad también son con IGV?
+| pregunta | su respuesta | en la pantalla |
+|---|---|---|
+| 1 · ¿Los montos de la probabilidad también son con IGV? | **Sí.** El `avance`, el `ritmo` (`necesario` y `habitual`), los `escenarios` y el `cierre` de cada mes salen de la misma suma que el avance: el total de la factura, en dólares y con IGV. Lo agregaron a su sección 2 para las dos pantallas | **Nada que cambiar**: lo asumíamos así y las dos pantallas ya dicen *«Todo en dólares y con IGV»* (la de probabilidad, junto al día de hoy; la de avance, en su presentación). Ahora está confirmado, no supuesto |
+| Sugerencia · el texto del 297 | **Quédense con su texto.** Lo estable es el `status` (`usuario sin acceso`): se decide por él. El `msg` de hoy es genérico y no está pensado para mostrarse. Si un día el 297 entra, simplemente deja de recibir ese 403 | **Nada que cambiar**: el login decide por el `status` y dice su propio texto. Y el cliente HTTP vuelve al login con `usuario sin acceso` y **no** con `sin permiso` (son dos `status` distintos a propósito), que es lo que confirmaron |
 
-Su sección 2 dice que **el avance es en dólares y con IGV**, y esa regla aparece junto a la lista de avance. En la probabilidad no lo repiten: ¿el `avance`, el `ritmo`
-(`necesario` y `habitual`), los `escenarios` y el `cierre` de **cada mes** son también **con IGV**? Lo asumimos —es lo coherente con la cuota, que el vendedor registra con IGV— y la
-pantalla lo dice (*«Todo en dólares y con IGV»*), pero **si fuera sin IGV, estaríamos rotulando mal cada número**.
-
-### Una sugerencia, opcional
-
-- **El texto del 297.** Hoy la pantalla de login dice un texto nuestro (*«Tu usuario todavía no tiene acceso a la intranet…»*). Si prefieren que lea **el `msg` de su
-  respuesta**, lo usamos; basta con que nos digan cuál será, porque cambiará cuando se decida qué pasa con ese usuario.
+Su lectura del documento es correcta en todo. Lo que confirmaron también: la probabilidad **se puede pedir de cualquier vendedor del grupo 20**, también de los de `sinCuota`
+(sus meses vienen como `sin cuota`, con lo que facturaron); refrescar **cada 3 minutos, solo en el mes en curso y con la pantalla a la vista** es lo que buscaban; y que una
+proyección bajo la meta con una probabilidad alta es a propósito, y la pantalla lo explica («Cómo se calcula» y los escenarios «a su ritmo habitual»).
 
 ---
 
@@ -93,6 +94,6 @@ Para ver probabilidades con sentido, los meses anteriores de la probabilidad.
 **Damos el módulo por cerrado cuando:**
 
 - [x] las dos pantallas están construidas y probadas con el simulacro
-- [ ] la pregunta de la sección 2 está respondida
+- [x] la pregunta y la sugerencia de la sección 2 están respondidas y reflejadas
 - [ ] tenemos la dirección del servidor de prueba y las claves
 - [ ] los casos de la sección 3 están recorridos contra bdnava08
