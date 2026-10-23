@@ -90,6 +90,12 @@ y están escritos contra el código, no de memoria.
   Se actualizó el 21/10 con nuestras respuestas: `/clientes` sin tope (máximo real 636), `columnas`, **exportar a Excel**
   (`&formato=xlsx`), `formato invalido`, y que un 0 en `unidades` no siempre es «devolvió todo». **La pantalla ya está
   construida**; falta recorrerla contra bdnava08.
+- **[zona-grupo34.md](zona-grupo34.md)** — El **jefe de zona (grupo 34)**: dos módulos de solo lectura sobre **todo el grupo 20**. `GET /zona/avance`
+  (el avance de la cuota de cada vendedor que la registró, con **semáforo**, `esperado` —cuánto del mes ya pasó—, proyección, probabilidad y **cómo cerró
+  el mes anterior**; aparte, los que **no registraron cuota**) y `GET /zona/probabilidad?codusu=` (la probabilidad de llegar a su cuota, y cómo iba en los 3
+  meses anteriores a la misma altura del mes, con cómo terminó cada uno). **En dólares y con IGV**, no la regla de la cuota por marca. Su menú es
+  `cotizacion`, `avance` y `probabilidad`; solo entra el usuario 126 (el 297, `403 usuario sin acceso`). **Las pantallas ya están construidas**; falta recorrerlas
+  contra bdnava08.
 - **[vendedor-mes-grupo25.md](vendedor-mes-grupo25.md)** — El **vendedor del mes** del grupo 25: `GET
   /vendedormes/top` con, de cada marca, **los 3 vendedores del grupo 20 que más la vendieron** (puesto, venta,
   `participacion`, unidades, clientes) y su **tendencia** frente al mes anterior (`sube`, `baja`, `igual`, `nuevo`).
@@ -173,6 +179,10 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   decimales y el mínimo, `precioNeto`, el filtro por fecha, los pedidos en el paso 1, el numerito del menú…) y a las tres
   preguntas de la segunda ronda (el contador, `fechas invalidas`, el redondeo), **sin nada abierto**, y cómo recorrerlo
   contra bdnava08 sin gastar solicitudes reales.
+- **[respuesta-zona.md](respuesta-zona.md)** — Para el backend: **cómo leímos el jefe de zona** (el menú de tres módulos y el `403 usuario sin acceso`
+  que lleva al login; el avance con su semáforo dicho con texto, la marca de lo que ya pasó del mes, los que no registraron cuota, y los meses cerrados sin
+  semáforo; la probabilidad con sus cuatro meses, los motivos sin inventar un número y el pasado en pasado), **una pregunta pequeña** (si los montos de la
+  probabilidad también son con IGV), una sugerencia opcional (el texto del 297) y los casos que recorreremos contra bdnava08.
 - **[respuesta-vendedor-mes.md](respuesta-vendedor-mes.md)** — Para el backend: **cómo leímos el vendedor del mes**
   (una sola pantalla, sin hub; el top de cada marca con su tendencia leída por texto; menos de 3 o ninguno; un vendedor sin
   `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de
@@ -294,16 +304,16 @@ el backend las lea.
 
 ## Las pruebas ya no son manuales
 
-La guía de pruebas manuales se archivó porque dejó de hacer falta. Hay **dieciocho suites
+La guía de pruebas manuales se archivó porque dejó de hacer falta. Hay **diecinueve suites
 automáticas**, una por módulo migrado, en **[`dev/pruebas/`](../dev/pruebas/)**:
 
 ```
 cd dev/pruebas
 npm install          una sola vez: lo único que hace falta es jsdom
-node todas.js        las dieciocho, con un resumen
+node todas.js        las diecinueve, con un resumen
 ```
 
-Diecisiete de las dieciocho **cargan el HTML real con sus scripts reales** en un DOM y los accionan
+Dieciocho de las diecinueve **cargan el HTML real con sus scripts reales** en un DOM y los accionan
 como lo haría un vendedor. Existen porque las comprobaciones unitarias no vieron un fallo
 que sí se notaba pulsando.
 

@@ -60,6 +60,8 @@ lista.
 | `pendiente25` | Especialista con una marca que le dio la jefatura y sin confirmar: en Reportes la ve, pero en Cuota **no le deja fijar la meta** y le lleva a Marcas. |
 | `jefatura25` | Jefatura registrada: ve el panel de su familia. En Reportes ve las suyas y las de sus especialistas de su familia. En Ajustes recibe, además de lo suyo, lo de las marcas sin dueño de su familia. |
 | `vendedor20` | **Del grupo 20**, no del 25: un vendedor que pide ajustes de precio y ve sus respuestas. Sin marcas ni reportes. Sirve para ver el otro lado de Ajustes: puede enviar la cotización `009-00970001` (tres responsables, una línea sin dueño y dos promociones) o el pedido `009-00775010`, en soles. |
+| `zona126` | **Del grupo 34**, jefe de zona (el usuario 126): su menú es solo Cotización, **Avance** y **Probabilidad**; ve el avance de la cuota de todo el grupo 20 y la probabilidad de cada vendedor. |
+| `zona297` | Jefe de zona **sin acceso** (el usuario 297): el login responde 403 `usuario sin acceso` y no entra. |
 | `random25` | Uno de los seis anteriores, al azar, con un nombre inventado. |
 | `malo` | Contraseña incorrecta. |
 | cualquier otro | Especialista ya registrado. Con `TIPO=JEFATURA node dev/servidor.js`, jefatura. |
@@ -110,7 +112,7 @@ js/<modulo>/    Su JavaScript
 styles/         CSS heredado de pantallas aún sin migrar
 caminos/        Constantes de endpoints (heredado; ver docs/arquitectura.md)
 dev/            Herramientas de desarrollo. No forman parte del producto.
-dev/pruebas/    Las dieciocho suites automáticas
+dev/pruebas/    Las diecinueve suites automáticas
 docs/           Documentación
 ```
 
@@ -139,10 +141,10 @@ Está detallado, con la plantilla completa, en **[docs/arquitectura.md](docs/arq
 ```
 cd dev/pruebas
 npm install          una sola vez: lo único que hace falta es jsdom
-node todas.js        las dieciocho suites, con un resumen
+node todas.js        las diecinueve suites, con un resumen
 ```
 
-Diecisiete de las dieciocho cargan las páginas reales en un DOM y las accionan. `node todas.js` sale
+Dieciocho de las diecinueve cargan las páginas reales en un DOM y las accionan. `node todas.js` sale
 con código 1 si alguna falla. Ver [`dev/pruebas/README.md`](dev/pruebas/README.md).
 
 Antes de subir, además: `node dev/revisar-despliegue.js` comprueba que lo que se sirve está completo y no lleva restos (ningún archivo
@@ -238,6 +240,12 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   **hasta qué día hay ventas** (`ventasHasta`). El contrato es [docs/vendedor-mes-grupo25.md](docs/vendedor-mes-grupo25.md);
   **el backend ya contestó todas las preguntas** ([docs/respuesta-vendedor-mes.md](docs/respuesta-vendedor-mes.md)) y solo falta
   el servidor de prueba.
+- **El jefe de zona (grupo 34) está construido y falta recorrerlo contra bdnava08.** Dos pantallas en la raíz (22/10): **Avance**
+  (`avance.html`: el avance de la cuota de TODOS los vendedores del grupo 20, con semáforo, lo que ya pasó del mes, proyección, cómo cerró
+  el mes anterior y los que no registraron cuota; se actualiza sola cada 3 minutos) y **Probabilidad** (`probabilidad.html`: la de un vendedor
+  y cómo iba, a esta misma altura, en los 3 meses anteriores). Su menú es exactamente `cotizacion`, `avance` y `probabilidad`, y solo
+  entra el usuario 126: el 297 recibe `403 usuario sin acceso`, en el login y en cualquier ruta (el cliente HTTP lo lleva al login). El
+  contrato es [docs/zona-grupo34.md](docs/zona-grupo34.md); queda **una pregunta pequeña** ([docs/respuesta-zona.md](docs/respuesta-zona.md)).
 - **El menú del grupo 25 ya es el que fijó el backend**: `marcas`, `cuota`, `reporte`, `cobertura`, `ajuste`, `vendedormes` y `cotizacion`.
   Las rutas antiguas de cuota por marca y de reportes se retiraron el 21/10 (responden 404) y el frontend ya no las nombra.
 - **Sin marcas en el mes no hay reportes**, ni los del mes pasado: es una regla de negocio
