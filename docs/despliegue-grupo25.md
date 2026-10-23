@@ -122,6 +122,20 @@ tiene que tener el mismo día:
 
 Cuentas para el recorrido: el **126** (entra) y el **297** (`403`). Los casos están en [respuesta-zona.md](respuesta-zona.md), sección 3.
 
+### Volver atrás del grupo 34
+
+Entra en `main` con **su propio commit de merge** («Jefe de zona (grupo 34): …»), encima del del grupo 25, así que se deshace igual y por separado:
+
+```
+git log --merges -2 --format="%h %s"     # el de arriba es el del grupo 34
+git revert -m 1 <hash del merge del grupo 34>
+git push origin main
+```
+
+- La etiqueta **`pre-grupo34`** marca lo que había justo antes (el merge del grupo 25, `79dac94`).
+- **Para deshacer el grupo 25 con el 34 ya subido, hay que deshacer primero el 34**: el 34 toca archivos que el 25 también tocó (el catálogo, el cliente
+  HTTP, los estilos y el login), y revertir el 25 con el 34 encima da conflictos. En ese orden, cada `revert` sale limpio.
+
 ---
 
 ## 6 · Lo que este repositorio no dice
