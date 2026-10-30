@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lista de precios: los precios de venta, sin IGV y con IGV - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Lista de precios</title>
+</head>
+
+<!-- Una sola pantalla, para el grupo 20 (cartera y cobertura): la lista de precios de venta, en dólares, sin IGV y con IGV, para verla aquí o
+     bajarla a Excel. Es solo lectura. No lleva costo ni stock ni códigos del sistema (la lista puede llegar a manos de los clientes), y se
+     filtra aquí, en el navegador: son unas 6 400 filas que llegan de una vez. La clave de menú es `listaprecios` y NO `reporte`, que es el
+     menú de reportes por marca del grupo 25. -->
+<body data-modulo="listaprecios" data-titulo="Lista de precios">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Lista de precios</h1>
+        <p class="cdk-cabecera__sub" id="periodo">Precios de venta, sin IGV y con IGV</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/listaprecios/datos.js"></script>
+<script src="/js/listaprecios/listaprecios.js"></script>
+</body>
+</html>
