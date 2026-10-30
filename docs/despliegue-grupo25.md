@@ -244,6 +244,28 @@ git push origin main
 - **Antes de deshacerlo, el backend tiene que quitar `promovigentes` y `quienvender` de su menú**: si no, **todos los vendedores** verían dos entradas genéricas que llevan a un 404. El cambio de fechas del motor de cotización del backend se queda aunque se quite una clave (ver «Cómo se deshace» arriba).
 - Lo único que se toca de un módulo que ya existía es `acoplarPromociones` en `js/cotizacion/buscar_promo_part5.js` (el aviso con el motivo): al deshacer vuelve a decir «no se pudo adjuntar» sin motivo, que es lo que decía.
 
+### Lo que suma la lista de precios del grupo 20 (30/10/2026)
+
+Se sube como **un paso aparte**, con su propio commit de merge, **encima del de promos vigentes y a quién vender hoy**. Su contrato ([listaprecios-grupo20.md](listaprecios-grupo20.md)) llegó después de los otros dos del grupo 20; lo que
+leímos y lo que hay que confirmar está en [respuesta-listaprecios.md](respuesta-listaprecios.md). Es de solo lectura, y el frontend llama a:
+
+| el frontend llama | para qué |
+|---|---|
+| `POST /v1/reporte/listaprecios` con `{ "formato": "json" }` | la lista completa para ver en pantalla (unas 6 400 filas, 1,4 MB). **Se pide una vez al abrir la pantalla**; filtrar y buscar se hace en el navegador |
+| `POST /v1/reporte/listaprecios` con `{ "formato": "xlsx" }` | el Excel, con **la lista completa aunque haya un filtro puesto**. Solo se guarda si el `Content-Type` es una hoja de cálculo; un error llega como JSON y se muestra |
+| `GET /v1/vendedor` del grupo 20 | una clave nueva: **`listaprecios`** (no `reporte`, que es del grupo 25). Sin acciones |
+
+**Lo que cambia en el orden de salida respecto a los otros dos módulos del grupo 20:**
+
+- **La clave sale apagada**: el backend no la manda a nadie hasta que esta pantalla esté publicada. **Primero la pantalla, después la clave** (una línea en el menú del grupo 20 y un reinicio del backend), así que **no hay apuro y nada se
+  rompe mientras tanto**. Esto es **distinto** de `promovigentes` y `quienvender`, que sí salen el mismo día que el frontend.
+- La ruta responde igual a cualquier vendedor del grupo 20 aunque la clave esté apagada: se puede recorrer contra bdnava08 sin esperar al menú. El grupo 25 y el 34 reciben `403 sin permiso`.
+- **Una prioridad más, sin mover a nadie:** «Lista de precios» tiene prioridad 15, **al final**, y en un móvil queda en «Más». La barra inferior no cambia.
+- **Nada de costo ni de stock**: la lista puede llegar a manos de los clientes. Si algún día el backend agregara un campo a las filas, la pantalla **no lo muestra** (solo pinta descripción, part number, marca, familia y los dos precios).
+- **Cuentas para el recorrido:** un vendedor de cartera y uno de cobertura (V0313 y V0278), y el 126 y uno del grupo 25 (`403 sin permiso`). **El servidor de prueba todavía no tiene este código.** Las claves no van en documentos.
+- **Cada descarga en Excel queda registrada en el backend** (módulo `reporte`, acción `lista de precios`). El frontend no hace nada para eso: mirar la lista en pantalla no se registra.
+- **No se guarda nada en el navegador**: cada vez que se abre la pantalla se pide de nuevo, para que el precio sea el de hoy.
+
 ---
 
 ## 6 · Lo que este repositorio no dice

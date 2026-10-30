@@ -264,6 +264,11 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   [docs/cierre-promovigentes-quienvender.md](docs/cierre-promovigentes-quienvender.md): el detalle de cada promoción trae los **almacenes** de cada producto (la pantalla los dice y avisa si solo hay stock donde la cotización no
   deja elegir), el motor de cotización **ya no ofrece promociones vencidas** (la cotización muestra el motivo si una vence mientras se arma), y los rótulos de «Vender hoy» quedaron como dijo el backend. **Salida: el mismo día,
   primero el frontend y después el backend** (el menú llega a todos los vendedores); ver [docs/despliegue-grupo25.md](docs/despliegue-grupo25.md), sección 5. Falta que el backend monte el código en el servidor de prueba.
+- **La lista de precios del grupo 20 (30/10) está construida y falta recorrerla contra bdnava08.** `listaprecios.html`: los precios de venta de los productos vigentes, en dólares, **sin IGV y con IGV**, para verlos
+  en pantalla (unas 6 400 filas, de 50 en 50, con filtro por familia, por marca y búsqueda) o **bajarlos a Excel**. Es solo lectura y **no lleva costo, ni stock, ni códigos del sistema** (la lista puede llegar a manos de
+  los clientes): por eso es distinta del reporte de precios por marca del grupo 25. Su clave de menú es **`listaprecios`** —no `reporte`, que es del 25—, y **el backend la manda apagada hasta que esta pantalla esté
+  publicada**: primero la pantalla, después la clave. El contrato es [docs/listaprecios-grupo20.md](docs/listaprecios-grupo20.md) (llegó después de los otros dos del grupo 20); lo que leímos y tres cosas que confirmar, en
+  [docs/respuesta-listaprecios.md](docs/respuesta-listaprecios.md). Para verla en la demo: `cartera20` o `vendedor20`.
 - **La cotización en soles (23/10) está construida y falta recorrerla contra bdnava08.** Una cotización hecha en soles se grababa
   con los importes en dólares. La pantalla ahora sigue **la regla del ERP** —precio unitario a 3 decimales, **precio con descuento a 2 decimales y ese por la
   cantidad** (el backend corrigió esta regla el 23/10), IGV y total sobre la suma—, con aritmética decimal exacta (en coma flotante
