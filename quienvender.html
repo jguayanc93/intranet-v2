@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A quién vender hoy: los 3 clientes del día - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · A quién vender hoy</title>
+</head>
+
+<!-- Una sola pantalla, para el grupo 20 (cartera y cobertura): los 3 clientes del día, 2 para reponer y 1 para llamar. Es solo información:
+     no hay botón de cambiar ni de refrescar, y la ruta se pide una sola vez, cuando el vendedor abre la pantalla (la primera vez del día
+     el backend la calcula y la graba; todo el día recibe las mismas). El menú dice «Vender hoy» porque en la barra inferior de un móvil el
+     texto se corta; aquí va el título completo. -->
+<body data-modulo="quienvender" data-titulo="A quién vender hoy">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">¿A quién vender hoy?</h1>
+        <p class="cdk-cabecera__sub" id="periodo">Los clientes que te tocan hoy</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<script src="/js/quienvender/datos.js"></script>
+<script src="/js/quienvender/quienvender.js"></script>
+</body>
+</html>
