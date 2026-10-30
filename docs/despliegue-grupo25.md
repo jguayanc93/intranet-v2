@@ -169,6 +169,20 @@ el frontend llama ahora a:
   `400 periodo invalido` y se muestra con su mensaje, sin los campos de reemplazo no hay notas, y sin `clientes` en el menú no hay entrada ni enlace. **Para deshacer solo el frontend con el backend ya arriba**,
   el menú del 126 seguiría trayendo `clientes` y saldría la entrada genérica que lleva a un 404: conviene pedirle antes al backend que quite esa línea del menú (es lo que se puede separar), o aceptar esa entrada para un solo usuario mientras tanto.
 
+### Volver atrás de la actualización del 24/10 del grupo 34
+
+Entra en `main` con **su propio commit de merge** («Jefe de zona (grupo 34): Cobertura, reemplazos y tres meses atrás»), encima del de la cotización en soles, así que se deshace igual y por separado:
+
+```
+git log --merges -5 --format="%h %s"     # el de arriba de los tres es el de la lista de precios; el del 24/10 es el tercero
+git revert -m 1 <hash del merge de esta actualización>
+git push origin main
+```
+
+- La etiqueta **`pre-zona34-clientes`** marca lo que había justo antes (el merge de la cotización en soles, `b7ecc46`). Probado en un clon descartable: tras el `revert`, `main` queda **idéntico** a `pre-zona34-clientes`.
+- **De arriba abajo.** Para deshacer la cotización en soles, el jefe de zona del 22/10 o el grupo 25 con esta actualización encima, hay que **deshacer primero esta** —y antes de esta, los dos pasos del grupo 20 que van encima—: tocan archivos comunes (`README.md`, el catálogo, `dev/servidor.js`…) y revertir en otro orden da conflicto. En ese orden, cada `revert` sale limpio.
+- El backend se deshace aparte, con su propio `git revert` (ver «Cómo se deshace» arriba): el frontend no necesita nada después.
+
 ---
 
 ## 6 · Lo que este repositorio no dice
