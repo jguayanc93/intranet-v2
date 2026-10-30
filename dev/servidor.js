@@ -157,6 +157,8 @@ const zonaSim = require("./simulador-zona");
 /* Grupo 20 (todos los vendedores), desde el 29/10: las promociones vigentes para ofrecer y «¿A quien vender hoy?». */
 const promoVigentesSim = require("./simulador-promovigentes");
 const quienVenderSim = require("./simulador-quienvender");
+/* Lista de precios del grupo 20, desde el 30/10: ver o bajar a Excel los precios de venta. */
+const listaPreciosSim = require("./simulador-listaprecios");
 
 let USUARIO = null;
 
@@ -192,7 +194,10 @@ const MODULOS = {
     ajuste:      "Ajuste de precio de cotizaciones y pedidos",
     /* Solo del grupo 20 (todos sus vendedores, cartera y cobertura), desde el 29/10: sin acciones, una clave y una pantalla. */
     promovigentes: "Mira las promociones vigentes para ofrecer a tus clientes",
-    quienvender:   "Los 3 clientes de hoy: 2 para reponer y 1 para llamar"
+    quienvender:   "Los 3 clientes de hoy: 2 para reponer y 1 para llamar",
+    /* Solo del grupo 20, desde el 30/10. Ojo: el backend real la manda APAGADA hasta que esta pantalla este publicada; la demo la trae
+       para poder verla. */
+    listaprecios:  "Descarga la lista de precios de venta, sin IGV y con IGV"
 };
 
 /* Lo que recibe cada grupo en el menu (docs/marcas-grupo25.md, secc. 4: el 21/10 el backend lo fijo).
@@ -330,6 +335,31 @@ http.createServer((pet, res) => {
 
             /* El Excel llega como archivo, con su nombre en Content-Disposition,
                que el servidor expone por CORS para que el navegador lo pueda leer. */
+            if (r.archivo) {
+                res.writeHead(200, {
+                    "Content-Type": r.archivo.tipo,
+                    "Content-Disposition": `attachment; filename="${r.archivo.nombre}"`,
+                    "Access-Control-Allow-Origin": ORIGEN,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Expose-Headers": "Content-Disposition"
+                });
+                return res.end(r.archivo.contenido);
+            }
+
+            responderPlano(res, r.cuerpo, r.status);
+        });
+    }
+
+    /* Lista de precios (grupo 20): POST con `{ formato }`; con `xlsx` llega el archivo. Ver dev/simulador-listaprecios.js.
+       Ojo: /v1/reporte/listaprecios no es /v1/reporte/marca/* (esas son del grupo 25 y le dan 403 a un vendedor). */
+    if (ruta === "/v1/reporte/listaprecios") {
+        return conCuerpo(pet, (d) => {
+            const r = listaPreciosSim.lista(d);
+
+            console.log("      listaprecios" + (d.formato ? " [" + d.formato + "]" : "") + ": " + r.status +
+                        (r.cuerpo && r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
+
+            /* El Excel llega como archivo, con su nombre en Content-Disposition (expuesta por CORS). */
             if (r.archivo) {
                 res.writeHead(200, {
                     "Content-Type": r.archivo.tipo,
