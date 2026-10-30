@@ -229,6 +229,21 @@ solo lectura, y el frontend llama a:
   menú**: se queda aunque se quite una clave. **Para deshacer solo el frontend con el backend ya arriba**, el menú de todos los vendedores seguiría trayendo las dos claves y saldrían entradas genéricas que llevan a un 404: antes hay que pedirle
   al backend que las quite del menú. El aviso de la cotización con el motivo (`buscar_promo_part5.js`) es inocuo con el backend anterior: sin `msg`, dice lo de siempre.
 
+### Volver atrás del grupo 20 (promos vigentes y a quién vender hoy)
+
+Entra en `main` con **su propio commit de merge** («Grupo 20: promociones vigentes y ¿A quién vender hoy?»), encima del de la actualización del 24/10 del grupo 34, así que se deshace igual y por separado:
+
+```
+git log --merges -5 --format="%h %s"     # el de arriba es el de la lista de precios; el de promos vigentes y a quién vender hoy es el segundo
+git revert -m 1 <hash del merge del grupo 20>
+git push origin main
+```
+
+- La etiqueta **`pre-grupo20`** marca lo que había justo antes (el merge de la actualización del 24/10 del grupo 34). Probado en un clon descartable: tras el `revert`, `main` queda **idéntico** a `pre-grupo20`.
+- **Se deshace antes que la actualización del 24/10 del grupo 34**, y **después de la lista de precios** (que va encima): usa el bloque «Fila compacta» de `core/cdk-shell.css` que esa actualización agregó, y los tres tocaron `README.md`, el catálogo y `dev/servidor.js`. De arriba abajo, cada `revert` sale limpio.
+- **Antes de deshacerlo, el backend tiene que quitar `promovigentes` y `quienvender` de su menú**: si no, **todos los vendedores** verían dos entradas genéricas que llevan a un 404. El cambio de fechas del motor de cotización del backend se queda aunque se quite una clave (ver «Cómo se deshace» arriba).
+- Lo único que se toca de un módulo que ya existía es `acoplarPromociones` en `js/cotizacion/buscar_promo_part5.js` (el aviso con el motivo): al deshacer vuelve a decir «no se pudo adjuntar» sin motivo, que es lo que decía.
+
 ---
 
 ## 6 · Lo que este repositorio no dice
