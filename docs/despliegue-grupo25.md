@@ -183,6 +183,52 @@ git push origin main
 - **De arriba abajo.** Para deshacer la cotización en soles, el jefe de zona del 22/10 o el grupo 25 con esta actualización encima, hay que **deshacer primero esta** —y antes de esta, los dos pasos del grupo 20 que van encima—: tocan archivos comunes (`README.md`, el catálogo, `dev/servidor.js`…) y revertir en otro orden da conflicto. En ese orden, cada `revert` sale limpio.
 - El backend se deshace aparte, con su propio `git revert` (ver «Cómo se deshace» arriba): el frontend no necesita nada después.
 
+### Lo que suma la actualización del 29/10/2026 del grupo 20 (promos vigentes y a quién vender hoy)
+
+Se sube como **un paso aparte**, con su propio commit de merge (el hash se anota aquí al hacerlo). **Es la primera vez que un módulo nuevo llega al menú de todos los vendedores** —cartera y cobertura, el grupo 20 entero—
+y no a un solo usuario, así que pesa más que el del jefe de zona. Los contratos son [promovigentes-grupo20.md](promovigentes-grupo20.md) y [quienvender-grupo20.md](quienvender-grupo20.md); nuestras ocho preguntas están en
+[respuesta-promovigentes-quienvender.md](respuesta-promovigentes-quienvender.md) y **el backend las contestó el 29/10** en [cierre-promovigentes-quienvender.md](cierre-promovigentes-quienvender.md) (abajo, lo que cambió). Todo es de
+solo lectura, y el frontend llama a:
+
+| el frontend llama | para qué |
+|---|---|
+| `GET /v1/promocion/vigentes` y `GET /v1/promocion/vigentes/<idprom>` | la lista de lo que está en promoción hoy y el detalle de una (un `404 promocion no vigente` es normal: se explica y se vuelve a la lista) |
+| `GET /v1/quienvender` | los 3 clientes del día. **Se pide una sola vez, cuando el vendedor abre la pantalla**: la primera vez del día el backend la calcula y la graba (cerca de 1 s), y todo el día contesta lo mismo. Nunca se pide por adelantado, ni se refresca |
+| `GET /v1/vendedor` del grupo 20 | dos claves nuevas: `promovigentes` y `quienvender`. Sin acciones |
+
+**El orden importa más que nunca:**
+
+- **El backend no debe poner `promovigentes` ni `quienvender` en el menú antes de que el frontend esté subido.** Una clave que el frontend no conoce se pinta como una entrada genérica («PROMOVIGENTES», «QUIENVENDER») que lleva a una
+  página que no existe (404), y esta vez la verían **todos los vendedores**. Al revés no pasa nada: si el frontend sube primero, las pantallas simplemente no aparecen hasta que el backend ponga las claves. **El backend confirmó** que cada
+  clave se activa por separado y que **sube primero el frontend y después el backend, el mismo día** (respuesta 7).
+- **La barra inferior del móvil cambia para todos los vendedores:** «Vender hoy» entra en el tercer lugar y **Factura pasa a «Más»** (decidido el 29/10; en el menú lateral y en «Más» siguen todos). «Promos vigentes» va al final, en «Más».
+  Conviene avisar a los vendedores el mismo día. Es la única prioridad que no es entera (2,5): no se movió ninguna otra.
+- **El nombre en el menú es corto a propósito** («Vender hoy», «Promos vigentes») porque en la barra inferior el texto se corta; el título de la pantalla es «¿A quién vender hoy?». Las claves son las del backend y no cambian.
+- **Un archivo compartido, otra vez: `core/cdk-shell.css`.** Estas pantallas reutilizan el bloque «Fila compacta» que nació con Cobertura (grupo 34) y le suman dos clases (`.cdk-fila__contenido` y `.cdk-fila--apagada`).
+  **Dependen de él los dos pasos**: para deshacer el del grupo 34 con este ya subido hay que **deshacer primero este**; si no, las listas de productos quedan sin estilo.
+- **Las promociones vencidas que la cotización ofrecía: el backend lo arregla en esta misma entrega** (respuesta del 29/10, pregunta 2 de [cierre-promovigentes-quienvender.md](cierre-promovigentes-quienvender.md)). El motor de
+  cotización ya usa la misma regla de vigencia que la lista (encendida y hoy entre su inicio y su fin, el último día incluido): las cinco vencidas de bdnava08 (14898, 15124, 15217, 15218 y 15227) ya no se ofrecen ni se aplican.
+  **Cambia lo que ven todos los vendedores en el módulo de siempre**, aunque en la base principal hoy no hay ninguna vencida (las 43 encendidas están vigentes). Lo nuevo para la pantalla de cotización: una promoción puede
+  **vencer mientras el vendedor arma la cotización**, y entonces `/promocion/acoplar` responde `400 promocion no registrada` con *«la promocion no existe, esta desabilitada o ya vencio»*. El módulo Promoción ya mostraba el
+  `msg`; **la cotización lo decía sin motivo** («no se pudo adjuntar») y por eso se tocó una función de `js/cotizacion/buscar_promo_part5.js` (`acoplarPromociones`): ahora el aviso trae el motivo del backend. Esa promoción
+  **no se puede adjuntar después**: la cotización ya se creó, y el aviso lo dice.
+- **Los almacenes (respuesta del 29/10, pregunta 1).** El **detalle** de cada promoción trae `almacenes` en cada producto (sin cantidades; `[]` si está agotado; la lista no lo trae). La pantalla lo dice («Stock en Principal, M&M»)
+  y avisa cuando un producto está disponible **solo** donde la cotización no deja elegir (hoy solo Principal y M&M, de `CDK.catalogo.almacenes()`): en la 15221, el `1VV22AL` está solo en Piura. El backend dice dónde hay, no dónde se
+  puede cotizar: esa regla es del frontend.
+- **Rótulos de «Vender hoy» ajustados a lo que dijo el backend (pregunta 4 y 5):** en REPONER «Lo que valdría reponer» (la suma de todo lo que le toca, **no** la de los productos de la tarjeta, que son los de más valor); en REACTIVAR
+  «Le vendiste en 12 meses» (lo que **este** vendedor vendió); y una nota «Los importes están en dólares, sin IGV». **El día de `fecha` es el de Lima** (reloj del servidor de base de datos, pregunta 3); la pantalla no lo calcula.
+- **Orden de salida acordado con el backend (29/10): el mismo día, primero el frontend y después el backend.** Las dos claves son líneas distintas del menú y van las dos. Antes de subir a producción el backend crea la tabla de «hoy» en la
+  base principal (ya existe en la de prueba); no hay nada que hacer de nuestro lado. **Avisar a los vendedores** (la barra inferior cambia) es del lado del backend, sin nada del frontend.
+- **Cuentas para el recorrido:** un vendedor de **cartera** (V0313), uno de **cobertura** (V0278), el **126** y uno del grupo 25 (`403 sin permiso`). Las claves **no se pasan por escrito**: las da quien coordina. **El servidor de
+  prueba todavía no tiene este código** (se monta cuando el backend dé por cerrados los módulos y se avisa). En bdnava08 hoy sí hay sugerencias «de verdad»: 14 de los 22 vendedores de cartera y cobertura reciben 2 REPONER y 1 LLAMAR
+  por la ruta real (V0313: 5, 5 y 3 productos; V0278: 5, **1** y 3; V0353: 3 SIN_COMPRAS; V0360: 3 LIBRE). La base está atrasada (facturas al 09/10): las fechas de `ultimaCompra` serán anteriores. **El día queda grabado**: para volver
+  a ver el armado de un vendedor hay que pedirle al backend que borre sus filas del día. REACTIVAR solo sale con un día simulado: lo arma el backend si se pide.
+  **Dos casos dependen del día:** la **15221 vence el 31/10/2026** (después da `404` y la lista deja de traerla); para un caso estable, la **14106** (vence el 01/01/2027).
+- **Cómo se deshace.** **El backend, con un solo `git revert`** si sale en un solo merge: quita las dos claves del menú, las rutas y el cambio de fechas del motor, y **el frontend no necesita nada** (sin las claves no hay entradas). Si solo se quita
+  una clave del menú, la entrada desaparece pero la ruta sigue respondiendo al grupo 20 si alguien escribe la dirección (es solo lectura, salvo que abrir `quienvender` graba la fila del dia). **El cambio de fechas del motor no depende del
+  menú**: se queda aunque se quite una clave. **Para deshacer solo el frontend con el backend ya arriba**, el menú de todos los vendedores seguiría trayendo las dos claves y saldrían entradas genéricas que llevan a un 404: antes hay que pedirle
+  al backend que las quite del menú. El aviso de la cotización con el motivo (`buscar_promo_part5.js`) es inocuo con el backend anterior: sin `msg`, dice lo de siempre.
+
 ---
 
 ## 6 · Lo que este repositorio no dice
