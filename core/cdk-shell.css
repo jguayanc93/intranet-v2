@@ -1877,6 +1877,10 @@ select.cdk-entrada { padding-right: 8px; }
 .cdk-fila__mas > div > span:first-child { color: var(--cdk-texto-suave); }
 .cdk-fila__mas > p { margin: 6px 0 0; font-size: 12px; line-height: 1.45; color: var(--cdk-texto-suave); }
 
+/* La misma fila sin ser un boton (no se abre): para listas que solo se leen, como los productos de una promocion. */
+.cdk-fila__contenido { padding: 10px 12px; }
+.cdk-fila--apagada .cdk-fila__nombre { color: var(--cdk-texto-suave); font-weight: 500; }
+
 .cdk-etiqueta { display: inline-block; padding: 1px 8px; border: 1px solid var(--cdk-borde); border-radius: 999px;
                 font-size: 11px; font-weight: 600; color: var(--cdk-texto-suave); white-space: nowrap; }
 

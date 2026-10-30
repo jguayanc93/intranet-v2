@@ -86,6 +86,38 @@ const PERFILES = {
             sim.buscarMarca("0206").dueno = "233";
             sim.estado.confirmados["233"] = true;
         }
+    },
+
+    /* Mas vendedores del grupo 20, para ver «¿A quien vender hoy?» (docs/quienvender-grupo20.md): cada uno enseña un caso distinto.
+       `codven` dice cual es el de la sesion en dev/simulador-quienvender.js; sin `codven`, el de siempre de su tipo (V0313 de cartera,
+       V0278 de cobertura). Todos ven tambien las promociones vigentes. */
+    cartera20: {
+        nombre: "Fiorella Benites", grupo: GRUPO_20, registrado: true, tipo: "CARTERA", codven: "V0313",
+        nota: "vendedor de CARTERA: «A quién vender hoy» trae 2 para reponer y 1 para llamar"
+    },
+    reponer20: {
+        nombre: "Renzo Salazar", grupo: GRUPO_20, registrado: true, tipo: "CARTERA", codven: "V0320",
+        nota: "vendedor de CARTERA sin a quién llamar: las 3 tarjetas son de reponer"
+    },
+    dos20: {
+        nombre: "Camila Tapia", grupo: GRUPO_20, registrado: true, tipo: "COBERTURA", codven: "V0330",
+        nota: "vendedor de COBERTURA con solo 2 candidatos: llegan 2 tarjetas"
+    },
+    reactivar20: {
+        nombre: "Sergio Zegarra", grupo: GRUPO_20, registrado: true, tipo: "COBERTURA", codven: "V0290",
+        nota: "vendedor de COBERTURA que dejó de facturar: 3 clientes para reactivar"
+    },
+    sincompras20: {
+        nombre: "Mónica Rojas", grupo: GRUPO_20, registrado: true, tipo: "COBERTURA", codven: "V0353",
+        nota: "vendedor de COBERTURA con clientes asignados pero sin compras: 3 sin compras, sin productos"
+    },
+    libre20: {
+        nombre: "Álvaro Paredes", grupo: GRUPO_20, registrado: true, tipo: "COBERTURA", codven: "V0360",
+        nota: "vendedor de COBERTURA sin historial: 3 clientes libres (lo que compraron a todos los vendedores)"
+    },
+    nuevo20: {
+        nombre: "Valeria Quiroz", grupo: GRUPO_20, registrado: true, tipo: "CARTERA", codven: "V0399",
+        nota: "vendedor de CARTERA recién llegado, sin clientes: ninguna tarjeta y un aviso (no es un error)"
     }
 };
 

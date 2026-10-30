@@ -29,6 +29,11 @@ function ok(etiqueta, real, esperado) {
  * ------------------------------------------------------------- */
 const llamadas = [];
 
+/* Promociones que /promocion/acoplar rechaza: `vencida` es el `400 promocion no registrada` del backend (29/10: el motor ya respeta las
+   fechas); `falla` es un 500 sin mensaje. */
+const acoplarRechazadas = {};
+const MSG_VENCIDA = "la promocion no existe, esta desabilitada o ya vencio";
+
 function sobre(data, extra) {
     return Object.assign({ status: "ok", codigo: 0, data }, extra || {});
 }
@@ -82,7 +87,13 @@ function responder(url, opciones) {
                    totales: { tota: 172.61, toti: 31.07, totn: 203.68 } });
     }
 
-    if (url.includes("/promocion/acoplar")) return r(sobre({ ndocu: cuerpo.ndocu }));
+    if (url.includes("/promocion/acoplar")) {
+        // Una promocion que vencio, o que se apago, entre que se aplico y que se creo la cotizacion.
+        if (acoplarRechazadas[cuerpo.nprom] === "vencida") return r({ status: "promocion no registrada", codigo: 3, msg: MSG_VENCIDA }, 400);
+        if (acoplarRechazadas[cuerpo.nprom] === "falla") return r({}, 500);
+        if (acoplarRechazadas[cuerpo.nprom] === "sin-ok") return r({ status: "documento ambiguo", codigo: 3 });
+        return r(sobre({ ndocu: cuerpo.ndocu }));
+    }
     if (url.includes("/cotizacion")) return r(sobre(["crear", "leer", "update", "delete", "alm"]));
 
     return r({ msg: "no simulado: " + url }, 404);
@@ -292,6 +303,46 @@ function escribir(doc, id, valor) {
 
     ok("vacio el carrito tras crear",
        Object.keys(w.productosSeleccionados || {}).length, 0);
+
+    const avisosDeAdjuntar = () => [...doc.querySelectorAll("#cdk-toasts .cdk-toast__texto")].map((n) => n.textContent).filter((t) => t.includes("adjuntar"));
+    ok("con la promocion adjuntada, no hay aviso de que algo no entro", avisosDeAdjuntar(), []);
+
+    /* ---------------------- una promocion que vence entre que se aplica y que se crea */
+    console.log("\n— una promocion vence antes de acoplarse (400 promocion no registrada) —");
+    const ndocu = "098-00000037";
+
+    w.promocionesAplicadas = [{ idprom: "15112" }, { idprom: "14898" }];
+    acoplarRechazadas["14898"] = "vencida";
+    await w.acoplarPromociones(ndocu);
+    ok("intento adjuntar las dos, una por una", llamadas.filter((l) => l.url.includes("/promocion/acoplar")).slice(-2).map((l) => l.cuerpo.nprom), ["15112", "14898"]);
+    ok("la que vencio: dice cual y POR QUE, con las palabras del backend (no se puede adjuntar luego)",
+       avisosDeAdjuntar().slice(-1), [`La cotización se creó, pero la promoción 14898 no se pudo adjuntar: ${MSG_VENCIDA}.`]);
+
+    w.promocionesAplicadas = [{ idprom: "15112" }, { idprom: "14898" }];
+    acoplarRechazadas["15112"] = "vencida";
+    await w.acoplarPromociones(ndocu);
+    ok("si vencen varias, las nombra a todas con su motivo",
+       avisosDeAdjuntar().slice(-1), [`La cotización se creó, pero 2 promociones no se pudieron adjuntar: 15112 (${MSG_VENCIDA}); 14898 (${MSG_VENCIDA}).`]);
+
+    delete acoplarRechazadas["14898"];
+    acoplarRechazadas["15112"] = "falla";
+    w.promocionesAplicadas = [{ idprom: "15112" }];
+    await w.acoplarPromociones(ndocu);
+    ok("un fallo sin mensaje del backend: el aviso de siempre, sin inventar un motivo",
+       avisosDeAdjuntar().slice(-1), ["La cotización se creó, pero la promoción 15112 no se pudo adjuntar."]);
+
+    const antesDeSinOk = avisosDeAdjuntar().length;       // el texto es el mismo del caso anterior: se cuentan los avisos, no solo se mira el ultimo
+    acoplarRechazadas["15112"] = "sin-ok";
+    w.promocionesAplicadas = [{ idprom: "15112" }];
+    await w.acoplarPromociones(ndocu);
+    ok("una respuesta 200 que no dice `ok` tampoco se da por adjuntada: avisa, una vez",
+       [avisosDeAdjuntar().length - antesDeSinOk, avisosDeAdjuntar().slice(-1)[0]], [1, "La cotización se creó, pero la promoción 15112 no se pudo adjuntar."]);
+
+    const antes = avisosDeAdjuntar().length;
+    delete acoplarRechazadas["15112"];
+    w.promocionesAplicadas = [{ idprom: "15112" }];
+    await w.acoplarPromociones(ndocu);
+    ok("y si entran todas, no avisa de nada", avisosDeAdjuntar().length, antes);
 
     /* --------------------------------------------------------------- */
     console.log(fallos === 0

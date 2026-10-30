@@ -99,6 +99,13 @@ y están escritos contra el código, no de memoria.
   vendedor), los **reemplazos por vacaciones** (`reemplazadoPor` y `reemplazaA`), **tres meses atrás** y un cambio de regla: a un vendedor de **CARTERA** solo le
   cuenta lo que factura **él** (cambia números que ya ven los vendedores); lo contestó en la sección 9, a [respuesta-zona-clientes.md](respuesta-zona-clientes.md).
   **Las pantallas ya están construidas**; falta recorrerlas contra bdnava08.
+- **[promovigentes-grupo20.md](promovigentes-grupo20.md)** — Las **promociones vigentes** del grupo 20 (cartera y cobertura), **para ofrecer, no para aplicar**: `GET /promocion/vigentes`
+  (lo que está en promoción hoy, las que vencen antes primero; `tipo` `DESCUENTO` o `REGALO` **sin montos**, `diasRestantes`, `soloAlgunosClientes`, cuántos productos hay y cuántos con stock) y
+  `GET /promocion/vigentes/<idprom>` (los productos que se compran, con part number y `DISPONIBLE`/`AGOTADO`, **nunca el número**, y desde el 29/10 los `almacenes` con stock). Clave de menú `promovigentes`. **Ojo:** el
+  motor de cotización no miraba las fechas; el backend lo corrige en la misma entrega (ver [cierre-promovigentes-quienvender.md](cierre-promovigentes-quienvender.md)). **La pantalla ya está construida**; falta recorrerla contra el servidor de prueba.
+- **[quienvender-grupo20.md](quienvender-grupo20.md)** — **¿A quién vender hoy?**, del grupo 20: `GET /quienvender` devuelve **3 clientes para hoy** (2 para reponer y 1 para llamar, con respaldos
+  `REACTIVAR`, `SIN_COMPRAS` y `LIBRE`). Se calcula y se graba **la primera vez que el vendedor abre el módulo en el día**; todo el día recibe los mismos. **Sin botón de cambiar ni de refrescar**; sin teléfono.
+  `valorUsd` quiere decir otra cosa en cada tipo. Clave de menú `quienvender`. **La pantalla ya está construida**; falta recorrerla contra bdnava08.
 - **[vendedor-mes-grupo25.md](vendedor-mes-grupo25.md)** — El **vendedor del mes** del grupo 25: `GET
   /vendedormes/top` con, de cada marca, **los 3 vendedores del grupo 20 que más la vendieron** (puesto, venta,
   `participacion`, unidades, clientes) y su **tendencia** frente al mes anterior (`sube`, `baja`, `igual`, `nuevo`).
@@ -191,6 +198,14 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   (si se activan por separado, los tres meses desde el primer día, quién avisa a los vendedores de cartera, cómo se deshace de su lado, la dirección y claves del
   servidor de prueba) y el orden que proponemos. **Contestado el 27/10** (sección 10 de [zona-grupo34.md](zona-grupo34.md)): el backend sale completo y en un solo despliegue, después del frontend;
   falta que monten el código en el servidor de prueba y nos pasen la dirección y las claves.
+- **[respuesta-promovigentes-quienvender.md](respuesta-promovigentes-quienvender.md)** — Para el backend: **cómo leímos las promociones vigentes y «¿A quién vender hoy?»** (qué mostramos de cada campo, lo que
+  suponemos sin preguntar, lo que **no** hace el frontend), **ocho preguntas** (en qué almacenes hay stock, la fecha para que el motor de cotización deje de aplicar vencidas, que el día se cuente en hora de Lima,
+  el periodo de la cantidad en `REACTIVAR`, qué es «lo que vale lo vencido», qué vendedores dan hoy 2 de reponer y 1 de llamar por la ruta real, activar cada clave por separado y el servidor de prueba), las
+  dos cosas que decidimos nosotros (**«Vender hoy» entra en la barra inferior del móvil y Factura pasa a «Más»**) y el orden de salida: **el menú llega a todos los vendedores**.
+- **[cierre-promovigentes-quienvender.md](cierre-promovigentes-quienvender.md)** — **Respuesta del backend (29/10)** a esas ocho preguntas. Cuatro cambios respecto a lo que leímos: **`almacenes` en cada producto del detalle**
+  de una promoción, **el motor de cotización respeta las fechas** (las vencidas ya no se ofrecen ni se aplican: la cotización puede recibir un `400 promocion no registrada` si una vence mientras se arma), precisiones de rótulos
+  (`valorUsd` sin IGV y en dólares, periodo de `cantidad`, «lo que valdría reponer», el día en hora de Lima) y los 12 meses de `REACTIVAR`. **Salida: el mismo día, primero el frontend y después el backend**; se deshace con un `git revert`
+  del backend. Falta que monten el código en el servidor de prueba y recorrer las dos pantallas.
 - **[respuesta-vendedor-mes.md](respuesta-vendedor-mes.md)** — Para el backend: **cómo leímos el vendedor del mes**
   (una sola pantalla, sin hub; el top de cada marca con su tendencia leída por texto; menos de 3 o ninguno; un vendedor sin
   `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de
