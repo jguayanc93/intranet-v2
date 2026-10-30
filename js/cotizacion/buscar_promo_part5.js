@@ -257,24 +257,35 @@ async function acoplarPromociones(documento) {
                 ndocu: documento,
                 nprom: String(promo.idprom)
             });
-            if (!r || r.status !== "ok") fallidas.push(promo);
+            if (!r || r.status !== "ok") fallidas.push({ promo });
         } catch (err) {
             if (CDK.http.esError(err) && err.status === 401) throw err;
-            fallidas.push(promo);
+            /* El backend dice por que: una promocion puede VENCER entre que el
+               vendedor la aplico y que creo la cotizacion, y entonces /acoplar
+               responde `400 promocion no registrada` ("la promocion no existe,
+               esta desabilitada o ya vencio"). Esa no se puede adjuntar despues,
+               y el vendedor tiene que saberlo en vez de buscarla en el modulo de
+               promociones. Sin `msg`, el aviso es el de siempre. */
+            fallidas.push({ promo, motivo: (CDK.http.esError(err) && err.datos && err.datos.msg) || null });
         }
     }
 
     /* La cotización ya existe, así que esto no es un fallo de creación: es una
-       promoción que no entró. Se dice cuál, porque se puede adjuntar luego
-       desde el módulo de promociones sin rehacer nada. */
+       promoción que no entró. Se dice cuál, y por qué si el backend lo dijo. */
     if (fallidas.length) {
-        CDK.toast(
-            fallidas.length === 1
-                ? `La cotización se creó, pero la promoción ${fallidas[0].idprom} no se pudo adjuntar.`
-                : `La cotización se creó, pero ${fallidas.length} promociones no se pudieron adjuntar.`,
-            "aviso",
-            0
-        );
+        const conMotivo = fallidas.some((f) => f.motivo);
+        const dice = (f) => (f.motivo ? `${f.promo.idprom} (${f.motivo})` : String(f.promo.idprom));
+
+        let texto;
+        if (fallidas.length === 1) {
+            texto = `La cotización se creó, pero la promoción ${fallidas[0].promo.idprom} no se pudo adjuntar` +
+                    (fallidas[0].motivo ? `: ${fallidas[0].motivo}.` : ".");
+        } else {
+            texto = `La cotización se creó, pero ${fallidas.length} promociones no se pudieron adjuntar` +
+                    (conMotivo ? `: ${fallidas.map(dice).join("; ")}.` : ".");
+        }
+
+        CDK.toast(texto, "aviso", 0);
     }
 }
 
