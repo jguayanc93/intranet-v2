@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Promociones vigentes para ofrecer - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Promos vigentes</title>
+</head>
+
+<!-- Una sola pantalla, para el grupo 20 (cartera y cobertura): sin `?id=`, la lista de las promociones vigentes hoy; con `?id=15221`, el
+     detalle de una, con sus productos. Es para OFRECER: aplicar una promoción a una cotización sigue siendo el módulo `promocion`, que
+     no es este. No toca nada: solo lee `/v1/promocion/vigentes`. -->
+<body data-modulo="promovigentes" data-titulo="Promos vigentes">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Promos vigentes</h1>
+        <p class="cdk-cabecera__sub" id="periodo">Lo que está en promoción para ofrecer</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas la lectura de los errores. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/promovigentes/datos.js"></script>
+<script src="/js/promovigentes/promovigentes.js"></script>
+</body>
+</html>
