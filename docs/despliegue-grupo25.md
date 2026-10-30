@@ -266,6 +266,20 @@ leímos y lo que hay que confirmar está en [respuesta-listaprecios.md](respuest
 - **Cada descarga en Excel queda registrada en el backend** (módulo `reporte`, acción `lista de precios`). El frontend no hace nada para eso: mirar la lista en pantalla no se registra.
 - **No se guarda nada en el navegador**: cada vez que se abre la pantalla se pide de nuevo, para que el precio sea el de hoy.
 
+### Volver atrás de la lista de precios
+
+Entra en `main` con **su propio commit de merge** («Grupo 20: lista de precios»), encima del de promos vigentes y a quién vender hoy, así que se deshace igual y por separado, y **es lo primero que se deshace** si hay que volver atrás:
+
+```
+git log --merges -3 --format="%h %s"     # el de arriba es el de la lista de precios
+git revert -m 1 <hash del merge de la lista de precios>
+git push origin main
+```
+
+- La etiqueta **`pre-listaprecios`** marca lo que había justo antes (el merge de promos vigentes y a quién vender hoy). Probado en un clon descartable: tras el `revert`, `main` queda **idéntico** a `pre-listaprecios`.
+- **No hace falta que el backend quite nada antes**, porque la clave `listaprecios` sale apagada: mientras no esté en el menú nadie ve la entrada. **Si ya la encendieron, que la apaguen antes de deshacer el frontend**: si no, los vendedores verían una entrada genérica («LISTAPRECIOS») que lleva a un 404.
+- No toca ningún módulo que ya existía: solo agrega archivos nuevos y líneas nuevas en el catálogo, `dev/servidor.js` y los índices.
+
 ---
 
 ## 6 · Lo que este repositorio no dice
