@@ -41,6 +41,7 @@ let llamadas = [];
 let forzar = null;           // (ruta, cuerpo) -> respuesta armada, para probar errores
 let alterar = null;          // (ruta, cuerpo, resultado) -> resultado, para probar que no se calcula nada
 let retardo = 0;             // ms que tarda el Excel, para ver el boton «Generando…»
+let sinLaClave = false;      // el menu NO trae `listaprecios`: asi sale del backend hasta que la pantalla este publicada
 
 function respuesta(obj, status, tipo) {
     const cuerpo = typeof obj === "string" ? obj : JSON.stringify(obj);
@@ -85,7 +86,8 @@ function responder(url, opciones) {
     if (forzada) return entregar(forzada, cuerpo.formato === "xlsx" ? retardo : 0);
 
     if (ruta === "/vendedor") {
-        return Promise.resolve(respuesta({ status: "ok", codigo: 0, data: MENU, nombre: "CRISTOPHER GONZALES", grupo: "VENTAS-EJECUTIVOS", tipo: S.rol, tipoCambio: 3.75 }));
+        const menu = sinLaClave ? Object.fromEntries(Object.entries(MENU).filter((e) => e[0] !== "listaprecios")) : MENU;
+        return Promise.resolve(respuesta({ status: "ok", codigo: 0, data: menu, nombre: "CRISTOPHER GONZALES", grupo: "VENTAS-EJECUTIVOS", tipo: S.rol, tipoCambio: 3.75 }));
     }
 
     let r = null;
@@ -168,7 +170,7 @@ const llamadasALaLista = () => llamadas.filter((l) => l.url.includes("/reporte/l
 
 function preparar(rol) {
     marcasSim.reiniciar(rol || "CARTERA");
-    forzar = null; alterar = null; retardo = 0;
+    forzar = null; alterar = null; retardo = 0; sinLaClave = false;
 }
 
 /* =====================================================================
@@ -458,6 +460,24 @@ function preparar(rol) {
        ["Cotización", "Pedido", "Vender hoy", "Ajustes", "Factura", "Promoción", "Cuota", "Listados", "Programador", "Promos vigentes", "Lista de precios"]);
     ok("en el movil: es la pagina abierta, asi que ocupa el ultimo espacio de la barra",
        [...p.doc.querySelectorAll(".cdk-bottomnav__enlace")].map((a) => texto(a)), ["Cotización", "Pedido", "Vender hoy", "Lista de precios", "Más"]);
+
+    /* ---- con la clave APAGADA: asi sale del backend hasta que la pantalla este publicada, y asi se recorre en el servidor de prueba */
+    console.log("\n— con la clave apagada (el menu no trae «Lista de precios») —");
+    preparar("CARTERA");
+    sinLaClave = true;
+    llamadas = [];
+    p = await montar("listaprecios.html");
+    await pausa(500);
+
+    ok("entrando directo a la pagina, abre igual: pide la lista y la pinta, sin error ni redireccion",
+       [llamadasALaLista().length, filasPantalla(p).length, p.doc.querySelector(".cdk-aviso--error"), p.destinos], [1, 50, null, []]);
+    ok("el menu no la ofrece (nadie ve una entrada que lleve a otra parte), y no marca nada como activo por ella",
+       [[...p.doc.querySelectorAll("#cdk-sidebar-lista .cdk-sidebar__enlace")].map((a) => texto(a)).includes("Lista de precios"),
+        p.doc.querySelectorAll("#cdk-sidebar-lista .cdk-sidebar__enlace.es-activo, #cdk-sidebar-lista .cdk-sidebar__enlace[aria-current='page']").length], [false, 0]);
+    ok("la barra del movil queda como siempre, sin dejarla en «Más» a la fuerza",
+       [...p.doc.querySelectorAll(".cdk-bottomnav__enlace")].map((a) => texto(a)), ["Cotización", "Pedido", "Vender hoy", "Ajustes", "Más"]);
+    ok("y el Excel se baja igual (la ruta responde a cualquier vendedor del grupo 20)", await (async () => {
+        clic(p, $(p, "lp-exportar")); await pausa(300); return p.descargas.map((x) => x.nombre); })(), ["lista-precios-2026-10-30.xlsx"]);
 
     console.log(fallos ? `\n${fallos} comprobacion(es) fallaron.` : "\nTodo correcto.");
     process.exit(fallos ? 1 : 0);

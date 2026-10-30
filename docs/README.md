@@ -213,6 +213,9 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
 - **[respuesta-listaprecios.md](respuesta-listaprecios.md)** — Para el backend: **la pantalla de la lista de precios está lista** y cómo leímos su contrato (se pide una sola vez, se filtra en el navegador, de 50 en 50, los dos
   precios tal cual llegan, el Excel siempre completo y solo si es de verdad una hoja), **tres cosas que confirmar** (si el JSON de 1,4 MB viaja comprimido, que `Content-Disposition` salga por CORS también en esta ruta, y
   el servidor de prueba con cuentas) y el orden: **primero la pantalla, después la clave** `listaprecios`.
+- **[cierre-listaprecios.md](cierre-listaprecios.md)** — **Respuesta del backend (30/10)** a esas tres cosas: la pantalla está bien con el contrato, **sin observaciones**; **el JSON no viaja comprimido** (1,4 MB; se queda así en esta
+  salida y queda anotado para después); **`Content-Disposition` sí sale por CORS** en la ruta; y el servidor de prueba trae el código hoy, con la clave **apagada**: la pantalla se recorre entrando directo a `listaprecios.html`.
+  Falta recorrerla y avisar para que enciendan la clave.
 - **[respuesta-vendedor-mes.md](respuesta-vendedor-mes.md)** — Para el backend: **cómo leímos el vendedor del mes**
   (una sola pantalla, sin hub; el top de cada marca con su tendencia leída por texto; menos de 3 o ninguno; un vendedor sin
   `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de

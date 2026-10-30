@@ -268,7 +268,8 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   en pantalla (unas 6 400 filas, de 50 en 50, con filtro por familia, por marca y búsqueda) o **bajarlos a Excel**. Es solo lectura y **no lleva costo, ni stock, ni códigos del sistema** (la lista puede llegar a manos de
   los clientes): por eso es distinta del reporte de precios por marca del grupo 25. Su clave de menú es **`listaprecios`** —no `reporte`, que es del 25—, y **el backend la manda apagada hasta que esta pantalla esté
   publicada**: primero la pantalla, después la clave. El contrato es [docs/listaprecios-grupo20.md](docs/listaprecios-grupo20.md) (llegó después de los otros dos del grupo 20); lo que leímos y tres cosas que confirmar, en
-  [docs/respuesta-listaprecios.md](docs/respuesta-listaprecios.md). Para verla en la demo: `cartera20` o `vendedor20`.
+  [docs/respuesta-listaprecios.md](docs/respuesta-listaprecios.md), **y el backend contestó el 30/10** en [docs/cierre-listaprecios.md](docs/cierre-listaprecios.md): sin observaciones; el JSON **no** viaja comprimido (1,4 MB; queda anotado
+  para después); y con la clave apagada se recorre entrando directo a `listaprecios.html`. Para verla en la demo: `cartera20` o `vendedor20`.
 - **La cotización en soles (23/10) está construida y falta recorrerla contra bdnava08.** Una cotización hecha en soles se grababa
   con los importes en dólares. La pantalla ahora sigue **la regla del ERP** —precio unitario a 3 decimales, **precio con descuento a 2 decimales y ese por la
   cantidad** (el backend corrigió esta regla el 23/10), IGV y total sobre la suma—, con aritmética decimal exacta (en coma flotante

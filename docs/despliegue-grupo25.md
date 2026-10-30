@@ -262,7 +262,12 @@ leímos y lo que hay que confirmar está en [respuesta-listaprecios.md](respuest
 - La ruta responde igual a cualquier vendedor del grupo 20 aunque la clave esté apagada: se puede recorrer contra bdnava08 sin esperar al menú. El grupo 25 y el 34 reciben `403 sin permiso`.
 - **Una prioridad más, sin mover a nadie:** «Lista de precios» tiene prioridad 15, **al final**, y en un móvil queda en «Más». La barra inferior no cambia.
 - **Nada de costo ni de stock**: la lista puede llegar a manos de los clientes. Si algún día el backend agregara un campo a las filas, la pantalla **no lo muestra** (solo pinta descripción, part number, marca, familia y los dos precios).
-- **Cuentas para el recorrido:** un vendedor de cartera y uno de cobertura (V0313 y V0278), y el 126 y uno del grupo 25 (`403 sin permiso`). **El servidor de prueba todavía no tiene este código.** Las claves no van en documentos.
+- **Cuentas para el recorrido:** un vendedor de cartera y uno de cobertura (V0313 y V0278), y el 126 y uno del grupo 25 (`403 sin permiso`). Las claves se pasan aparte, no en documentos. **El backend contestó el 30/10**
+  ([cierre-listaprecios.md](cierre-listaprecios.md)): el código sale hoy a `main` y el servidor de prueba lo trae en el mismo paso que el resto del grupo 20; ellos avisan cuando esté arriba. **Con la clave apagada la pantalla se recorre
+  entrando directo a `listaprecios.html`** (la ruta responde igual a cualquier vendedor del grupo 20): hay una prueba que lo comprueba (abre, pide la lista, baja el Excel, y el menú no la ofrece ni deja la barra del móvil distinta).
+- **Lo que contestó el backend (30/10):** la pantalla está bien con el contrato, **sin observaciones**. **La respuesta JSON NO viaja comprimida** (unos 1,4 MB el JSON y 2,2 MB el Excel, sin `Content-Encoding`): se queda así en esta salida
+  y queda anotado para después, porque comprimir en el backend es una dependencia nueva que toca todas las rutas; si un proxy delante la comprime, el navegador la descomprime solo y la pantalla no cambia. **`Content-Disposition` sí sale por CORS**
+  en esta ruta, así que el Excel se guarda con la fecha (`lista-precios-AAAA-MM-DD.xlsx`). **Con datos móviles, la primera carga de la lista es lo más lento de la pantalla**: se ve «Cargando la lista de precios…» mientras llega.
 - **Cada descarga en Excel queda registrada en el backend** (módulo `reporte`, acción `lista de precios`). El frontend no hace nada para eso: mirar la lista en pantalla no se registra.
 - **No se guarda nada en el navegador**: cada vez que se abre la pantalla se pide de nuevo, para que el precio sea el de hoy.
 
