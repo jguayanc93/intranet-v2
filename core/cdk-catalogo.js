@@ -44,6 +44,8 @@
         promovigentes: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z',
         /* Un telefono: a quien llamar o reponer hoy. */
         quienvender: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z',
+        /* Una moneda con el signo del dolar: la lista de precios de venta. */
+        listaprecios: 'M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
 
         ajuste:      'M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75',
 
@@ -338,6 +340,19 @@
             etiqueta: "Vender hoy",            // corto: en la barra inferior de un movil «A quien vender hoy» se corta. La pantalla lleva el titulo completo
             icono: ICONOS.quienvender,
             prioridad: 2.5,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* La lista de precios de venta del grupo 20 (cartera y cobertura; desde el 30/10/2026): se ve en pantalla o se baja a Excel. Solo
+           lectura, sin costo ni stock (puede llegar a manos de los clientes). Una clave y una pagina en la raiz (`listaprecios.html`). La
+           clave NO es `reporte`: esa es del menu de reportes por marca del grupo 25, y su ruta le daria 403 a un vendedor. Prioridad 15,
+           despues de todo: es de consulta, y en un movil queda en «Mas» sin desplazar nada. El backend la manda APAGADA hasta que esta
+           pantalla este publicada. Ver docs/listaprecios-grupo20.md. */
+        listaprecios: {
+            etiqueta: "Lista de precios",
+            icono: ICONOS.listaprecios,
+            prioridad: 15,
             carpeta: "",
             accesos: {}
         },

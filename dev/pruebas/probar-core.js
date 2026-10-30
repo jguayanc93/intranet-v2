@@ -194,6 +194,24 @@ ok("ni el 25 ni el 34 los traen en su menu, asi que no cambia nada para ellos",
     CDK.catalogo.ordenar(["clientes", "probabilidad", "avance", "cotizacion"])],
    [["cotizacion", "marcas", "ajuste", "cuota", "reporte", "cobertura", "vendedormes"], ["cotizacion", "avance", "probabilidad", "clientes"]]);
 
+/* listaprecios (grupo 20, desde el 30/10/2026): la lista de precios de venta, una pantalla en la raiz y sin acciones. NO es `reporte`, que es
+   el menu de reportes por marca del grupo 25 (y su ruta le daria 403 a un vendedor). Prioridad 15: al final, en «Mas», sin mover a nadie. */
+ok("listaprecios es modulo conocido, en la raiz y sin acciones",
+   [CDK.catalogo.conocido("listaprecios"), CDK.catalogo.hub("listaprecios"), Object.keys(CDK.catalogo.modulo("listaprecios").accesos), CDK.catalogo.modulo("listaprecios").etiqueta],
+   [true, "/demo1/listaprecios.html", [], "Lista de precios"]);
+ok("no es `reporte`: otra clave, otra pantalla, otro nombre",
+   [CDK.catalogo.hub("listaprecios") !== CDK.catalogo.hub("reporte"), CDK.catalogo.modulo("listaprecios").etiqueta !== CDK.catalogo.modulo("reporte").etiqueta,
+    CDK.catalogo.modulo("listaprecios").icono !== CDK.catalogo.modulo("reporte").icono], [true, true, true]);
+ok("el menu de un vendedor del grupo 20: «Lista de precios» es lo ultimo, despues de «Promos vigentes»",
+   CDK.catalogo.ordenar(["listaprecios", "promovigentes", "programador", "listas", "cuota", "promocion", "factura", "ajuste", "quienvender", "pedido", "cotizacion"]),
+   ["cotizacion", "pedido", "quienvender", "ajuste", "factura", "promocion", "cuota", "listas", "programador", "promovigentes", "listaprecios"]);
+ok("la barra inferior del movil no cambia por ella: los mismos cuatro con o sin ella",
+   [CDK.catalogo.ordenar(["cotizacion", "pedido", "factura", "ajuste", "quienvender"]).slice(0, 4),
+    CDK.catalogo.ordenar(["cotizacion", "pedido", "factura", "ajuste", "quienvender", "listaprecios"]).slice(0, 4)],
+   [["cotizacion", "pedido", "quienvender", "ajuste"], ["cotizacion", "pedido", "quienvender", "ajuste"]]);
+ok("tiene su propio icono, y no el generico de los modulos que el catalogo no conoce",
+   CDK.catalogo.modulo("listaprecios").icono !== CDK.catalogo.modulo("clave-inventada").icono, true);
+
 /* cobertura (grupo 25): otra pantalla en la raiz. No es la cobertura del grupo 20, que es un tipo de vendedor. */
 ok("cobertura es modulo conocido", CDK.catalogo.conocido("cobertura"), true);
 ok("y vive en la raiz",            CDK.catalogo.hub("cobertura"), "/demo1/cobertura.html");
