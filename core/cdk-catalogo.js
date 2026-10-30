@@ -40,6 +40,10 @@
         /* Una flecha que sube: hacia donde va, y con que probabilidad. */
         probabilidad: 'M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941',
         marcas:      'M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3ZM6 6h.008v.008H6V6Z',
+        /* Un cupon: lo que esta en promocion para ofrecer (no es el regalo de `promocion`, que es aplicar una a una cotizacion). */
+        promovigentes: 'M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z',
+        /* Un telefono: a quien llamar o reponer hoy. */
+        quienvender: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z',
 
         ajuste:      'M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75',
 
@@ -310,6 +314,30 @@
             etiqueta: "Cobertura",
             icono: ICONOS.cobertura,           // dos personas y una detras: los clientes que compran
             prioridad: 13,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* Las promociones VIGENTES para ofrecer (grupo 20, cartera y cobertura; desde el 29/10/2026): solo lectura. Una clave en el
+           menu y una pagina en la raiz (`promovigentes.html`, que con `?id=15221` es el detalle de una). No es `promocion`, que es
+           adjuntar y quitar promociones en una cotizacion. Prioridad 14, despues de todo: es de consulta, y en un movil queda en «Mas»
+           sin desplazar nada. Ver docs/promovigentes-grupo20.md. */
+        promovigentes: {
+            etiqueta: "Promos vigentes",
+            icono: ICONOS.promovigentes,
+            prioridad: 14,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* «¿A quien vender hoy?» (grupo 20, cartera y cobertura; desde el 29/10/2026): los 3 clientes del dia, de lectura. Una clave y
+           una pagina en la raiz (`quienvender.html`). Es lo primero que un vendedor mira al empezar el dia, asi que lleva prioridad 2,5:
+           entra en la barra inferior del movil en el tercer lugar, y Factura pasa a «Mas» (decidido el 29/10: no es un problema). Es la
+           unica prioridad que no es entera; las demas no se mueven. Ver docs/quienvender-grupo20.md. */
+        quienvender: {
+            etiqueta: "Vender hoy",            // corto: en la barra inferior de un movil «A quien vender hoy» se corta. La pantalla lleva el titulo completo
+            icono: ICONOS.quienvender,
+            prioridad: 2.5,
             carpeta: "",
             accesos: {}
         },

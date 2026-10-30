@@ -172,6 +172,28 @@ ok("clientes es modulo conocido, en la raiz y sin acciones",
 ok("el menu de zona son cuatro: cotizacion, avance, probabilidad y clientes, en ese orden",
    CDK.catalogo.ordenar(["clientes", "probabilidad", "avance", "cotizacion"]), ["cotizacion", "avance", "probabilidad", "clientes"]);
 
+/* promovigentes y quienvender (grupo 20, desde el 29/10/2026): dos pantallas en la raiz, sin acciones. Llegan al menu de TODOS los
+   vendedores. «Vender hoy» entra en la barra inferior del movil en el tercer lugar (prioridad 2,5, decidido el 29/10: Factura pasa a «Mas»);
+   «Promos vigentes» va al final, en «Mas». Los nombres del menu son cortos porque en la barra el texto se corta. */
+ok("promovigentes y quienvender son modulos conocidos, en la raiz y sin acciones",
+   [["promovigentes", "quienvender"].map((k) => CDK.catalogo.conocido(k)), ["promovigentes", "quienvender"].map((k) => CDK.catalogo.hub(k)),
+    ["promovigentes", "quienvender"].map((k) => Object.keys(CDK.catalogo.modulo(k).accesos))],
+   [[true, true], ["/demo1/promovigentes.html", "/demo1/quienvender.html"], [[], []]]);
+ok("sus nombres en el menu: «Promos vigentes» y «Vender hoy» (cortos: la barra inferior los corta)",
+   [CDK.catalogo.modulo("promovigentes").etiqueta, CDK.catalogo.modulo("quienvender").etiqueta], ["Promos vigentes", "Vender hoy"]);
+ok("el menu de un vendedor del grupo 20: «Vender hoy» tercero, y «Promos vigentes» al final",
+   CDK.catalogo.ordenar(["promovigentes", "programador", "listas", "cuota", "promocion", "factura", "ajuste", "quienvender", "pedido", "cotizacion"]),
+   ["cotizacion", "pedido", "quienvender", "ajuste", "factura", "promocion", "cuota", "listas", "programador", "promovigentes"]);
+ok("«Vender hoy» es lo unico que desplaza a alguien de la barra: Factura sigue siendo la cuarta sin el, y pasa a la quinta con el",
+   [CDK.catalogo.ordenar(["cotizacion", "pedido", "factura", "ajuste"]).indexOf("factura"),
+    CDK.catalogo.ordenar(["cotizacion", "pedido", "factura", "ajuste", "quienvender"]).indexOf("factura")], [3, 4]);
+ok("no se mueve ninguna otra prioridad: las de siempre siguen enteras y en su sitio",
+   ["cotizacion", "pedido", "ajuste", "factura", "promocion", "cuota", "listas", "programador"].map((k) => CDK.catalogo.modulo(k).prioridad), [1, 2, 3, 3, 4, 5, 6, 7]);
+ok("ni el 25 ni el 34 los traen en su menu, asi que no cambia nada para ellos",
+   [CDK.catalogo.ordenar(["marcas", "cuota", "reporte", "cobertura", "ajuste", "vendedormes", "cotizacion"]),
+    CDK.catalogo.ordenar(["clientes", "probabilidad", "avance", "cotizacion"])],
+   [["cotizacion", "marcas", "ajuste", "cuota", "reporte", "cobertura", "vendedormes"], ["cotizacion", "avance", "probabilidad", "clientes"]]);
+
 /* cobertura (grupo 25): otra pantalla en la raiz. No es la cobertura del grupo 20, que es un tipo de vendedor. */
 ok("cobertura es modulo conocido", CDK.catalogo.conocido("cobertura"), true);
 ok("y vive en la raiz",            CDK.catalogo.hub("cobertura"), "/demo1/cobertura.html");
