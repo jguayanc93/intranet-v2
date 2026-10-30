@@ -278,8 +278,9 @@
            vendedores del grupo 20. Como reporte, marcas y cobertura, es una pantalla y no un hub: no hay
            `GET /avance` con accesos, asi que el patron de permisos dinamicos no aplica y avance.html vive en la
            raiz. Ojo con el nombre: no es el avance de la cuota PROPIA del vendedor (js/cuota/avance.js, en el
-           modulo `cuota`), sino el de todos. Prioridades 11 y 12: el menu de zona son tres modulos, asi que
-           caben todos en la barra de abajo de un movil. Ver docs/zona-grupo34.md. */
+           modulo `cuota`), sino el de todos. Prioridades 11, 12 y 13: el menu de zona son cuatro modulos
+           (cotizacion, avance, probabilidad y clientes), asi que caben justo en los cuatro espacios de la barra
+           de abajo de un movil (el quinto boton es siempre «Mas»). Ver docs/zona-grupo34.md. */
         avance: {
             etiqueta: "Avance",
             icono: ICONOS.avance,
@@ -295,6 +296,20 @@
             etiqueta: "Probabilidad",
             icono: ICONOS.probabilidad,
             prioridad: 12,
+            carpeta: "",
+            accesos: {}
+        },
+
+        /* Los clientes de UN vendedor del grupo 20: su cartera si es de CARTERA, su cobertura si es de COBERTURA (desde el
+           24/10/2026). Una sola clave en el menu y una sola pantalla (`clientes.html`): el menu no trae acciones, y es la
+           pantalla la que elige la ruta, `/zona/cartera` o `/zona/cobertura`, por el tipo del vendedor. Ojo con el nombre: la
+           CLAVE es `clientes` (la que manda el backend: `cobertura` ya es la cobertura de clientes por marca del grupo 25, y
+           `/lista/clientes` los clientes del grupo 20), pero lo que ve el jefe de zona se llama **Cobertura**. No chocan: el
+           menu de zona y el del grupo 25 nunca son el mismo. */
+        clientes: {
+            etiqueta: "Cobertura",
+            icono: ICONOS.cobertura,           // dos personas y una detras: los clientes que compran
+            prioridad: 13,
             carpeta: "",
             accesos: {}
         },

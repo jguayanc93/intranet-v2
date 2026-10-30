@@ -62,7 +62,7 @@ const PERFILES = {
        login y en cualquier ruta, hasta que se decida (docs/zona-grupo34.md, seccion 1). */
     zona126: {
         nombre: "Cristhiam Vaca", grupo: GRUPO_34, registrado: true, tipo: "ZONA",
-        nota: "jefe de zona (usuario 126): ve el avance de la cuota de todo el grupo 20 y la probabilidad de cada vendedor"
+        nota: "jefe de zona (usuario 126): ve el avance de la cuota de todo el grupo 20, la probabilidad de cada vendedor y su cartera o cobertura de clientes"
     },
     zona297: {
         nombre: "Diego Moscoso", grupo: GRUPO_34, registrado: true, tipo: "ZONA", sinAcceso: true,

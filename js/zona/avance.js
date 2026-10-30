@@ -16,6 +16,13 @@
  *     minutos mientras la pantalla se ve y es el mes en curso, y con un botón, nunca más seguido.
  *   · Un mes cerrado no tiene semáforo, ni lo de hoy, ni proyección ni probabilidad: ahí manda si **logró** la meta.
  *   · Un vendedor sin cuota ese mes no sale en la lista: va aparte. Sin ningún vendedor con cuota no es un error.
+ *   · **Reemplazos por vacaciones** (`reemplazadoPor` y `reemplazaA`, desde el 24/10/2026): junto al dueño de una cartera se
+ *     dice quién la atendió, y junto a quien la atendió, a quién reemplazó. Vienen en las dos listas, y el reemplazado
+ *     suele estar en la de quienes no registraron cuota. **No están registrados en ninguna parte: el backend los deduce de
+ *     las facturas**, y por eso la pantalla dice «parece» y no lo da por hecho.
+ *   · Se puede mirar el mes en curso y **tres** anteriores (antes, dos).
+ *   · Cada fila, con cuota o sin ella, ofrece «Ver sus clientes» (`clientes.html`) **solo si el menu trae `clientes`**: sin ese
+ *     modulo el enlace llevaria a una pantalla que el backend no sirve. Va con su `tipo` como pista.
  *
  * Ver docs/zona-grupo34.md.
  */
@@ -35,13 +42,14 @@
     var REFRESCO_MS = 3 * 60 * 1000;
 
     var datos = null;                   // lo ultimo que dijo GET /zona/avance
-    var periodo = null;                 // null = el mes en curso; { anno, mes } = uno de los dos anteriores
+    var periodo = null;                 // null = el mes en curso; { anno, mes } = uno de los tres anteriores
     var actual = null;                  // { anno, mes } del mes en curso, en cuanto el servidor lo dice
     var filtroEstado = "todos";
     var filtroTipo = "todos";
     var busqueda = "";
     var ticket = 0;                     // descarta respuestas de pedidos viejos
     var reloj = null;                   // el siguiente refresco automatico
+    var conClientes = false;            // ¿el menu de este usuario trae `clientes`? Solo entonces cada fila ofrece sus clientes
 
     cargar();
 
@@ -79,8 +87,10 @@
     }
 
     /* ---------------------------------------------------------------
-     * Meses: el en curso y los dos anteriores
+     * Meses: el en curso y los tres anteriores
      * ------------------------------------------------------------- */
+    var MESES_ATRAS = 3;                // lo que acepta el backend; un mes mas atras es `400 periodo invalido`
+
     function claveDe(p) { return p.anno + "-" + (p.mes < 10 ? "0" : "") + p.mes; }
 
     function mesEnCurso() {
@@ -97,10 +107,10 @@
     function selectorDeMes() {
         var base = mesEnCurso();
         var opciones = [{ valor: "", texto: M.periodo(base) + " (este mes)" }];
-        [1, 2].forEach(function (n) {
+        for (var n = 1; n <= MESES_ATRAS; n++) {
             var p = mesesAtras(base, n);
             opciones.push({ valor: claveDe(p), texto: M.periodo(p) });
-        });
+        }
 
         var elegida = periodo ? claveDe(periodo) : "";
         var s = el("select", { id: "za-mes", clase: "cdk-entrada" }, opciones.map(function (o) {
@@ -134,6 +144,17 @@
      * ============================================================= */
 
     /**
+     * ¿El menu trae `clientes`? Sin ese modulo el enlace de cada fila llevaria a una pantalla que el backend no sirve. La lista de
+     * modulos ya la pide el shell: esto comparte esa peticion (o la cache), no hace otra. Si no se puede saber, no hay enlace.
+     */
+    function sabeDeClientes() {
+        return CDK.permisos.modulos().then(
+            function (modulos) { conClientes = !!(modulos && modulos.clientes); },
+            function () { conClientes = false; }
+        );
+    }
+
+    /**
      * `silencioso`: al cambiar de mes o al refrescar se pide sin tapar la pantalla con un spinner, y si no se puede, la
      * pantalla buena se queda como estaba. Devuelve una promesa de si pinto.
      */
@@ -141,8 +162,9 @@
         var mio = ++ticket;
         if (!silencioso) CDK.estados.cargando(contenido, "Calculando el avance de los vendedores…");
 
-        return Z.avance(periodo)
-            .then(function (d) {
+        return Promise.all([Z.avance(periodo), sabeDeClientes()])
+            .then(function (resultado) {
+                var d = resultado[0];
                 if (mio !== ticket) return false;
 
                 /* Algo que no es lo que dice el contrato no se pinta a ojo. */
@@ -355,6 +377,44 @@
         return seccion;
     }
 
+    /**
+     * Los reemplazos por vacaciones de un vendedor, con cuota o sin ella: quien atendio su cartera, y a quienes atendio el.
+     * Todo viene del backend (`venta` y `porcentaje` son lo que facturo el que reemplazo a los clientes del dueño, y que
+     * parte fue de lo que todos les facturaron). Sin los campos —un backend anterior al 24/10— no hay nada que decir.
+     */
+    function notasDeReemplazo(x) {
+        var notas = [];
+
+        function detalle(r) { return "el " + porciento(r.porcentaje) + " de lo facturado a sus clientes: " + dolares(r.venta); }
+
+        if (x.reemplazadoPor) {
+            notas.push(el("p", { clase: "cdk-pista", id: "za-reemplazado-" + x.codusu, "data-reemplazo": "reemplazado", style: "margin:8px 0 0",
+                                 texto: "Parece estar de vacaciones: su cartera la atendió " + x.reemplazadoPor.nombre + " (" + detalle(x.reemplazadoPor) + ")." }));
+        }
+
+        (Array.isArray(x.reemplazaA) ? x.reemplazaA : []).forEach(function (r) {
+            notas.push(el("p", { clase: "cdk-pista", id: "za-reemplaza-" + x.codusu + "-" + r.codven, "data-reemplazo": "reemplaza", style: "margin:8px 0 0",
+                                 texto: "Reemplaza a " + r.nombre + ": atendió su cartera (" + detalle(r) + ")." }));
+        });
+
+        return notas;
+    }
+
+    /**
+     * Los enlaces de una fila: su probabilidad y, si el menu trae `clientes`, sus clientes. A `clientes.html` va su `tipo` como
+     * pista (el backend tiene una ruta por tipo, y la pantalla prueba la otra si el de ese mes era distinto).
+     */
+    function accionesDe(x, idProbabilidad) {
+        var enlaces = [el("a", { href: CDK.rutas.app("/probabilidad.html?codusu=" + encodeURIComponent(x.codusu)), clase: "cdk-enlace-accion",
+                                 id: idProbabilidad, texto: "Ver su probabilidad ›" })];
+
+        if (conClientes) {
+            enlaces.push(el("a", { href: CDK.rutas.app("/clientes.html?codusu=" + encodeURIComponent(x.codusu) + "&tipo=" + encodeURIComponent(x.tipo || "")),
+                                   clase: "cdk-enlace-accion", id: "za-ver-clientes-" + x.codusu, texto: "Ver sus clientes ›" }));
+        }
+        return el("div", { clase: "cdk-articulo__acciones" }, enlaces);
+    }
+
     /** Lo que se dice de la probabilidad: el numero, o por que no hay. */
     function textoDeProbabilidad(v) {
         if (v.motivo === "historia insuficiente") return "Vendedor nuevo: todavía no hay historia para calcular su probabilidad.";
@@ -404,6 +464,8 @@
             })));
         }
 
+        notasDeReemplazo(v).forEach(function (n) { cuerpo.push(n); });
+
         if (vivo && v.proyeccion !== null && v.proyeccion !== undefined) {
             cuerpo.push(el("p", { clase: "cdk-pista", id: "za-proyeccion-" + v.codusu, style: "margin:8px 0 0",
                                   texto: "A su ritmo de los últimos 90 días cerraría en " + dolares(v.proyeccion) + "." }));
@@ -414,10 +476,7 @@
 
         cuerpo.push(el("p", { clase: "cdk-pista", id: "za-anterior-" + v.codusu, style: "margin:4px 0 0", texto: textoDelMesAnterior(v) }));
 
-        cuerpo.push(el("div", { style: "margin-top:10px" }, [
-            el("a", { href: CDK.rutas.app("/probabilidad.html?codusu=" + encodeURIComponent(v.codusu)), clase: "cdk-enlace-accion",
-                      id: "za-ver-probabilidad-" + v.codusu, texto: "Ver su probabilidad ›" })
-        ]));
+        cuerpo.push(accionesDe(v, "za-ver-probabilidad-" + v.codusu));
 
         var li = el("li", { clase: "cdk-articulo" }, [el("div", { clase: "cdk-articulo__cuerpo" }, cuerpo)]);
         li.setAttribute("data-codusu", v.codusu);
@@ -439,12 +498,8 @@
             var li = el("li", { clase: "cdk-articulo" }, [el("div", { clase: "cdk-articulo__cuerpo" }, [
                 el("div", { clase: "cdk-articulo__nombre", style: "overflow-wrap:anywhere", texto: s.nombre }),
                 el("div", { clase: "cdk-articulo__detalle", texto: (TIPOS[s.tipo] || s.tipo || "") + " · " + s.codven }),
-                el("div", { clase: "cdk-articulo__datos" }, detalle),
-                el("div", { style: "margin-top:8px" }, [
-                    el("a", { href: CDK.rutas.app("/probabilidad.html?codusu=" + encodeURIComponent(s.codusu)), clase: "cdk-enlace-accion",
-                              texto: "Ver su probabilidad ›" })
-                ])
-            ])]);
+                el("div", { clase: "cdk-articulo__datos" }, detalle)
+            ].concat(notasDeReemplazo(s), [accionesDe(s, null)]))]);
             li.setAttribute("data-codusu", s.codusu);
             return li;
         });

@@ -61,7 +61,7 @@ lista.
 | `jefatura25` | Jefatura registrada: ve el panel de su familia. En Reportes ve las suyas y las de sus especialistas de su familia. En Ajustes recibe, además de lo suyo, lo de las marcas sin dueño de su familia. |
 | `vendedor20` | **Del grupo 20**, no del 25: un vendedor que pide ajustes de precio y ve sus respuestas. Sin marcas ni reportes. Sirve para ver el otro lado de Ajustes: puede enviar la cotización `009-00970001` (tres responsables, una línea sin dueño y dos promociones) o el pedido `009-00775010`, en soles. |
 | `sintc20` | **Del grupo 20**, vendedor **sin tipo de cambio hoy** (`/vendedor` trae `tipoCambio: null`): la cotización nueva no deja elegir soles y dice por qué, y `/pegar` responde `tipcambio no registrado`. |
-| `zona126` | **Del grupo 34**, jefe de zona (el usuario 126): su menú es solo Cotización, **Avance** y **Probabilidad**; ve el avance de la cuota de todo el grupo 20 y la probabilidad de cada vendedor. |
+| `zona126` | **Del grupo 34**, jefe de zona (el usuario 126): su menú es solo Cotización, **Avance**, **Probabilidad** y **Cobertura**; ve el avance de la cuota de todo el grupo 20, la probabilidad de cada vendedor y su cartera o su cobertura de clientes. |
 | `zona297` | Jefe de zona **sin acceso** (el usuario 297): el login responde 403 `usuario sin acceso` y no entra. |
 | `random25` | Uno de los seis anteriores, al azar, con un nombre inventado. |
 | `malo` | Contraseña incorrecta. |
@@ -241,12 +241,18 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   **hasta qué día hay ventas** (`ventasHasta`). El contrato es [docs/vendedor-mes-grupo25.md](docs/vendedor-mes-grupo25.md);
   **el backend ya contestó todas las preguntas** ([docs/respuesta-vendedor-mes.md](docs/respuesta-vendedor-mes.md)) y solo falta
   el servidor de prueba.
-- **El jefe de zona (grupo 34) está construido y falta recorrerlo contra bdnava08.** Dos pantallas en la raíz (22/10): **Avance**
+- **El jefe de zona (grupo 34) está construido y falta recorrerlo contra bdnava08.** Tres pantallas en la raíz (22/10 y 24/10): **Avance**
   (`avance.html`: el avance de la cuota de TODOS los vendedores del grupo 20, con semáforo, lo que ya pasó del mes, proyección, cómo cerró
-  el mes anterior y los que no registraron cuota; se actualiza sola cada 3 minutos) y **Probabilidad** (`probabilidad.html`: la de un vendedor
-  y cómo iba, a esta misma altura, en los 3 meses anteriores). Su menú es exactamente `cotizacion`, `avance` y `probabilidad`, y solo
-  entra el usuario 126: el 297 recibe `403 usuario sin acceso`, en el login y en cualquier ruta (el cliente HTTP lo lleva al login). El
-  contrato es [docs/zona-grupo34.md](docs/zona-grupo34.md); **el backend ya contestó todas las preguntas** ([docs/respuesta-zona.md](docs/respuesta-zona.md); los montos de la probabilidad son con IGV, como la pantalla ya decía) y solo falta el servidor de prueba.
+  el mes anterior, los que no registraron cuota y, desde el 24/10, **los reemplazos por vacaciones** y **tres meses atrás**; se actualiza sola
+  cada 3 minutos), **Probabilidad** (`probabilidad.html`: la de un vendedor y cómo iba, a esta misma altura, en los 3 meses anteriores) y
+  **Cobertura** (`clientes.html`, 24/10; en pantalla se llama **Cobertura** y su clave del menú sigue siendo `clientes`. Primero se elige **cartera o cobertura**, luego un vendedor de ese tipo —o se llega desde «Ver sus clientes» en cada fila del avance, que solo sale si el menú trae `clientes`— y muestra su **cartera** o su **cobertura**, con la lista de clientes en filas de dos líneas y pestañas para filtrarla —la pantalla elige `/zona/cartera` o
+  `/zona/cobertura` por el tipo que tuvo ese mes, y si el backend dice «vendedor de otro tipo» prueba la otra—, con lo que le cuenta y lo que no, los
+  libres, los clientes en riesgo y la comparación con los 3 meses anteriores). Su menú es exactamente `cotizacion`, `avance`, `probabilidad` y
+  `clientes`, y solo entra el usuario 126: el 297 recibe `403 usuario sin acceso`, en el login y en cualquier ruta (el cliente HTTP lo lleva al login). El
+  contrato es [docs/zona-grupo34.md](docs/zona-grupo34.md); **el backend ya contestó todas las preguntas**
+  ([docs/respuesta-zona.md](docs/respuesta-zona.md) y [docs/respuesta-zona-clientes.md](docs/respuesta-zona-clientes.md), que contestó en la sección 9 del contrato)
+  y solo falta el servidor de prueba. **Ojo con el orden:** el backend no debe mostrar `clientes` en el menú antes de que esta pantalla esté
+  desplegada, y la nueva regla de CARTERA cambia números que los vendedores ven hoy (ver [docs/despliegue-grupo25.md](docs/despliegue-grupo25.md), sección 5).
 - **La cotización en soles (23/10) está construida y falta recorrerla contra bdnava08.** Una cotización hecha en soles se grababa
   con los importes en dólares. La pantalla ahora sigue **la regla del ERP** —precio unitario a 3 decimales, **precio con descuento a 2 decimales y ese por la
   cantidad** (el backend corrigió esta regla el 23/10), IGV y total sobre la suma—, con aritmética decimal exacta (en coma flotante

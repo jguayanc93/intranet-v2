@@ -90,12 +90,15 @@ y están escritos contra el código, no de memoria.
   Se actualizó el 21/10 con nuestras respuestas: `/clientes` sin tope (máximo real 636), `columnas`, **exportar a Excel**
   (`&formato=xlsx`), `formato invalido`, y que un 0 en `unidades` no siempre es «devolvió todo». **La pantalla ya está
   construida**; falta recorrerla contra bdnava08.
-- **[zona-grupo34.md](zona-grupo34.md)** — El **jefe de zona (grupo 34)**: dos módulos de solo lectura sobre **todo el grupo 20**. `GET /zona/avance`
+- **[zona-grupo34.md](zona-grupo34.md)** — El **jefe de zona (grupo 34)**: tres módulos de solo lectura sobre **todo el grupo 20**. `GET /zona/avance`
   (el avance de la cuota de cada vendedor que la registró, con **semáforo**, `esperado` —cuánto del mes ya pasó—, proyección, probabilidad y **cómo cerró
   el mes anterior**; aparte, los que **no registraron cuota**) y `GET /zona/probabilidad?codusu=` (la probabilidad de llegar a su cuota, y cómo iba en los 3
   meses anteriores a la misma altura del mes, con cómo terminó cada uno). **En dólares y con IGV**, no la regla de la cuota por marca. Su menú es
-  `cotizacion`, `avance` y `probabilidad`; solo entra el usuario 126 (el 297, `403 usuario sin acceso`). Se actualizó el 22/10 con nuestra respuesta: **todos los montos de los
-  dos módulos son con IGV** (también los de la probabilidad). **Las pantallas ya están construidas**; falta recorrerlas contra bdnava08.
+  `cotizacion`, `avance`, `probabilidad` y `clientes`; solo entra el usuario 126 (el 297, `403 usuario sin acceso`). Se actualizó el 22/10 con nuestra respuesta: **todos los montos de los
+  dos módulos son con IGV** (también los de la probabilidad). **El 24/10 suma** el módulo `clientes` (`GET /zona/cartera` y `GET /zona/cobertura`, según el tipo del
+  vendedor), los **reemplazos por vacaciones** (`reemplazadoPor` y `reemplazaA`), **tres meses atrás** y un cambio de regla: a un vendedor de **CARTERA** solo le
+  cuenta lo que factura **él** (cambia números que ya ven los vendedores); lo contestó en la sección 9, a [respuesta-zona-clientes.md](respuesta-zona-clientes.md).
+  **Las pantallas ya están construidas**; falta recorrerlas contra bdnava08.
 - **[vendedor-mes-grupo25.md](vendedor-mes-grupo25.md)** — El **vendedor del mes** del grupo 25: `GET
   /vendedormes/top` con, de cada marca, **los 3 vendedores del grupo 20 que más la vendieron** (puesto, venta,
   `participacion`, unidades, clientes) y su **tendencia** frente al mes anterior (`sube`, `baja`, `igual`, `nuevo`).
@@ -183,6 +186,11 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   que lleva al login; el avance con su semáforo dicho con texto, la marca de lo que ya pasó del mes, los que no registraron cuota, y los meses cerrados sin
   semáforo; la probabilidad con sus cuatro meses, los motivos sin inventar un número y el pasado en pasado), **sus respuestas a la pregunta**
   (los montos de la probabilidad **sí** son con IGV) **y a la sugerencia** (el texto del 297 se queda como está), ya reflejadas, y los casos que recorreremos contra bdnava08.
+- **[salida-zona-grupo34.md](salida-zona-grupo34.md)** — Para el backend: **en qué orden sale la actualización del 24/10 del jefe de zona** y qué necesitamos de ellos.
+  Qué pasa con cada cambio (`clientes` en el menú, la regla de CARTERA, los reemplazos, los tres meses) según salga primero el frontend o el backend, **cinco preguntas**
+  (si se activan por separado, los tres meses desde el primer día, quién avisa a los vendedores de cartera, cómo se deshace de su lado, la dirección y claves del
+  servidor de prueba) y el orden que proponemos. **Contestado el 27/10** (sección 10 de [zona-grupo34.md](zona-grupo34.md)): el backend sale completo y en un solo despliegue, después del frontend;
+  falta que monten el código en el servidor de prueba y nos pasen la dirección y las claves.
 - **[respuesta-vendedor-mes.md](respuesta-vendedor-mes.md)** — Para el backend: **cómo leímos el vendedor del mes**
   (una sola pantalla, sin hub; el top de cada marca con su tendencia leída por texto; menos de 3 o ninguno; un vendedor sin
   `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de
