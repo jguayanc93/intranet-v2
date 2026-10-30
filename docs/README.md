@@ -106,6 +106,10 @@ y están escritos contra el código, no de memoria.
 - **[quienvender-grupo20.md](quienvender-grupo20.md)** — **¿A quién vender hoy?**, del grupo 20: `GET /quienvender` devuelve **3 clientes para hoy** (2 para reponer y 1 para llamar, con respaldos
   `REACTIVAR`, `SIN_COMPRAS` y `LIBRE`). Se calcula y se graba **la primera vez que el vendedor abre el módulo en el día**; todo el día recibe los mismos. **Sin botón de cambiar ni de refrescar**; sin teléfono.
   `valorUsd` quiere decir otra cosa en cada tipo. Clave de menú `quienvender`. **La pantalla ya está construida**; falta recorrerla contra bdnava08.
+- **[listaprecios-grupo20.md](listaprecios-grupo20.md)** — La **lista de precios del grupo 20** (cartera y cobertura): `POST /reporte/listaprecios` con `{ formato: "json" | "xlsx" }`, solo lectura. Los precios de venta de los
+  productos vigentes de 8 familias (unas **6 400 filas**, sin paginar), en dólares, **sin IGV y con IGV**, ya ordenados; **sin costo, sin stock y sin códigos del sistema**, porque la lista puede llegar a manos de los clientes
+  (por eso no es el reporte de precios del grupo 25). El Excel trae siempre la lista completa. Clave de menú **`listaprecios`** (no `reporte`), que el backend manda **apagada** hasta que la pantalla esté publicada.
+  **La pantalla ya está construida**; falta recorrerla contra bdnava08.
 - **[vendedor-mes-grupo25.md](vendedor-mes-grupo25.md)** — El **vendedor del mes** del grupo 25: `GET
   /vendedormes/top` con, de cada marca, **los 3 vendedores del grupo 20 que más la vendieron** (puesto, venta,
   `participacion`, unidades, clientes) y su **tendencia** frente al mes anterior (`sube`, `baja`, `igual`, `nuevo`).
@@ -206,6 +210,9 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   de una promoción, **el motor de cotización respeta las fechas** (las vencidas ya no se ofrecen ni se aplican: la cotización puede recibir un `400 promocion no registrada` si una vence mientras se arma), precisiones de rótulos
   (`valorUsd` sin IGV y en dólares, periodo de `cantidad`, «lo que valdría reponer», el día en hora de Lima) y los 12 meses de `REACTIVAR`. **Salida: el mismo día, primero el frontend y después el backend**; se deshace con un `git revert`
   del backend. Falta que monten el código en el servidor de prueba y recorrer las dos pantallas.
+- **[respuesta-listaprecios.md](respuesta-listaprecios.md)** — Para el backend: **la pantalla de la lista de precios está lista** y cómo leímos su contrato (se pide una sola vez, se filtra en el navegador, de 50 en 50, los dos
+  precios tal cual llegan, el Excel siempre completo y solo si es de verdad una hoja), **tres cosas que confirmar** (si el JSON de 1,4 MB viaja comprimido, que `Content-Disposition` salga por CORS también en esta ruta, y
+  el servidor de prueba con cuentas) y el orden: **primero la pantalla, después la clave** `listaprecios`.
 - **[respuesta-vendedor-mes.md](respuesta-vendedor-mes.md)** — Para el backend: **cómo leímos el vendedor del mes**
   (una sola pantalla, sin hub; el top de cada marca con su tendencia leída por texto; menos de 3 o ninguno; un vendedor sin
   `tipo`; **el aviso de que el total no es el avance de la cuota**), **sus respuestas a las dos preguntas y a la sugerencia de
