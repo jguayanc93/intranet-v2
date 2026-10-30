@@ -117,7 +117,7 @@ tiene que tener el mismo día:
 |---|---|
 | `GET /v1/zona/avance` (con `?anno=&mes=` para un mes anterior) | el avance de todos los vendedores del grupo 20 |
 | `GET /v1/zona/probabilidad?codusu=` | la probabilidad de uno |
-| `GET /v1/vendedor` con tipo `ZONA` | el menú de tres módulos (`cotizacion`, `avance`, `probabilidad`) |
+| `GET /v1/vendedor` con tipo `ZONA` | el menú de tres módulos (`cotizacion`, `avance`, `probabilidad`); desde el 24/10, cuatro (ver más abajo) |
 | `403 usuario sin acceso` en el login y en cualquier ruta | el 297: el frontend lo lleva al login |
 
 Cuentas para el recorrido: el **126** (entra) y el **297** (`403`). Los casos están en [respuesta-zona.md](respuesta-zona.md), sección 3.
@@ -135,6 +135,39 @@ git push origin main
 - La etiqueta **`pre-grupo34`** marca lo que había justo antes (el merge del grupo 25, `79dac94`).
 - **Para deshacer el grupo 25 con el 34 ya subido, hay que deshacer primero el 34**: el 34 toca archivos que el 25 también tocó (el catálogo, el cliente
   HTTP, los estilos y el login), y revertir el 25 con el 34 encima da conflictos. En ese orden, cada `revert` sale limpio.
+
+### Lo que suma la actualización del 24/10/2026 del grupo 34 (clientes, reemplazos, tres meses)
+
+Se sube como un paso aparte, para poder deshacerlo por separado, igual que los anteriores (con su propio commit de merge; el hash se anota aquí al hacerlo). Además de lo de arriba,
+el frontend llama ahora a:
+
+| el frontend llama | para qué |
+|---|---|
+| `GET /v1/zona/cartera?codusu=` y `GET /v1/zona/cobertura?codusu=` (con `&anno=&mes=`, hasta 3 meses atrás) | los clientes de un vendedor; la pantalla elige la ruta por **el tipo que tuvo ese mes** |
+| `400 vendedor de otro tipo` | **es normal**, no un fallo: la pantalla prueba la otra ruta una sola vez. Si las dos lo dicen, se detiene y muestra el motivo |
+| `GET /v1/vendedor` con tipo `ZONA` | menú de **cuatro** módulos: `cotizacion`, `avance`, `probabilidad` y `clientes` |
+| `reemplazadoPor` y `reemplazaA` en cada fila de `/zona/avance` | las notas «parece estar de vacaciones» y «reemplaza a …» (sin los campos, no se muestra nada) |
+| `/zona/avance?anno=&mes=` de hasta 3 meses atrás | el selector del avance ofrece el mes en curso y tres anteriores (antes, dos) |
+
+**El orden importa más de lo habitual:**
+
+- **El backend no debe poner `clientes` en el menú del 126 antes de que el frontend esté subido.** Un módulo que el frontend no conoce se pinta como una entrada
+  genérica «CLIENTES» que lleva a una página que no existe (404). Al revés no pasa nada: si el frontend sube primero, `clientes` simplemente no aparece
+  hasta que el backend lo ponga en el menú, y sin `reemplazadoPor`/`reemplazaA` la pantalla no inventa ninguna nota.
+- **El cambio de la regla de CARTERA modifica números que los vendedores ven hoy** (a un vendedor de cartera solo le cuenta lo que factura **él**; cambian su avance
+  aquí, en la probabilidad y en su propia pantalla de cuota). No hay nada que hacer en pantalla, pero conviene avisar a los vendedores el mismo día.
+- **Cuentas para el recorrido:** el **126** (entra) y el **297** (`403`). Qué comprobamos está en [respuesta-zona-clientes.md](respuesta-zona-clientes.md), sección 4, y **los casos con sus cifras de bdnava08**
+  en la sección 6 de [zona-grupo34.md](zona-grupo34.md). El servidor de prueba **todavía no tiene este código** (el backend lo monta y avisa); la dirección y las claves las pasa quien lleva el proyecto de su lado.
+- **Un archivo compartido más: `core/cdk-shell.css`.** Esta actualización le **agrega** un bloque («Fila compacta»: `.cdk-filas`, `.cdk-fila…`, `.cdk-etiqueta` y `.cdk-pestanas--cortas`) para la lista de clientes. Solo suma clases nuevas: no cambia
+  ninguna existente, así que ninguna otra pantalla se ve distinta. Es el único cambio de estilos del paso, y se deshace con el resto.
+- **El nombre en pantalla.** El módulo se llama **Cobertura** (27/10), pero **su clave del menú sigue siendo `clientes`**: es la que manda el backend y no cambia. Primero pide elegir entre cartera y cobertura, y el código del cliente
+  no se muestra en ninguna parte. Quien recorra el menú del 126 verá «Cobertura», no «Clientes».
+- **Cómo sale el backend** (su respuesta del 27/10, sección 10 de [zona-grupo34.md](zona-grupo34.md)): **completo y en un solo despliegue** —la regla de CARTERA, los reemplazos, el tercer mes y `clientes` en el menú—, **después**
+  de que este frontend esté arriba. Solo `clientes` en el menú se puede separar, si se avisa. El tercer mes vale **solo para el avance, la cartera y la cobertura**; la cuota del propio vendedor y las marcas siguen en dos
+  (esas pantallas no se tocaron). Las rutas `/zona/cartera` y `/zona/cobertura` se autorizan aparte del menú: el 126 puede llamarlas aunque el menú no traiga `clientes`.
+- **Cómo se deshace.** El backend, con **un solo `git revert`** que deshace todo a la vez (la regla de CARTERA no se puede revertir sola); el frontend no necesita nada después: el tercer mes responde
+  `400 periodo invalido` y se muestra con su mensaje, sin los campos de reemplazo no hay notas, y sin `clientes` en el menú no hay entrada ni enlace. **Para deshacer solo el frontend con el backend ya arriba**,
+  el menú del 126 seguiría trayendo `clientes` y saldría la entrada genérica que lleva a un 404: conviene pedirle antes al backend que quite esa línea del menú (es lo que se puede separar), o aceptar esa entrada para un solo usuario mientras tanto.
 
 ---
 
