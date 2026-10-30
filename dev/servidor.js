@@ -154,12 +154,19 @@ const vendedorMesSim = require("./simulador-vendedormes");
 /* Jefe de zona (grupo 34): el avance de la cuota de todos los vendedores del grupo 20 y la probabilidad de cada uno. */
 const zonaSim = require("./simulador-zona");
 
+/* Grupo 20 (todos los vendedores), desde el 29/10: las promociones vigentes para ofrecer y «¿A quien vender hoy?». */
+const promoVigentesSim = require("./simulador-promovigentes");
+const quienVenderSim = require("./simulador-quienvender");
+
 let USUARIO = null;
 
 function entrar(cuenta) {
     const p = perfiles.entrar(cuenta, marcasSim, { tipoPorDefecto: process.env.TIPO });
     USUARIO = { nombre: p.nombre, grupo: p.grupo, tipo: p.tipo };
     ajusteSim.reiniciar();
+    /* Cada ingreso deja las sugerencias del dia como al empezar: la primera vez que abra el modulo, se calculan. */
+    quienVenderSim.reiniciar();
+    quienVenderSim.usar(p.codven);
     console.log("      sesion: " + p.nombre + " · " + p.clave + " · " +
                 (p.registrado ? "registrado como " + p.tipo
                               : "SIN REGISTRAR (debe pasar por el alta)"));
@@ -182,7 +189,10 @@ const MODULOS = {
     avance:      "Avance de cuota de todos los vendedores del grupo 20",
     probabilidad: "Probabilidad de que un vendedor llegue a su cuota, comparada con meses anteriores",
     clientes:    "Revisa la cartera o la cobertura de clientes de cada vendedor del grupo 20",
-    ajuste:      "Ajuste de precio de cotizaciones y pedidos"
+    ajuste:      "Ajuste de precio de cotizaciones y pedidos",
+    /* Solo del grupo 20 (todos sus vendedores, cartera y cobertura), desde el 29/10: sin acciones, una clave y una pantalla. */
+    promovigentes: "Mira las promociones vigentes para ofrecer a tus clientes",
+    quienvender:   "Los 3 clientes de hoy: 2 para reponer y 1 para llamar"
 };
 
 /* Lo que recibe cada grupo en el menu (docs/marcas-grupo25.md, secc. 4: el 21/10 el backend lo fijo).
@@ -376,6 +386,25 @@ http.createServer((pet, res) => {
                     (params.anno || params.mes ? " " + params.anno + "-" + params.mes : "") + ": " + r.status +
                     (r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
         return responderPlano(res, r.cuerpo, r.status);
+    }
+
+    /* Promociones vigentes (grupo 20): la lista y el detalle de una. Ver dev/simulador-promovigentes.js. */
+    if (ruta === "/v1/promocion/vigentes" || ruta.startsWith("/v1/promocion/vigentes/")) {
+        const id = decodeURIComponent(ruta.slice("/v1/promocion/vigentes/".length));
+        const r = ruta === "/v1/promocion/vigentes" ? promoVigentesSim.lista() : promoVigentesSim.detalle(id);
+
+        console.log("      " + ruta.slice(4) + ": " + r.status + (r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
+        return responderPlano(res, r.cuerpo, r.status);
+    }
+
+    /* ¿A quien vender hoy? (grupo 20): los 3 clientes del dia. La primera vez del dia el backend los calcula (cerca de un segundo);
+       el resto del dia contesta al instante lo mismo. Ver dev/simulador-quienvender.js. */
+    if (ruta === "/v1/quienvender") {
+        const r = quienVenderSim.sugerir();
+
+        console.log("      quienvender" + (r.cuerpo.data ? " " + r.cuerpo.data.vendedor.codven : "") + ": " + r.status +
+                    (r.primera ? " (primera vez del dia: tarda)" : "") + (r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : ""));
+        return setTimeout(() => responderPlano(res, r.cuerpo, r.status), r.primera ? 900 : 0);
     }
 
     /* Vendedor del mes (grupo 25). Ver dev/simulador-vendedormes.js. */
