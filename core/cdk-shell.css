@@ -1842,6 +1842,47 @@ select.cdk-entrada { padding-right: 8px; }
 }
 
 /* ---------------------------------------------------------------------
+   Fila compacta
+
+   Para listas largas (150 o 200 clientes) donde una tarjeta por fila obliga a
+   desplazarse mucho: cada fila ocupa dos lineas —el nombre y su importe, y
+   debajo rotulos y un dato corto— y el resto sale al tocarla (`aria-expanded`).
+   Un solo marco para toda la lista, con una raya entre filas; no una tarjeta
+   por cliente. La usa Cobertura (grupo 34, `clientes.html`).
+
+   `.cdk-pestanas--cortas` son las mismas pestañas, mas bajas, para cuando hay
+   siete o mas y en movil no deben ocupar media pantalla.
+   --------------------------------------------------------------------- */
+.cdk-filas { margin: 0; padding: 0; list-style: none; overflow: hidden;
+             border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio); background: var(--cdk-superficie); }
+.cdk-fila { border-bottom: 1px solid var(--cdk-borde); }
+.cdk-fila:last-child { border-bottom: 0; }
+
+.cdk-fila__boton { display: block; width: 100%; min-height: var(--cdk-tactil); padding: 10px 12px; border: 0;
+                   background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.cdk-fila__boton:hover { background: var(--cdk-fondo); }
+.cdk-fila__boton:focus-visible { outline: 2px solid var(--cdk-primario); outline-offset: -2px; }
+
+.cdk-fila__linea { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cdk-fila__nombre { min-width: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.cdk-fila__importe { flex: 0 0 auto; font-size: 14px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cdk-fila__importe--negativo { color: var(--cdk-error); }
+.cdk-fila__importe--apagado { color: var(--cdk-texto-suave); font-weight: 500; }
+
+.cdk-fila__datos { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 3px; font-size: 12px; color: var(--cdk-texto-suave); }
+
+.cdk-fila__mas { display: none; margin-top: 8px; font-size: 13px; }
+.cdk-fila__boton[aria-expanded="true"] .cdk-fila__mas { display: block; }
+.cdk-fila__mas > div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-top: 1px dashed var(--cdk-borde); }
+.cdk-fila__mas > div > span:first-child { color: var(--cdk-texto-suave); }
+.cdk-fila__mas > p { margin: 6px 0 0; font-size: 12px; line-height: 1.45; color: var(--cdk-texto-suave); }
+
+.cdk-etiqueta { display: inline-block; padding: 1px 8px; border: 1px solid var(--cdk-borde); border-radius: 999px;
+                font-size: 11px; font-weight: 600; color: var(--cdk-texto-suave); white-space: nowrap; }
+
+.cdk-pestanas--cortas .cdk-pestana { min-height: 36px; padding: 0 11px; font-size: 13px; }
+
+/* ---------------------------------------------------------------------
    Modo oscuro — opt-in con <html data-tema="oscuro">.
 
    NO se engancha a prefers-color-scheme todavia. Hoy solo main.html e

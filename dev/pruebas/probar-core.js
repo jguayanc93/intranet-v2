@@ -164,6 +164,14 @@ ok("el menu de zona: cotizacion, avance y probabilidad, en ese orden",
    CDK.catalogo.ordenar(["probabilidad", "avance", "cotizacion"]), ["cotizacion", "avance", "probabilidad"]);
 ok("zona ya es operativo",          CDK.catalogo.tipo("ZONA").operativo, true);
 
+/* clientes (grupo 34, desde el 24/10/2026): una pantalla en la raiz que elige /zona/cartera o /zona/cobertura por el tipo del vendedor.
+   No es la cobertura por marca del grupo 25 (`cobertura`), aunque lleve el mismo icono. Con ella, el menu de zona son cuatro. */
+ok("clientes es modulo conocido, en la raiz y sin acciones",
+   [CDK.catalogo.conocido("clientes"), CDK.catalogo.hub("clientes"), Object.keys(CDK.catalogo.modulo("clientes").accesos), CDK.catalogo.modulo("clientes").etiqueta],
+   [true, "/demo1/clientes.html", [], "Cobertura"]);
+ok("el menu de zona son cuatro: cotizacion, avance, probabilidad y clientes, en ese orden",
+   CDK.catalogo.ordenar(["clientes", "probabilidad", "avance", "cotizacion"]), ["cotizacion", "avance", "probabilidad", "clientes"]);
+
 /* cobertura (grupo 25): otra pantalla en la raiz. No es la cobertura del grupo 20, que es un tipo de vendedor. */
 ok("cobertura es modulo conocido", CDK.catalogo.conocido("cobertura"), true);
 ok("y vive en la raiz",            CDK.catalogo.hub("cobertura"), "/demo1/cobertura.html");
