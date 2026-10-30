@@ -181,6 +181,7 @@ const MODULOS = {
     vendedormes: "Los 3 vendedores que mas venden cada una de tus marcas en el mes",
     avance:      "Avance de cuota de todos los vendedores del grupo 20",
     probabilidad: "Probabilidad de que un vendedor llegue a su cuota, comparada con meses anteriores",
+    clientes:    "Revisa la cartera o la cobertura de clientes de cada vendedor del grupo 20",
     ajuste:      "Ajuste de precio de cotizaciones y pedidos"
 };
 
@@ -192,9 +193,10 @@ const MENU_GRUPO_25 = ["marcas", "cuota", "reporte", "cobertura", "ajuste", "ven
 const SOLO_GRUPO_25 = ["marcas", "reporte", "cobertura", "vendedormes"];
 const esGrupo25 = (rol) => rol === "ESPECIALISTA" || rol === "JEFATURA";
 
-/* El jefe de zona (grupo 34), desde el 22/10: EXACTAMENTE estos tres. Antes tenia el menu de un vendedor. */
-const MENU_ZONA = ["cotizacion", "avance", "probabilidad"];
-const SOLO_ZONA = ["avance", "probabilidad"];
+/* El jefe de zona (grupo 34): EXACTAMENTE estos cuatro (los tres de 22/10 y `clientes`, del 24/10). Antes tenia el menu de un
+   vendedor. `clientes` es una sola clave con dos rutas, /zona/cartera y /zona/cobertura, y el menu no dice cual: lo decide el tipo. */
+const MENU_ZONA = ["cotizacion", "avance", "probabilidad", "clientes"];
+const SOLO_ZONA = ["avance", "probabilidad", "clientes"];
 
 function modulosDe(rol) {
     return Object.keys(MODULOS)
@@ -360,12 +362,15 @@ http.createServer((pet, res) => {
         return responderPlano(res, r.cuerpo, r.status);
     }
 
-    /* Jefe de zona (grupo 34): el avance de todos y la probabilidad de uno. Ver dev/simulador-zona.js. */
-    if (ruta === "/v1/zona/avance" || ruta === "/v1/zona/probabilidad") {
+    /* Jefe de zona (grupo 34): el avance de todos, la probabilidad de uno y los clientes de uno (cartera o cobertura, segun su
+       tipo). Ver dev/simulador-zona.js. */
+    const RUTAS_ZONA = { "/v1/zona/avance": zonaSim.avance, "/v1/zona/probabilidad": zonaSim.probabilidad,
+                         "/v1/zona/cartera": zonaSim.cartera, "/v1/zona/cobertura": zonaSim.cobertura };
+    if (RUTAS_ZONA[ruta]) {
         const q = new URL(pet.url, "http://x").searchParams;
         const params = { anno: q.get("anno"), mes: q.get("mes"), codusu: q.get("codusu") };
 
-        const r = ruta === "/v1/zona/avance" ? zonaSim.avance(params) : zonaSim.probabilidad(params);
+        const r = RUTAS_ZONA[ruta](params);
 
         console.log("      " + ruta.slice(4) + (params.codusu ? " " + params.codusu : "") +
                     (params.anno || params.mes ? " " + params.anno + "-" + params.mes : "") + ": " + r.status +

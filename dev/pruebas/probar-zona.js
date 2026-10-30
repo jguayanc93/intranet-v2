@@ -12,7 +12,11 @@
  *   · que se actualice solo cada 3 minutos mientras se ve y es el mes en curso, y nunca en un mes cerrado
  *   · que la probabilidad compare los 4 meses a la misma altura, con como termino cada uno, y que un mes sin cuota,
  *     un vendedor nuevo o una meta alcanzada se digan sin inventar un numero
- *   · que un 403 `usuario sin acceso` lleve al login, y que el menu del jefe de zona sea de tres modulos
+ *   · que un 403 `usuario sin acceso` lleve al login, y que el menu del jefe de zona sea de cuatro modulos (el cuarto, `clientes`,
+ *     tiene su propia suite: probar-zona-clientes.js)
+ *   · que el avance llegue hasta tres meses atras, y que el selector no ofrezca un cuarto
+ *   · que los reemplazos por vacaciones (`reemplazadoPor` y `reemplazaA`) se digan junto al dueño de la cartera y junto a quien
+ *     la atendio, en las dos listas y en un mes cerrado, con lo que llega del backend, y que sin esos campos no se invente nada
  *
  * El simulacro es dev/simulador-zona.js, el mismo de dev/servidor.js.
  */
@@ -40,6 +44,7 @@ function ok(etiqueta, real, esperado) {
 let llamadas = [];
 let forzar = null;           // (ruta) -> respuesta armada, para probar errores
 let alterar = null;          // (camino, resultado) -> resultado, para probar que no se calcula nada
+let sinClientes = false;     // el menu del backend NO trae `clientes` (un backend anterior al 24/10)
 
 function respuesta(obj, status) {
     const cuerpo = JSON.stringify(obj);
@@ -61,10 +66,13 @@ function responder(url, opciones) {
     const params = new URLSearchParams(consulta || "");
 
     if (camino === "/vendedor") {
+        const modulos = { cotizacion: "Permite manejar cotizaciones", avance: "Avance de cuota de todos los vendedores del grupo 20",
+                          probabilidad: "Probabilidad de que un vendedor llegue a su cuota",
+                          clientes: "Revisa la cartera o la cobertura de clientes de cada vendedor del grupo 20" };
+        if (sinClientes) delete modulos.clientes;
         return respuesta({
             status: "ok", codigo: 0,
-            data: { cotizacion: "Permite manejar cotizaciones", avance: "Avance de cuota de todos los vendedores del grupo 20",
-                    probabilidad: "Probabilidad de que un vendedor llegue a su cuota" },
+            data: modulos,
             nombre: "CRISTHIAM VACA", grupo: "VENTAS-JEFES DE ZONA", tipo: S.rol, tipoCambio: 3.75
         });
     }
@@ -162,7 +170,7 @@ const usd = (n) => "$ " + n.toLocaleString("en-US", { minimumFractionDigits: 2, 
 
 function preparar(rol) {
     marcasSim.reiniciar(rol || "ZONA");
-    forzar = null; alterar = null;
+    forzar = null; alterar = null; sinClientes = false;
 }
 
 /* =====================================================================
@@ -278,6 +286,32 @@ function preparar(rol) {
     ok("cada fila lleva al detalle de ese vendedor",
        $(p, "za-ver-probabilidad-" + atrasado.codusu).getAttribute("href"), "/probabilidad.html?codusu=" + atrasado.codusu);
 
+    /* ---- «Ver sus clientes»: solo si el menu trae `clientes`, en las dos listas, y con el tipo como pista */
+    ok("cada fila ofrece sus clientes, con su tipo como pista (el menu trae `clientes`)",
+       [texto($(p, "za-ver-clientes-" + atrasado.codusu)), $(p, "za-ver-clientes-" + atrasado.codusu).getAttribute("href")],
+       ["Ver sus clientes ›", `/clientes.html?codusu=${atrasado.codusu}&tipo=${atrasado.tipo}`]);
+    ok("tambien las de quienes no registraron su cuota, con el tipo con el que estan registrados hoy",
+       [...p.doc.querySelectorAll("#za-sincuota-lista > li")].map((li) => li.querySelector("a[href^='/clientes.html']").getAttribute("href")),
+       sim.sinCuota.map((s) => `/clientes.html?codusu=${s.codusu}&tipo=${s.tipo}`));
+    ok("una por fila: ni una de mas ni una de menos", p.doc.querySelectorAll("#contenido a[href^='/clientes.html']").length, sim.vendedores.length + sim.sinCuota.length);
+
+    /* Sin `clientes` en el menu (un backend anterior al 24/10) el enlace llevaria a una pantalla que no existe: no sale. */
+    sinClientes = true;
+    p = await montar("avance.html");
+    await pausa(250);
+    ok("sin `clientes` en el menu no hay enlace a los clientes, pero si el de la probabilidad, y las dos listas se pintan igual",
+       [p.doc.querySelectorAll("#contenido a[href^='/clientes.html']").length, p.doc.querySelectorAll("#contenido a[href^='/probabilidad.html']").length, filas(p).length],
+       [0, sim.vendedores.length + sim.sinCuota.length, sim.vendedores.length]);
+    sinClientes = false;
+
+    /* Si ni siquiera se puede leer el menu, no se sabe: sin enlace, y la pantalla sigue entera. */
+    forzar = (ruta) => (ruta === "/vendedor" ? respuesta({ status: "error", codigo: 1, msg: "se cayo" }, 500) : null);
+    p = await montar("avance.html");
+    await pausa(250);
+    ok("si el menu no se puede leer, no hay enlace a los clientes y el avance se pinta igual",
+       [p.doc.querySelectorAll("#contenido a[href^='/clientes.html']").length, filas(p).length], [0, sim.vendedores.length]);
+    forzar = null;
+
     /* ---- nada se calcula aqui */
     alterar = (camino, r) => {
         if (r.cuerpo.data && r.cuerpo.data.vendedores) {
@@ -355,8 +389,8 @@ function preparar(rol) {
     preparar();
     p = await montar("avance.html");
     await pausa(250);
-    ok("el mes en curso y los dos anteriores", [...$(p, "za-mes").options].map((o) => o.textContent),
-       ["octubre de 2026 (este mes)", "septiembre de 2026", "agosto de 2026"]);
+    ok("el mes en curso y los tres anteriores", [...$(p, "za-mes").options].map((o) => o.textContent),
+       ["octubre de 2026 (este mes)", "septiembre de 2026", "agosto de 2026", "julio de 2026"]);
 
     llamadas = [];
     await elegirOpcion(p, $(p, "za-mes"), "2026-09");
@@ -383,7 +417,7 @@ function preparar(rol) {
     /* Si cambiar de mes falla, no se pierde lo que se estaba viendo. */
     await elegirOpcion(p, $(p, "za-mes"), "");
     forzar = (ruta) => (ruta.includes("mes=8")
-        ? respuesta({ status: "periodo invalido", codigo: 2, msg: "solo se puede pedir el mes en curso y los dos anteriores" }, 400) : null);
+        ? respuesta({ status: "periodo invalido", codigo: 2, msg: "solo se puede pedir el mes en curso y los tres anteriores" }, 400) : null);
     await elegirOpcion(p, $(p, "za-mes"), "2026-08");
     ok("`periodo invalido`: se dice con su mensaje, y el selector vuelve a donde estaba",
        [toasts(p.doc).some((t) => t.includes("solo se puede pedir el mes en curso")), $(p, "za-mes").value, $(p, "za-mes").disabled, filas(p).length], [true, "", false, sim.vendedores.length]);
@@ -409,6 +443,77 @@ function preparar(rol) {
     ok("ni la proyeccion ni lo de hoy, ni en la lista ni en los que no registraron",
        [filas(p).some((li) => texto(li).includes("cerraría en") || texto(li).includes("Hoy")),
         texto($(p, "za-sincuota-lista")).includes("cerraría en") || texto($(p, "za-sincuota-lista")).includes("Hoy")], [false, false]);
+    alterar = null;
+
+    /* ============================================================ hasta tres meses atras */
+    console.log("\n— hasta tres meses atrás —");
+    preparar();
+    p = await montar("avance.html");
+    await pausa(250);
+    llamadas = [];
+    await elegirOpcion(p, $(p, "za-mes"), "2026-07");
+    const julio = delBackend({ anno: 2026, mes: 7 });
+    ok("el selector llega hasta hace tres meses (julio), y pide con `anno` y `mes`", rutas(), ["/zona/avance?anno=2026&mes=7"]);
+    ok("dice que es un mes cerrado, y trae los vendedores de ese mes",
+       [texto($(p, "periodo")), filas(p).map((li) => li.getAttribute("data-codusu"))], ["julio de 2026 · mes cerrado", julio.vendedores.map((v) => v.codusu)]);
+    ok("y el selector se queda en julio", $(p, "za-mes").value, "2026-07");
+    ok("un mes mas atras (junio) no se ofrece, y el backend lo rechaza con 400",
+       [[...$(p, "za-mes").options].some((o) => o.value === "2026-06"), zonaSim.avance({ anno: "2026", mes: "6" }).status], [false, 400]);
+
+    /* ============================================================ los reemplazos por vacaciones */
+    console.log("\n— los reemplazos por vacaciones —");
+    preparar();
+    p = await montar("avance.html");
+    await pausa(250);
+
+    /* La fila de un vendedor, este en la lista de los que tienen cuota o en la de los que no la registraron. */
+    const filaCualquiera = (codusu) => p.doc.querySelector(`#za-vendedores > li[data-codusu='${codusu}'], #za-sincuota-lista > li[data-codusu='${codusu}']`);
+    const notasDe = (codusu) => [...filaCualquiera(codusu).querySelectorAll("[data-reemplazo]")].map((n) => texto(n));
+    const quien = (r) => `(el ${r.porcentaje} % de lo facturado a sus clientes: ${usd(r.venta)})`;
+    const dice = (r) => `Parece estar de vacaciones: su cartera la atendió ${r.nombre} ${quien(r)}.`;
+    const reemplaza = (r) => `Reemplaza a ${r.nombre}: atendió su cartera ${quien(r)}.`;
+
+    const enSinCuota = (cod) => sim.sinCuota.find((s) => s.codusu === cod);
+    const conCuota = (cod) => sim.vendedores.find((v) => v.codusu === cod);
+
+    ok("el dueño de una cartera dice quien la atendio, con lo que facturo y que parte fue de lo que se les facturo (en «sinCuota», donde suele estar)",
+       notasDe("293"), [dice(enSinCuota("293").reemplazadoPor)]);
+    ok("quien la atendio dice a quien reemplazo; si fueron dos, las dos, en el orden del backend",
+       [notasDe("399"), enSinCuota("399").reemplazaA.length], [enSinCuota("399").reemplazaA.map(reemplaza), 2]);
+    ok("tambien en la lista de los que tienen cuota: el reemplazado y el que reemplaza",
+       [notasDe("421"), notasDe("406")], [[dice(conCuota("421").reemplazadoPor)], conCuota("406").reemplazaA.map(reemplaza)]);
+    ok("quien no tiene reemplazo no dice nada: ni nota ni hueco", [notasDe("196"), notasDe("246")], [[], []]);
+    ok("cada nota es un parrafo suyo, con id, para poder encontrarla",
+       [!!$(p, "za-reemplazado-293"), !!$(p, "za-reemplaza-399-" + enSinCuota("399").reemplazaA[0].codven)], [true, true]);
+
+    /* En un mes cerrado tambien se dice: no depende del semaforo ni de lo de hoy. */
+    await elegirOpcion(p, $(p, "za-mes"), "2026-07");
+    ok("en un mes cerrado tambien: el dueño (sin cuota) y quien la atendio (con cuota)",
+       [notasDe("246"), notasDe("399")], [[dice(julio.sinCuota.find((s) => s.codusu === "246").reemplazadoPor)],
+                                          julio.vendedores.find((v) => v.codusu === "399").reemplazaA.map(reemplaza)]);
+
+    /* Nada se calcula aqui: el nombre, lo facturado y el % son los que llegan. */
+    alterar = (camino, r) => {
+        const d = r.cuerpo.data;
+        if (d && d.sinCuota) d.sinCuota.forEach((s) => { if (s.reemplazadoPor) Object.assign(s.reemplazadoPor, { nombre: "OTRO NOMBRE", venta: 5, porcentaje: 12.5 }); });
+        return r;
+    };
+    p = await montar("avance.html");
+    await pausa(250);
+    ok("el nombre, lo facturado y el % son los que llegan, aunque no cuadren con nada",
+       notasDe("293"), ["Parece estar de vacaciones: su cartera la atendió OTRO NOMBRE (el 12.5 % de lo facturado a sus clientes: $ 5.00)."]);
+
+    /* Un backend anterior al 24/10 no trae los campos: no hay nada que decir, y la pantalla sigue entera. */
+    alterar = (camino, r) => {
+        const d = r.cuerpo.data;
+        if (d && d.vendedores) [...d.vendedores, ...d.sinCuota].forEach((x) => { delete x.reemplazadoPor; delete x.reemplazaA; });
+        return r;
+    };
+    p = await montar("avance.html");
+    await pausa(250);
+    ok("sin los campos no se inventa ninguna nota, y las dos listas se pintan igual",
+       [p.doc.querySelectorAll("[data-reemplazo]").length, filas(p).length, p.doc.querySelectorAll("#za-sincuota-lista > li").length],
+       [0, sim.vendedores.length, sim.sinCuota.length]);
     alterar = null;
 
     /* ============================================================ actualizar */
@@ -486,7 +591,7 @@ function preparar(rol) {
     await pausa(250);
     const activo = p.doc.querySelector(".cdk-sidebar__enlace.es-activo");
     ok("Avance sale en el menu, marcado, y lleva a su pagina", [texto(activo), activo && activo.getAttribute("href")], ["Avance", "/avance.html"]);
-    ok("son tres modulos y en este orden", [...p.doc.querySelectorAll("#cdk-sidebar-lista .cdk-sidebar__enlace")].map((a) => texto(a)), ["Cotización", "Avance", "Probabilidad"]);
+    ok("son cuatro modulos y en este orden (el cuarto, `clientes`, es del 24/10 y se llama Cobertura)", [...p.doc.querySelectorAll("#cdk-sidebar-lista .cdk-sidebar__enlace")].map((a) => texto(a)), ["Cotización", "Avance", "Probabilidad", "Cobertura"]);
     ok("con su icono", (activo.querySelector("svg path").getAttribute("d") || "").startsWith("M3.75 3v11.25"), true);
 
     /* ============================================================ la probabilidad: elegir */

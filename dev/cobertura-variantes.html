@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>CDK · Cobertura: sus clientes del mes</title>
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <style>
+        body { margin: 0; padding: 24px 16px 60px; background: var(--cdk-fondo);
+               color: var(--cdk-texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .marco { max-width: 1280px; margin: 0 auto; }
+
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .intro { margin: 0 0 12px; font-size: 14px; color: var(--cdk-texto-suave); line-height: 1.55; max-width: 78ch; }
+        .intro strong { color: var(--cdk-texto); }
+
+        .controles { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 16px 0 22px; }
+        .controles label { font-size: 13px; color: var(--cdk-texto-suave); }
+
+        .rejilla { display: grid; gap: 28px 22px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+
+        .caso__titulo { font-size: 15px; font-weight: 700; margin: 0 0 2px; }
+        .caso__nota { font-size: 12px; color: var(--cdk-texto-suave); margin: 0 0 10px; line-height: 1.5; min-height: 54px; }
+
+        /* Una pantalla de móvil, con su propio desplazamiento: así se compara cuánto cabe de verdad */
+        .pantalla { height: 640px; overflow: auto; padding: 12px; box-sizing: border-box;
+                    background: var(--cdk-fondo); border: 1px solid var(--cdk-borde); border-radius: 18px; }
+        .pantalla h2 { font-size: 15px; margin: 2px 0 2px; }
+        .pantalla .sub-seccion { font-size: 12px; color: var(--cdk-texto-suave); margin: 0 0 10px; line-height: 1.45; }
+
+        .sub { font-size: 12px; color: var(--cdk-texto-suave); line-height: 1.45; }
+        .nums { font-variant-numeric: tabular-nums; }
+        .etq { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px;
+               border: 1px solid var(--cdk-borde); color: var(--cdk-texto-suave); white-space: nowrap; }
+        .etq--nuevo { background: var(--cdk-primario-suave); color: var(--cdk-primario-fuerte); border-color: transparent; }
+        .etq--bien { color: var(--cdk-exito); border-color: currentColor; }
+
+        .lista { border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio); overflow: hidden; background: var(--cdk-superficie); }
+        .vacio { padding: 14px; font-size: 13px; color: var(--cdk-texto-suave); }
+
+        /* A · ranking con barra */
+        .a-fila { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--cdk-borde);
+                  background: transparent; font: inherit; color: inherit; cursor: pointer; }
+        .a-fila:last-child { border-bottom: 0; }
+        .a-fila:hover { background: var(--cdk-fondo); }
+        .a-linea { display: flex; gap: 10px; align-items: baseline; }
+        .a-pos { flex: 0 0 22px; text-align: right; font-size: 12px; color: var(--cdk-texto-suave); }
+        .a-nombre { flex: 1; min-width: 0; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+        .a-venta { font-weight: 700; font-size: 14px; white-space: nowrap; }
+        .a-venta--neg { color: var(--cdk-error); }
+        .a-barra { height: 4px; border-radius: 2px; background: var(--cdk-borde); margin: 6px 0 0 32px; }
+        .a-barra > i { display: block; height: 100%; border-radius: 2px; background: var(--cdk-primario); }
+        .a-sub { margin: 4px 0 0 32px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .det { display: none; padding: 4px 0 0 32px; font-size: 13px; }
+        .abierta .det { display: block; }
+        .det div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-top: 1px dashed var(--cdk-borde); }
+        .det div:first-child { margin-top: 8px; }
+        .det span:first-child { color: var(--cdk-texto-suave); }
+        .apagada .a-nombre, .apagada .a-venta { color: var(--cdk-texto-suave); font-weight: 500; }
+
+        /* B · agrupado */
+        .b-grupo { border: 1px solid var(--cdk-borde); border-radius: var(--cdk-radio); background: var(--cdk-superficie); margin-bottom: 10px; overflow: hidden; }
+        .b-grupo > summary { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 11px 12px; cursor: pointer;
+                             font-weight: 700; font-size: 14px; list-style: none; }
+        .b-grupo > summary::-webkit-details-marker { display: none; }
+        .b-grupo > summary::after { content: "▾"; margin-left: 4px; color: var(--cdk-texto-suave); }
+        .b-grupo:not([open]) > summary::after { content: "▸"; }
+        .b-grupo__cifras { margin-left: auto; font-weight: 600; font-size: 13px; text-align: right; }
+        .b-fila { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; padding: 8px 12px; border-top: 1px solid var(--cdk-borde); }
+        .b-fila__nombre { min-width: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+        .b-fila__venta { font-size: 13px; font-weight: 700; white-space: nowrap; }
+
+        /* D · pestañas y dos líneas */
+        .d-buscar { margin-bottom: 10px; }
+        .d-fila { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--cdk-borde);
+                  background: transparent; font: inherit; color: inherit; cursor: pointer; }
+        .d-fila:last-child { border-bottom: 0; }
+        .d-fila:hover { background: var(--cdk-fondo); }
+        .d-1 { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; }
+        .d-nombre { min-width: 0; font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+        .d-venta { font-weight: 700; font-size: 14px; white-space: nowrap; }
+        .d-2 { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 3px; }
+        .d-extra { display: none; margin-top: 6px; font-size: 12px; }
+        .abierta .d-extra { display: block; }
+        .pestanas-cortas .cdk-pestana { min-height: 34px; padding: 0 11px; font-size: 13px; }
+
+        /* C · tabla */
+        .c-nuevo { margin-left: 4px; }
+        th.ordena { cursor: pointer; user-select: none; white-space: nowrap; }
+        .c-otros { display: block; font-size: 11px; color: var(--cdk-texto-suave); font-weight: 400; margin-top: 2px; }
+        .centro { text-align: center; padding: 10px; }
+    </style>
+</head>
+
+<body>
+<div class="marco">
+
+    <h1>Cobertura · «Sus clientes del mes»</h1>
+    <p class="intro">
+        <strong>Datos inventados.</strong> Es la lista que ves al abrir a un vendedor: sus clientes del mes, del que más compró al que menos.
+        Hoy cada cliente ocupa una tarjeta con cuatro datos y rótulos, así que con 150 o 200 clientes la pantalla se vuelve un desplazamiento
+        largo y es difícil ver de un vistazo <em>quién pesa</em>, <em>de quién era</em> cada cliente y <em>quién es nuevo</em>.
+    </p>
+    <p class="intro">
+        Abajo, <strong>cuatro alternativas</strong> junto a cómo está hoy (sin el código del cliente). Todas muestran <strong>lo mismo que manda el backend</strong>:
+        solo cambian cómo se ordena y se agrupa lo que ya viene, sin calcular cifras nuevas. Cada marco es una pantalla de móvil con su propio
+        desplazamiento; toca una fila, un título de grupo o un encabezado de la tabla para probarlo.
+    </p>
+
+    <div class="controles">
+        <label for="tipo">Ver como:</label>
+        <select id="tipo" class="cdk-entrada" style="width:auto">
+            <option value="COBERTURA">Un vendedor de cobertura (sus clientes del mes)</option>
+            <option value="CARTERA">Un vendedor de cartera (sus clientes asignados)</option>
+        </select>
+    </div>
+
+    <div class="rejilla" id="rejilla"></div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    /* ---------------------------------------------------------------
+     * Datos inventados (siempre los mismos)
+     * ------------------------------------------------------------- */
+    function azar(semilla) {
+        return function () {
+            semilla |= 0; semilla = (semilla + 0x6D2B79F5) | 0;
+            var t = Math.imul(semilla ^ (semilla >>> 15), 1 | semilla);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    var PRE = ["COMERCIAL", "INVERSIONES", "CORPORACION", "DISTRIBUIDORA", "SERVICIOS", "GRUPO", "TECNOLOGIA", "IMPORTADORA", "MULTISERVICIOS", "SOLUCIONES"];
+    var SECTOR = ["COMPUTO", "SISTEMAS", "INFORMATICA", "SUMINISTROS", "OFICINA", "TELECOM", "REDES", "DIGITAL"];
+    var LUGAR = ["ANDINA", "DEL SUR", "PACIFICO", "INCA", "LIMA NORTE", "AMAZONAS", "ZEGARRA", "QUISPE", "HUANCAYO", "CHICLAYO", "TRUJILLO", "AREQUIPA",
+                 "SAN MARTIN", "LOS OLIVOS", "SAN BORJA", "PRADO", "CUSCO", "PIURA", "ICA", "TACNA"];
+    var SUF = ["S.A.C.", "E.I.R.L.", "S.R.L.", "S.A."];
+    var VENDEDORES = ["UTANI FERNANDO", "MENDOZA DEL CARPIO ROSA", "BENITES ZEGARRA FIORELLA", "UBILLUZ ROJAS CARLOS"];
+
+    function nombreDe(i) {
+        if (i === 3) return "COMERCIALIZADORA E IMPORTADORA DE EQUIPOS Y SUMINISTROS INFORMATICOS DEL PERU S.A.C.";
+        return PRE[i % PRE.length] + " " + SECTOR[(i * 3) % SECTOR.length] + " " + LUGAR[(i * 7) % LUGAR.length] + " " + SUF[i % SUF.length];
+    }
+
+    var redondo = function (n) { return Math.round(n * 100) / 100; };
+    var dia = function (n) { return "2026-10-" + (n < 10 ? "0" : "") + n; };
+
+    function cobertura() {
+        var r = azar(34), clientes = [], n = 46;
+        for (var i = 0; i < n; i++) {
+            var venta = redondo(62000 * Math.pow(0.9, i) * (0.75 + 0.5 * r()));
+            var x = r(), dueno;
+            if (x < 0.40) dueno = { codven: "V0334", nombre: "GONZALES JUAN", tipo: "propio" };
+            else if (x < 0.65) dueno = { codven: "V0261", nombre: VENDEDORES[Math.floor(r() * 2)], tipo: "cartera" };
+            else if (x < 0.80) dueno = r() < 0.7 ? { codven: "V0000", nombre: "OFICINA", tipo: "libre" } : null;
+            else dueno = { codven: "V0300", nombre: VENDEDORES[2 + Math.floor(r() * 2)], tipo: "otro" };
+            var nuevo = i > 4 && r() < 0.18;
+            clientes.push({
+                nombre: nombreDe(i), venta: venta, docs: 1 + Math.floor(r() * 13), atendido: true, nuevo: nuevo, dueno: dueno,
+                ultimaCompra: dia(1 + Math.floor(r() * 22)),
+                promedioMensual: nuevo ? null : redondo(venta * (0.6 + 0.8 * r())),
+                otros: dueno && dueno.tipo === "propio" && r() < 0.14 ? [{ nombre: VENDEDORES[1], venta: redondo(400 + r() * 2600) }] : []
+            });
+        }
+        [0, -184.5, -1205.3].forEach(function (v, k) {
+            clientes.push({ nombre: nombreDe(n + k), venta: v, docs: 1 + k, atendido: false, nuevo: false, dueno: { codven: "V0334", nombre: "GONZALES JUAN", tipo: "propio" },
+                            ultimaCompra: dia(3 + k * 5), promedioMensual: redondo(900 + k * 700), otros: [] });
+        });
+        return clientes;
+    }
+
+    function cartera() {
+        var r = azar(7), clientes = [], n = 40;
+        for (var i = 0; i < n; i++) {
+            var atendido = i < 24;
+            var venta = atendido ? redondo(48000 * Math.pow(0.88, i) * (0.75 + 0.5 * r())) : (i % 7 === 0 ? redondo(-r() * 900) : 0);
+            clientes.push({
+                nombre: nombreDe(i + 5), venta: venta, docs: atendido ? 1 + Math.floor(r() * 11) : 0, atendido: atendido, nuevo: false,
+                dueno: null, enCarteraHoy: i !== 12 && i !== 30,
+                ultimaCompra: atendido ? dia(1 + Math.floor(r() * 22)) : "2026-0" + (7 + Math.floor(r() * 3)) + "-" + (10 + Math.floor(r() * 18)),
+                promedioMensual: redondo(1500 + r() * 9000),
+                otros: !atendido && i % 5 === 0 ? [{ nombre: VENDEDORES[0], venta: redondo(800 + r() * 4000) }] : []
+            });
+        }
+        return clientes;
+    }
+
+    /* ---------------------------------------------------------------
+     * Formatos, como en la pantalla real
+     * ------------------------------------------------------------- */
+    function usd(n) {
+        var a = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return (n < 0 ? "-$ " : "$ ") + a;
+    }
+    function fecha(iso) { return iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4); }
+    function duenoTexto(c) {
+        var d = c.dueno;
+        if (!d) return "Sin dueño (libre)";
+        if (d.tipo === "propio") return "Suyo";
+        if (d.tipo === "libre") return d.nombre + " (libre)";
+        if (d.tipo === "cartera") return "De cartera: " + d.nombre;
+        return "De otro vendedor: " + d.nombre;
+    }
+    function duenoCorto(c) {
+        var d = c.dueno;
+        if (!d) return "Libre";
+        return { propio: "Suyo", libre: "Libre", cartera: "Cartera", otro: "Otro" }[d.tipo];
+    }
+    function categoria(c) { return c.dueno ? c.dueno.tipo : "libre"; }
+    var NOMBRE_DE_CATEGORIA = { propio: "Suyos", cartera: "De cartera", libre: "Libres", otro: "De otro vendedor" };
+
+    function h(tag, attrs, hijos) {
+        var n = document.createElement(tag);
+        Object.keys(attrs || {}).forEach(function (k) {
+            if (k === "clase") n.className = attrs[k];
+            else if (k === "texto") n.textContent = attrs[k];
+            else if (k === "html") n.innerHTML = attrs[k];
+            else n.setAttribute(k, attrs[k]);
+        });
+        (hijos || []).forEach(function (x) { if (x) n.appendChild(x); });
+        return n;
+    }
+    function etq(texto, extra) { return h("span", { clase: "etq" + (extra ? " " + extra : ""), texto: texto }); }
+    function pestanaDe(c, tipo) {
+        return tipo === "CARTERA" ? (c.atendido ? etq("Atendido", "etq--bien") : etq("Sin atender")) : (c.nuevo ? etq("Nuevo", "etq--nuevo") : null);
+    }
+    function otrosTexto(c) {
+        return c.otros.length ? "Otros vendedores le facturaron este mes: " + c.otros.map(function (o) { return o.nombre + " (" + usd(o.venta) + ")"; }).join(", ") + ". No le cuenta." : "";
+    }
+
+    /* ---------------------------------------------------------------
+     * Hoy: la tarjeta de siempre (sin el código del cliente)
+     * ------------------------------------------------------------- */
+    function hoy(clientes, tipo) {
+        var ul = h("ul", { clase: "cdk-articulos" });
+        clientes.forEach(function (c) {
+            var datos = [["Venta", usd(c.venta)]];
+            if (c.docs) datos.push(["Facturas", String(c.docs)]);
+            if (c.promedioMensual) datos.push(["Compraba por mes", usd(c.promedioMensual)]);
+            if (c.ultimaCompra) datos.push(["Última compra", fecha(c.ultimaCompra)]);
+
+            var rotulos = [];
+            if (tipo === "CARTERA") rotulos.push(h("span", { clase: "cdk-semaforo" + (c.atendido ? " cdk-semaforo--logrado" : ""), texto: c.atendido ? "Atendido" : "Sin atender" }));
+            else {
+                if (c.nuevo) rotulos.push(h("span", { clase: "cdk-semaforo", texto: "Nuevo" }));
+                if (!c.atendido) rotulos.push(h("span", { clase: "cdk-semaforo", texto: "No cuenta como atendido" }));
+            }
+
+            var cuerpo = [
+                h("div", { style: "display:flex;align-items:flex-start;justify-content:space-between;gap:10px" }, [
+                    h("div", { style: "min-width:0;flex:1" }, [
+                        h("div", { clase: "cdk-articulo__nombre", style: "overflow-wrap:anywhere", texto: c.nombre }),
+                        tipo === "COBERTURA" ? h("div", { clase: "cdk-articulo__detalle", texto: duenoTexto(c) }) : null
+                    ]),
+                    h("div", { style: "display:flex;flex-direction:column;align-items:flex-end;gap:4px" }, rotulos)
+                ]),
+                h("div", { clase: "cdk-articulo__datos" }, datos.map(function (d) {
+                    return h("span", { clase: "cdk-dato" }, [document.createTextNode(d[0] + " "), h("span", { clase: "cdk-dato__valor", texto: d[1] })]);
+                }))
+            ];
+            if (c.otros.length) cuerpo.push(h("p", { clase: "cdk-pista", style: "margin:8px 0 0", texto: otrosTexto(c) }));
+            ul.appendChild(h("li", { clase: "cdk-articulo" }, [h("div", { clase: "cdk-articulo__cuerpo" }, cuerpo)]));
+        });
+        return [h("h2", { texto: tipo === "CARTERA" ? "Sus clientes" : "Sus clientes del mes" }), ul];
+    }
+
+    /* ---------------------------------------------------------------
+     * A · Ranking con barra: una línea por cliente, el detalle al tocar
+     * ------------------------------------------------------------- */
+    function ranking(clientes, tipo) {
+        var maximo = Math.max.apply(null, clientes.map(function (c) { return c.venta; }));
+        var lista = h("div", { clase: "lista" });
+
+        clientes.forEach(function (c, i) {
+            var sub = [];
+            if (tipo === "COBERTURA") sub.push(etq(duenoCorto(c) + (c.dueno && (c.dueno.tipo === "cartera" || c.dueno.tipo === "otro") ? " · " + c.dueno.nombre.split(" ")[0] : "")));
+            var p = pestanaDe(c, tipo); if (p) sub.push(p);
+            if (tipo === "COBERTURA" && !c.atendido) sub.push(etq("No cuenta como atendido"));
+            if (c.otros.length) sub.push(etq("Otros facturaron"));
+
+            var det = [["Facturas", c.docs ? String(c.docs) : "—"], ["Última compra", fecha(c.ultimaCompra)], ["Compraba por mes", c.promedioMensual ? usd(c.promedioMensual) : "—"]];
+            if (tipo === "COBERTURA") det.unshift(["De quién era", duenoTexto(c)]);
+
+            var fila = h("button", { type: "button", clase: "a-fila" + (c.atendido ? "" : " apagada") }, [
+                h("div", { clase: "a-linea" }, [
+                    h("span", { clase: "a-pos nums", texto: String(i + 1) }),
+                    h("span", { clase: "a-nombre", texto: c.nombre }),
+                    h("span", { clase: "a-venta nums" + (c.venta < 0 ? " a-venta--neg" : ""), texto: usd(c.venta) })
+                ]),
+                c.venta > 0 ? h("div", { clase: "a-barra" }, [h("i", { style: "width:" + Math.max(2, Math.round(c.venta / maximo * 100)) + "%" })]) : null,
+                sub.length ? h("div", { clase: "a-sub" }, sub) : null,
+                h("div", { clase: "det" }, det.map(function (d) { return h("div", {}, [h("span", { texto: d[0] }), h("span", { clase: "nums", texto: d[1] })]); })
+                    .concat(c.otros.length ? [h("p", { clase: "sub", style: "margin:6px 0 0", texto: otrosTexto(c) })] : []))
+            ]);
+            fila.addEventListener("click", function () { fila.classList.toggle("abierta"); });
+            lista.appendChild(fila);
+        });
+        return [h("h2", { texto: tipo === "CARTERA" ? "Sus clientes" : "Sus clientes del mes" }),
+                h("p", { clase: "sub-seccion", texto: "Del que más compró al que menos. La barra compara con el cliente más grande. Toca una fila para ver el detalle." }), lista];
+    }
+
+    /* ---------------------------------------------------------------
+     * B · Agrupado por «de quién era» (cobertura) o por atendido (cartera)
+     * ------------------------------------------------------------- */
+    function agrupado(clientes, tipo) {
+        var salida = [h("h2", { texto: tipo === "CARTERA" ? "Sus clientes" : "Sus clientes del mes" }),
+                      h("p", { clase: "sub-seccion", texto: tipo === "CARTERA" ? "Separados entre los que atendió y los que no. Toca un título para abrir o cerrar." :
+                               "Separados por de quién era el cliente según las facturas. Las cifras de cada grupo son las del backend. Toca un título para abrir o cerrar." })];
+
+        function grupo(titulo, filas, cifras, abierto) {
+            if (!filas.length) return;
+            var d = h("details", { clase: "b-grupo" }, [
+                h("summary", {}, [h("span", { texto: titulo }), h("span", { clase: "b-grupo__cifras nums", texto: cifras })])
+            ]);
+            if (abierto) d.setAttribute("open", "");
+            filas.forEach(function (c) {
+                var nota = [fecha(c.ultimaCompra)].concat(c.docs ? [c.docs + (c.docs === 1 ? " factura" : " facturas")] : []).join(" · ");
+                d.appendChild(h("div", { clase: "b-fila" }, [
+                    h("div", { style: "min-width:0" }, [
+                        h("div", { clase: "b-fila__nombre", texto: c.nombre }),
+                        h("div", { clase: "sub", texto: "Última compra " + nota + (c.dueno && c.dueno.tipo !== "propio" && c.dueno.tipo !== "libre" ? " · " + c.dueno.nombre : "") }),
+                        c.nuevo ? etq("Nuevo", "etq--nuevo") : null,
+                        c.otros.length ? h("div", { clase: "sub", texto: otrosTexto(c) }) : null
+                    ]),
+                    h("span", { clase: "b-fila__venta nums", texto: usd(c.venta) })
+                ]));
+            });
+            salida.push(d);
+        }
+
+        function resumen(filas) {
+            var total = filas.reduce(function (s, c) { return s + c.venta; }, 0);
+            return filas.length + (filas.length === 1 ? " cliente · " : " clientes · ") + usd(redondo(total));
+        }
+
+        if (tipo === "CARTERA") {
+            var si = clientes.filter(function (c) { return c.atendido; }), no = clientes.filter(function (c) { return !c.atendido; });
+            grupo("Atendidos", si, resumen(si), true);
+            grupo("Sin atender", no, no.length + " clientes", false);
+        } else {
+            var atendidos = clientes.filter(function (c) { return c.atendido; });
+            ["propio", "cartera", "libre", "otro"].forEach(function (k, i) {
+                var fs = atendidos.filter(function (c) { return categoria(c) === k; });
+                grupo(NOMBRE_DE_CATEGORIA[k], fs, resumen(fs), i === 0);
+            });
+            var ceros = clientes.filter(function (c) { return !c.atendido; });
+            grupo("Terminaron en 0 o en negativo", ceros, ceros.length + " clientes · no cuentan", false);
+        }
+        return salida;
+    }
+
+    /* ---------------------------------------------------------------
+     * C · Tabla ordenable
+     * ------------------------------------------------------------- */
+    function tabla(clientes, tipo) {
+        var orden = { clave: "venta", sentido: -1 };
+        var mostrados = 20;
+        var caja = h("div", { clase: "cdk-tabla-caja", style: "max-height:520px" });
+        var pie = h("div", { clase: "centro" });
+
+        var COLUMNAS = [
+            ["nombre", "Cliente"], ["venta", "Venta"],
+            [tipo === "CARTERA" ? "estado" : "dueno", tipo === "CARTERA" ? "Estado" : "De quién era"],
+            ["docs", "Facturas"], ["ultimaCompra", "Última compra"], ["promedioMensual", "Compraba/mes"]
+        ];
+
+        function valor(c, k) {
+            if (k === "estado") return c.atendido ? 1 : 0;
+            if (k === "dueno") return duenoCorto(c);
+            return c[k] === null || c[k] === undefined ? -Infinity : c[k];
+        }
+
+        function pintar() {
+            var filas = clientes.slice().sort(function (a, b) {
+                var x = valor(a, orden.clave), y = valor(b, orden.clave);
+                return (x < y ? -1 : x > y ? 1 : 0) * orden.sentido;
+            });
+            var visibles = filas.slice(0, mostrados);
+
+            var cabeza = h("tr", {}, COLUMNAS.map(function (col) {
+                var th = h("th", { clase: "ordena", texto: col[1] + (orden.clave === col[0] ? (orden.sentido < 0 ? " ▼" : " ▲") : "") });
+                th.addEventListener("click", function () {
+                    if (orden.clave === col[0]) orden.sentido = -orden.sentido; else { orden.clave = col[0]; orden.sentido = col[0] === "nombre" ? 1 : -1; }
+                    pintar();
+                });
+                return th;
+            }));
+
+            var cuerpo = visibles.map(function (c) {
+                var nombre = h("td", { style: "min-width:190px;font-weight:600" }, [
+                    h("span", { texto: c.nombre }),
+                    c.nuevo ? h("span", { clase: "etq etq--nuevo c-nuevo", texto: "Nuevo" }) : null,
+                    c.otros.length ? h("span", { clase: "c-otros", texto: "Otros: " + c.otros.map(function (o) { return o.nombre + " (" + usd(o.venta) + ")"; }).join(", ") }) : null
+                ]);
+                return h("tr", {}, [
+                    nombre,
+                    h("td", { clase: "nums", style: "text-align:right;font-weight:700;white-space:nowrap;" + (c.venta < 0 ? "color:var(--cdk-error)" : ""), texto: usd(c.venta) }),
+                    h("td", { style: "white-space:nowrap", texto: tipo === "CARTERA" ? (c.atendido ? "Atendido" : "Sin atender") : duenoCorto(c) + (c.dueno && (c.dueno.tipo === "cartera" || c.dueno.tipo === "otro") ? " · " + c.dueno.nombre.split(" ")[0] : "") + (c.atendido ? "" : " · no cuenta") }),
+                    h("td", { clase: "nums", style: "text-align:right", texto: c.docs ? String(c.docs) : "—" }),
+                    h("td", { clase: "nums", style: "white-space:nowrap", texto: fecha(c.ultimaCompra) }),
+                    h("td", { clase: "nums", style: "text-align:right;white-space:nowrap", texto: c.promedioMensual ? usd(c.promedioMensual) : "—" })
+                ]);
+            });
+
+            caja.innerHTML = "";
+            caja.appendChild(h("table", { clase: "cdk-tabla" }, [h("thead", {}, [cabeza]), h("tbody", {}, cuerpo)]));
+
+            pie.innerHTML = "";
+            if (filas.length > mostrados) {
+                var b = h("button", { type: "button", clase: "cdk-boton cdk-boton--suave", texto: "Mostrar los " + (filas.length - mostrados) + " restantes" });
+                b.addEventListener("click", function () { mostrados = filas.length; pintar(); });
+                pie.appendChild(b);
+            }
+        }
+        pintar();
+
+        return [h("h2", { texto: tipo === "CARTERA" ? "Sus clientes" : "Sus clientes del mes" }),
+                h("p", { clase: "sub-seccion", texto: "Toca un encabezado para ordenar. En pantalla ancha caben todas las columnas; aquí se desplaza hacia el lado con el cliente fijo." }), caja, pie];
+    }
+
+    /* ---------------------------------------------------------------
+     * D · Filtros rápidos y dos líneas por cliente
+     * ------------------------------------------------------------- */
+    function filtros(clientes, tipo) {
+        var FILTROS = tipo === "CARTERA"
+            ? [["todos", "Todos"], ["atendidos", "Atendidos"], ["sin", "Sin atender"]]
+            : [["todos", "Todos"], ["nuevos", "Nuevos"], ["propio", "Suyos"], ["cartera", "De cartera"], ["libre", "Libres"], ["otro", "De otro"], ["no", "No cuentan"]];
+        var activo = "todos", aguja = "";
+
+        var pestanas = h("div", { clase: "cdk-pestanas pestanas-cortas" });
+        var cuenta = h("p", { clase: "sub", style: "margin:0 0 8px" });
+        var destino = h("div", {});
+
+        function pasa(c) {
+            if (aguja && c.nombre.toLowerCase().indexOf(aguja) === -1) return false;
+            switch (activo) {
+                case "atendidos": return c.atendido;
+                case "sin": return !c.atendido;
+                case "nuevos": return c.nuevo;
+                case "no": return !c.atendido;
+                case "todos": return true;
+                default: return c.atendido && categoria(c) === activo;
+            }
+        }
+
+        function pintar() {
+            pestanas.innerHTML = "";
+            FILTROS.forEach(function (f) {
+                var b = h("button", { type: "button", clase: "cdk-pestana" + (f[0] === activo ? " es-activa" : ""), texto: f[1] });
+                b.addEventListener("click", function () { activo = f[0]; pintar(); });
+                pestanas.appendChild(b);
+            });
+
+            var visibles = clientes.filter(pasa);
+            cuenta.textContent = visibles.length === clientes.length ? "" : "Se muestran " + visibles.length + " de " + clientes.length + ".";
+            destino.innerHTML = "";
+            if (!visibles.length) { destino.appendChild(h("div", { clase: "lista" }, [h("div", { clase: "vacio", texto: "Ningún cliente coincide." })])); return; }
+
+            var lista = h("div", { clase: "lista" });
+            visibles.forEach(function (c) {
+                var dos = [];
+                if (tipo === "COBERTURA") dos.push(etq(duenoCorto(c) + (c.dueno && (c.dueno.tipo === "cartera" || c.dueno.tipo === "otro") ? " · " + c.dueno.nombre.split(" ")[0] : "")));
+                var p = pestanaDe(c, tipo); if (p) dos.push(p);
+                if (tipo === "COBERTURA" && !c.atendido) dos.push(etq("No cuenta como atendido"));
+                dos.push(h("span", { clase: "sub", texto: (c.docs ? c.docs + (c.docs === 1 ? " factura" : " facturas") + " · " : "") + "última " + fecha(c.ultimaCompra) }));
+
+                var extra = [];
+                if (c.promedioMensual) extra.push(h("div", { clase: "sub", texto: "Compraba por mes " + usd(c.promedioMensual) }));
+                if (c.otros.length) extra.push(h("div", { clase: "sub", texto: otrosTexto(c) }));
+                if (!extra.length) extra.push(h("div", { clase: "sub", texto: "Sin más datos." }));
+
+                var fila = h("button", { type: "button", clase: "d-fila" }, [
+                    h("div", { clase: "d-1" }, [
+                        h("span", { clase: "d-nombre", texto: c.nombre }),
+                        h("span", { clase: "d-venta nums", style: c.venta < 0 ? "color:var(--cdk-error)" : (c.atendido ? "" : "color:var(--cdk-texto-suave)"), texto: usd(c.venta) })
+                    ]),
+                    h("div", { clase: "d-2" }, dos),
+                    h("div", { clase: "d-extra" }, extra)
+                ]);
+                fila.addEventListener("click", function () { fila.classList.toggle("abierta"); });
+                lista.appendChild(fila);
+            });
+            destino.appendChild(lista);
+        }
+
+        var buscador = h("input", { type: "search", clase: "cdk-entrada d-buscar", placeholder: "Buscar un cliente", "aria-label": "Buscar un cliente" });
+        buscador.addEventListener("input", function () { aguja = buscador.value.trim().toLowerCase(); pintar(); });
+
+        pintar();
+        return [h("h2", { texto: tipo === "CARTERA" ? "Sus clientes" : "Sus clientes del mes" }), buscador, pestanas, cuenta, destino];
+    }
+
+    /* ---------------------------------------------------------------
+     * La página
+     * ------------------------------------------------------------- */
+    var VARIANTES = [
+        { id: "hoy", titulo: "Hoy · tarjetas", nota: "Como está ahora, sin el código. Cada cliente ocupa unos 140 px: en una pantalla de móvil caben cuatro o cinco.", f: hoy },
+        { id: "a", titulo: "A · Ranking con barra", nota: "Una línea por cliente, con una barra que muestra quién pesa. El resto (facturas, última compra, quién le facturó) aparece al tocar. Cabe el triple de clientes.", f: ranking },
+        { id: "b", titulo: "B · Agrupado por dueño", nota: "Responde «¿a quién le vende?»: suyos, de cartera, libres, de otro. Cada grupo con las cifras que manda el backend, plegado. En cartera: atendidos y sin atender.", f: agrupado },
+        { id: "c", titulo: "C · Tabla ordenable", nota: "Para comparar y ordenar (por venta, por última compra, por nombre). La más densa en pantalla ancha; en móvil se desplaza hacia el lado con el cliente fijo.", f: tabla },
+        { id: "d", titulo: "D · Filtros y dos líneas", nota: "Pestañas rápidas (Nuevos, Suyos, Libres…) en vez de los dos desplegables de hoy, y dos líneas por cliente. Lo demás, al tocar.", f: filtros }
+    ];
+
+    function pintarTodo() {
+        var tipo = document.getElementById("tipo").value;
+        var datos = tipo === "CARTERA" ? cartera() : cobertura();
+        var rejilla = document.getElementById("rejilla");
+        rejilla.innerHTML = "";
+
+        VARIANTES.forEach(function (v) {
+            var pantalla = h("div", { clase: "pantalla" }, v.f(datos.map(function (c) { return Object.assign({}, c); }), tipo));
+            rejilla.appendChild(h("div", { id: "v-" + v.id }, [
+                h("p", { clase: "caso__titulo", texto: v.titulo }),
+                h("p", { clase: "caso__nota", texto: v.nota }),
+                pantalla
+            ]));
+        });
+    }
+
+    document.getElementById("tipo").addEventListener("change", pintarTodo);
+    pintarTodo();
+})();
+</script>
+</body>
+</html>
