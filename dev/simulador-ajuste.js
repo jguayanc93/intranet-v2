@@ -32,6 +32,10 @@
  * `precioMinimo` ya redondeado; `desde`/`hasta` mal escritos, inexistentes o al reves dan `400 fechas invalidas`;
  * y `ajustesPendientes` (dev/servidor.js) cuenta solo lo que se puede responder.
  *
+ * Tercera ronda (06/11/2026): **un costo de 0 cuenta como costo desconocido**. En `/solicitud` esa linea llega con `costo`,
+ * `precioMinimo` y `margen` en null, y confirmarla da `409 costo desconocido`. Ajuste directo (el grupo 25 sobre sus propios
+ * documentos) vive en dev/simulador-ajuste-directo.js, sobre estos mismos documentos.
+ *
  * Que es fiel al contrato:
  *
  *   · enviar crea UNA solicitud por cada responsable —el dueño de la marca en el mes o,
@@ -86,7 +90,11 @@ const PRODUCTOS = {
     "0505-012610": { codmar: "0008", codf: "T664120-AL",   descripcion: "BOTELLA DE TINTA EPSON 664 NEGRO",       costo: 7.45,  stock: 3491, almacen: "01" },
     "0505-012615": { codmar: "0008", codf: "T664220-AL",   descripcion: "BOTELLA DE TINTA EPSON 664 CIAN",        costo: 7.45,  stock: 2210, almacen: "01" },
     "0505-003201": { codmar: "0032", codf: "AUV128-64G",   descripcion: "MEMORIA USB ADATA UV128 64GB",           costo: 4.10,  stock: 1200, almacen: "01" },
-    "0505-003601": { codmar: "0036", codf: "ZT-GT1030",    descripcion: "TARJETA DE VIDEO ZOTAC GT1030 2GB",       costo: 88.00, stock: 14,   almacen: "01" }
+    "0505-003601": { codmar: "0036", codf: "ZT-GT1030",    descripcion: "TARJETA DE VIDEO ZOTAC GT1030 2GB",       costo: 88.00, stock: 14,   almacen: "01" },
+    /* Sin costo cargado en su almacen (06/11/2026: un costo de 0 cuenta como desconocido). Llega con `costo`,
+       `precioMinimo` y `margen` en null, y ajustarlo da `409 costo desconocido`. Lo usan los documentos de ajuste directo,
+       y las pruebas de «Recibidas» lo meten en una solicitud. */
+    "0505-000202": { codmar: "0002", codf: "TDK-DVDR47",   descripcion: "DVD-R TDK 4.7GB (TORRE X50)",            costo: 0,     stock: 0,    almacen: "01" }
 };
 
 /* ---------------------------------------------------------------- documentos */
@@ -318,6 +326,23 @@ const margenDe = (precio, costo) => {
     return { monto: monto, sobreCosto: costo > 0 ? redondear(monto / costo * 100) : null,
              sobreVenta: precio > 0 ? redondear(monto / precio * 100) : null };
 };
+
+/** Como esta hoy una linea: `precio` es el de lista; `precioNeto`, lo que paga el cliente por unidad (hasta 4 decimales). */
+const actualDe = (l) => ({ cantidad: l.cantidad, precio: l.precio, dsct: l.dsct, total: importeDe(l),
+                           precioNeto: redondear4(l.precio * (1 - l.dsct / 100)) });
+
+/**
+ * Costo, minimo, stock, almacen y margen de una linea. El margen va con el precio actual SIN descuento, que es como queda
+ * al ajustar. **Sin costo** (no existe o es 0, desde el 06/11/2026): `costo`, `precioMinimo` y `margen` en null.
+ */
+function costoDeLinea(doc, l) {
+    const p = PRODUCTOS[l.codi];
+    const costo = costoEn(doc, l.codi);
+    if (!(costo > 0)) return { costo: null, stock: p.stock, almacen: p.almacen, precioMinimo: null, margen: null };
+    return { costo: costo, stock: p.stock, almacen: p.almacen, precioMinimo: precioMinimoDe(doc, l.codi), margen: margenDe(l.precio, costo) };
+}
+
+const costoDesconocido = () => error(409, "costo desconocido", "el producto no tiene costo en el almacen de la linea: no se puede ajustar su precio");
 
 const recientesPrimero = (a, b) => (a.fecreg < b.fecreg ? 1 : a.fecreg > b.fecreg ? -1 : b.id - a.id);
 
@@ -563,18 +588,12 @@ function solicitud(params) {
         lineas: s.items.map((item) => {
             const l = doc.lineas.find((x) => x.item === item);
             const p = PRODUCTOS[l.codi];
-            const costo = costoEn(doc, l.codi);
-            return {
+            return Object.assign({
                 item: l.item, codi: l.codi, codf: p.codf, descripcion: p.descripcion, marca: marcaPlana(l.codmar),
                 enviado: s.enviado[item],
                 /* `precio` es el de lista; `precioNeto`, lo que paga hoy el cliente por unidad (hasta 4 decimales). */
-                actual: { cantidad: l.cantidad, precio: l.precio, dsct: l.dsct, total: importeDe(l),
-                          precioNeto: redondear4(l.precio * (1 - l.dsct / 100)) },
-                costo: costo, precioMinimo: precioMinimoDe(doc, l.codi), stock: p.stock, almacen: p.almacen,
-                /* Con el precio actual SIN descuento, que es como queda al ajustar. */
-                margen: margenDe(l.precio, costo),
-                ajuste: s.ajuste[item] || null
-            };
+                actual: actualDe(l)
+            }, costoDeLinea(doc, l), { ajuste: s.ajuste[item] || null });
         })
     });
 }
@@ -645,6 +664,7 @@ function confirmar(cuerpo) {
         }
 
         const costo = costoEn(doc, linea.codi);
+        if (!(costo > 0)) return costoDesconocido();
         const minimo = precioMinimoDe(doc, linea.codi);
         if (precio < minimo) {
             return error(409, "precio bajo costo", "el precio no puede ser menor que el costo (" + minimo + ")");
@@ -698,4 +718,7 @@ function rechazar(cuerpo) {
 }
 
 module.exports = { previa, enviar, enviadas, listaCotizaciones, listaPedidos, recibidas, solicitud, confirmar, rechazar, reiniciar,
-                   estado: A, PRODUCTOS, responsableDe, costoEn, VENDEDOR };
+                   estado: A, PRODUCTOS, responsableDe, costoEn, VENDEDOR,
+                   /* Lo que reutiliza dev/simulador-ajuste-directo.js: los mismos documentos, las mismas cuentas, los mismos errores. */
+                   ayudas: { ok, error, noIdentificado, sinPermiso, esVendedor, claveDoc, marcaPlana, importeDe, totalesDe, actualDe,
+                             costoDeLinea, costoDesconocido, costoEn, precioMinimoDe, alCentimo, fechasInvalidas, nombreDe } };

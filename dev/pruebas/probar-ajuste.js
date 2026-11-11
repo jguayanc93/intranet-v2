@@ -894,6 +894,62 @@ function preparar(rol, opciones) {
        [...p.doc.querySelectorAll("#ajuste-lineas > li")].map((n) => n.id), ["linea-1", "linea-3", "linea-6"]);
     ok("y las que no son suyas, aparte", texto($(p, "ajuste-aviso-otras")).includes("4 líneas de otras marcas"), true);
 
+    /* ============================================ una linea sin costo (06/11) */
+    console.log("\n— una línea sin costo (un costo de 0 cuenta como desconocido) —");
+    const TDK = ajusteSim.PRODUCTOS["0505-000201"];
+    const EPSON = ajusteSim.PRODUCTOS["0505-020601"];
+    const costoTdk = TDK.costo, costoEpson = EPSON.costo;
+
+    preparar("ESPECIALISTA");
+    TDK.costo = 0;
+    p = await montar("ajuste/ajuste_solicitud.html", "?id=" + idDe("009-00969476"));
+    await pausa(250);
+    ok("el backend la manda con costo, minimo y margen en null",
+       (() => { const l = ajusteSim.solicitud({ id: idDe("009-00969476") }).cuerpo.data.lineas.find((x) => x.item === 3);
+                return [l.costo, l.precioMinimo, l.margen]; })(), [null, null, null]);
+    ok("se ve, sin controles de precio, y se dice por que",
+       [!!$(p, "linea-3"), !!$(p, "linea-3-activa"), !!$(p, "linea-3-sin-costo")], [true, false, true]);
+    ok("su costo no sale como $ 0.00", valorDe($(p, "linea-3"), "Costo"), "Sin costo en este almacén");
+    ok("ni un margen inventado", valorDe($(p, "linea-3"), "Margen sin descuento"), null);
+    ok("la otra linea se ajusta como siempre", !!$(p, "linea-2-activa"), true);
+    ok("y la cuenta es de las que se pueden ajustar", (() => {
+        marcar(p, $(p, "linea-2-activa"), true);
+        return texto($(p, "ajuste-resumen"));
+    })(), "Vas a ajustar 1 de 1 línea.");
+    llamadas = [];
+    escribir(p, $(p, "linea-2-precio"), "170");
+    clic(p, $(p, "ajuste-confirmar"));
+    await pausa(60);
+    clic(p, botonModal(p, "confirmar"));
+    await pausa(300);
+    ok("solo viaja la que tiene costo", posts(llamadas).map((x) => x.cuerpo.lineas), [[{ item: 2, precio: 170 }]]);
+
+    preparar("ESPECIALISTA");
+    TDK.costo = 0; EPSON.costo = 0;
+    p = await montar("ajuste/ajuste_solicitud.html", "?id=" + idDe("009-00969476"));
+    await pausa(250);
+    ok("con todas sin costo, no hay nada que marcar: lo dice, y se puede rechazar",
+       [texto($(p, "ajuste-resumen")), $(p, "ajuste-confirmar").disabled, $(p, "ajuste-rechazar").disabled],
+       ["Ninguna línea se puede ajustar: no tienen costo cargado. Si no hay nada que ajustar, rechaza la solicitud.", true, false]);
+    TDK.costo = costoTdk; EPSON.costo = costoEpson;
+
+    /* El costo se borro despues de abrirla: el backend dice `409 costo desconocido`, y se vuelve a pedir. */
+    preparar("ESPECIALISTA");
+    p = await montar("ajuste/ajuste_solicitud.html", "?id=" + idDe("009-00969476"));
+    await pausa(250);
+    marcar(p, $(p, "linea-3-activa"), true);
+    escribir(p, $(p, "linea-3-precio"), "25");
+    TDK.costo = 0;
+    llamadas = [];
+    clic(p, $(p, "ajuste-confirmar"));
+    await pausa(60);
+    clic(p, botonModal(p, "confirmar"));
+    await pausa(350);
+    ok("si al confirmar ya no tiene costo, se dice y se vuelve a pedir: la linea queda sin controles",
+       [toasts(p.doc).some((t) => t.includes("no tiene costo")), gets(llamadas, "/ajuste/solicitud"), !!$(p, "linea-3-sin-costo")],
+       [true, 1, true]);
+    TDK.costo = costoTdk;
+
     /* ====================================================== lo que no existe */
     console.log("\n— lo que no existe —");
     preparar("ESPECIALISTA");
