@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ajustar mis documentos - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Mis documentos</title>
+</head>
+
+<!-- Grupo 25: sus propias cotizaciones y pedidos, para ajustarles el precio o asignarlos. Ver docs/ajuste-directo.md. -->
+<body data-modulo="ajuste" data-titulo="Mis documentos">
+
+<div class="cdk-pagina">
+    <header class="cdk-cabecera">
+        <h1 class="cdk-cabecera__titulo">Mis documentos</h1>
+        <p class="cdk-cabecera__sub">Tus cotizaciones y pedidos: ajusta el precio de las líneas de tus marcas o asígnalos a un vendedor</p>
+    </header>
+
+    <div id="contenido"></div>
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- Comparte con Marcas la lectura de los errores del backend. -->
+<script src="/js/marcas/datos.js"></script>
+<script src="/js/ajuste/datos.js"></script>
+<script src="/js/ajuste/fechas.js"></script>
+<script src="/js/ajuste/directo.js"></script>
+</body>
+</html>
