@@ -136,7 +136,15 @@ y están escritos contra el código, no de memoria.
   aparte (`ajuste`).** Se actualizó el 21/10 —dos rondas— con nuestras respuestas: `GET /ajuste`, `precioMinimo` (el costo, con hasta
   4 decimales, redondeado hacia arriba), `precioNeto`, filtros `desde`/`hasta`, las pendientes se **cierran al leer**,
   `ajustesPendientes` en `/vendedor` (solo lo que se puede responder), la lista de pedidos con los `sin aprobar`,
-  `400 fechas invalidas` y el precio **redondeado al céntimo, la mitad hacia arriba**.
+  `400 fechas invalidas` y el precio **redondeado al céntimo, la mitad hacia arriba**. El 06/11, tercera ronda: los casos
+  de prueba de bdnava08 (sección 8), las acciones `directo` y `asignados` del grupo 25, y **un costo de 0 cuenta como costo
+  desconocido** (la línea se muestra sin controles de precio).
+- **[ajuste-directo.md](ajuste-directo.md)** — El **ajuste directo y la asignación** (grupo 25, 06/11/2026): el especialista o la
+  jefatura ajusta el precio de **sus propias** cotizaciones y pedidos —solo el precio, nunca la cantidad; se quitan todas las
+  promociones, flete incluido— y, si quiere, los **asigna** a un vendedor del grupo 20; `asignados` es el historial. Seis rutas
+  bajo `/ajuste/directo` y `/ajuste/asignados`. Dos rondas: el 06/11 contestaron nuestras siete preguntas (`otras[]`,
+  `motivoAjustar`/`motivoAsignar`, `hayMas`, `flete`, `ndocu` sin fechas); el 10/11, los casos de línea sin costo para «Recibidas» y
+  cómo se hace la asignación de prueba.
 
 ## Lo que está esperando a salir
 
@@ -193,6 +201,10 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   decimales y el mínimo, `precioNeto`, el filtro por fecha, los pedidos en el paso 1, el numerito del menú…) y a las tres
   preguntas de la segunda ronda (el contador, `fechas invalidas`, el redondeo), **sin nada abierto**, y cómo recorrerlo
   contra bdnava08 sin gastar solicitudes reales.
+- **[respuesta-ajuste-directo.md](respuesta-ajuste-directo.md)** — Para el backend: **el ajuste directo está construido**. Qué hicimos
+  con cada una de sus respuestas, cómo quedó cada pantalla («Mis documentos», el documento y «Asignados»), el orden **«aplicar no
+  cierra, asignar sí»**, la línea sin costo en las dos pantallas que ajustan y la tabla del recorrido por bdnava08, con la asignación
+  al final. **Sin nada abierto** desde el 10/11.
 - **[respuesta-zona.md](respuesta-zona.md)** — Para el backend: **cómo leímos el jefe de zona** (el menú de tres módulos y el `403 usuario sin acceso`
   que lleva al login; el avance con su semáforo dicho con texto, la marca de lo que ya pasó del mes, los que no registraron cuota, y los meses cerrados sin
   semáforo; la probabilidad con sus cuatro meses, los motivos sin inventar un número y el pasado en pasado), **sus respuestas a la pregunta**

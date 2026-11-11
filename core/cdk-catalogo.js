@@ -376,7 +376,11 @@
                 "enviar":    { pagina: "ajuste_enviar",    etiqueta: "Pedir ajuste", descripcion: "Pedir que ajusten el precio de una cotización o pedido" },
                 "enviadas":  { pagina: "ajuste_enviadas",  etiqueta: "Mis ajustes",  descripcion: "Lo que pediste y lo que respondieron" },
                 /* Grupo 25 */
-                "recibidas": { pagina: "ajuste_recibidas", etiqueta: "Recibidas",    descripcion: "Ajustes de precio que te enviaron" }
+                "recibidas": { pagina: "ajuste_recibidas", etiqueta: "Recibidas",    descripcion: "Ajustes de precio que te enviaron" },
+                /* Grupo 25, desde el 06/11/2026: sus propios documentos, sin que nadie se los envie. El detalle de uno
+                   (ajuste_documento) se abre desde la lista, no desde aqui. Ver docs/ajuste-directo.md. */
+                "directo":   { pagina: "ajuste_directo",   etiqueta: "Mis documentos", descripcion: "Ajusta el precio de tus cotizaciones y pedidos, o asígnalos a un vendedor" },
+                "asignados": { pagina: "ajuste_asignados", etiqueta: "Asignados",    descripcion: "Lo que asignaste a un vendedor y en qué quedó" }
             }
         }
     };

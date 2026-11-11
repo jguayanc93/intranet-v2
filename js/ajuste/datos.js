@@ -7,13 +7,15 @@
  *
  *   vendedor      enviar, enviadas
  *   responsable   recibidas, solicitud, confirmar, rechazar
+ *                 directo/documentos, directo/documento, directo/aplicar,
+ *                 directo/vendedores, directo/asignar, asignados   (sus propios documentos)
  *
  * Las respuestas vienen en el sobre `{ status, codigo, data }`, sin doble
  * codificar; aqui se devuelve ya `data`. En un error HTTP el sobre queda en
  * `err.datos` (`status` para decidir en codigo, `msg` para mostrar), y se leen con
  * `CDK.marcas.statusDe` y `CDK.marcas.mensajeError`, que comparten la forma.
  *
- * Ver docs/ajuste-precios.md.
+ * Ver docs/ajuste-precios.md y docs/ajuste-directo.md.
  */
 ;(function (global) {
     "use strict";
@@ -151,8 +153,89 @@
     };
 
     /* ---------------------------------------------------------------
+     * Ajuste directo y asignacion (grupo 25), desde el 06/11/2026
+     *
+     * El especialista o la jefatura ajusta el precio de SUS cotizaciones y pedidos (los de su
+     * codigo de vendedor), sin que nadie se los envie, y si quiere los asigna a un vendedor del
+     * grupo 20. Ver docs/ajuste-directo.md.
+     * ------------------------------------------------------------- */
+
+    /**
+     * Una pestaña de «Mis documentos»: `tipo` es `COT` o `PED`. `filtros`: `{ desde, hasta }` (AAAA-MM-DD) o
+     * `{ ndocu }` (con serie; entonces las fechas se ignoran). Sin filtros, los ultimos 30 dias.
+     *
+     * Devuelve `{ tipo, ndocu, desde, hasta, ultimosDias, hayMas, documentos[] }`: `desde`/`hasta` dicen siempre que
+     * fechas son, tambien las de los 30 dias por defecto.
+     */
+    ajuste.directoDocumentos = function (tipo, filtros) {
+        return CDK.http.get(CDK.rutas.api("/ajuste/directo/documentos" + consulta(Object.assign({ tipo: tipo }, filtros))))
+            .then(function (r) {
+                var d = desenvolver(r) || {};
+                if (!Array.isArray(d.documentos)) d.documentos = [];
+                return d;
+            });
+    };
+
+    /** Un documento propio con todo para ajustarlo o asignarlo: sus lineas, las de otras marcas y sus ajustes anteriores. */
+    ajuste.directoDocumento = function (tipo, ndocu) {
+        return CDK.http.get(CDK.rutas.api("/ajuste/directo/documento" + consulta({ tipo: tipo, ndocu: ndocu }))).then(desenvolver);
+    };
+
+    /** Aplica los precios nuevos. `lineas`: solo las que se ajustan, `{ item, precio }` (nunca la cantidad). */
+    ajuste.directoAplicar = function (tipo, ndocu, lineas, observacion) {
+        var cuerpo = { tipo: tipo, ndocu: ndocu, lineas: lineas };
+        if (observacion) cuerpo.observacion = observacion;
+
+        return CDK.http.post(CDK.rutas.api("/ajuste/directo/aplicar"), cuerpo).then(desenvolver);
+    };
+
+    /** Vendedores activos del grupo 20, por nombre o codigo. Devuelve `{ hayMas, vendedores[] }` (hasta 50). */
+    ajuste.directoVendedores = function (pista) {
+        return CDK.http.get(CDK.rutas.api("/ajuste/directo/vendedores" + consulta({ pista: pista })))
+            .then(function (r) {
+                var d = desenvolver(r) || {};
+                if (!Array.isArray(d.vendedores)) d.vendedores = [];
+                return d;
+            });
+    };
+
+    /** Pasa el documento a un vendedor. **No se deshace desde la intranet.** */
+    ajuste.directoAsignar = function (tipo, ndocu, codven) {
+        return CDK.http.post(CDK.rutas.api("/ajuste/directo/asignar"), { tipo: tipo, ndocu: ndocu, codven: codven }).then(desenvolver);
+    };
+
+    /** Lo que asigno, los mas recientes primero (hasta 100). `{ desde, hasta }` por fecha de asignacion. Devuelve `{ hayMas, asignados[] }`. */
+    ajuste.asignados = function (filtros) {
+        return CDK.http.get(CDK.rutas.api("/ajuste/asignados" + consulta(filtros)))
+            .then(function (r) {
+                var d = desenvolver(r) || {};
+                if (!Array.isArray(d.asignados)) d.asignados = [];
+                return d;
+            });
+    };
+
+    /* ---------------------------------------------------------------
      * Lectura de los datos
      * ------------------------------------------------------------- */
+
+    /**
+     * En que esta un documento, dicho para la persona. `sin aprobar` y `aprobado` son los que se pueden ajustar o
+     * asignar; los demas solo llegan cuando el documento avanzo (en el detalle o en «Asignados»).
+     */
+    var SITUACIONES = {
+        "sin aprobar": { texto: "Sin aprobar", tono: "alerta" },
+        "aprobado":    { texto: "Aprobado",    tono: "bien" },
+        "pedido":      { texto: "Convertida en pedido", tono: "bien" },
+        "facturado":   { texto: "Facturado",   tono: "bien" },
+        "atendido":    { texto: "Atendido",    tono: "bien" },
+        "desaprobado": { texto: "Desaprobado", tono: "nulo" },
+        "anulado":     { texto: "Anulado",     tono: "nulo" },
+        "otro":        { texto: "Otro estado", tono: "nulo" }
+    };
+
+    ajuste.situacion = function (s) {
+        return SITUACIONES[s] || { texto: String(s || "—"), tono: "nulo" };
+    };
 
     /** «Cotización» o «Pedido», segun el `tipo` (`COT` o `PED`). */
     ajuste.tipoNombre = function (tipo) {

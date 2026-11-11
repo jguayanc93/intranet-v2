@@ -142,6 +142,9 @@ const reportesSim = require("./simulador-reportes");
    usuario CONFIRMADO (`confirmado25`); `pendiente25` ve el aviso de confirmar. */
 const cuotaSim = require("./simulador-cuota");
 const ajusteSim = require("./simulador-ajuste");
+/* Ajuste directo y asignacion (grupo 25, desde el 06/11): sobre los mismos documentos que el ajuste, asi lo asignado al vendedor
+   de la demo le aparece en sus listas. Se reinicia DESPUES del ajuste, que vacia los documentos. */
+const directoSim = require("./simulador-ajuste-directo");
 
 /* Cobertura de clientes por marca (grupo 25), no la cuota de cobertura del grupo 20. Usa las mismas
    marcas y los mismos meses que cuota y reportes. */
@@ -166,6 +169,7 @@ function entrar(cuenta) {
     const p = perfiles.entrar(cuenta, marcasSim, { tipoPorDefecto: process.env.TIPO });
     USUARIO = { nombre: p.nombre, grupo: p.grupo, tipo: p.tipo };
     ajusteSim.reiniciar();
+    directoSim.reiniciar();
     /* Cada ingreso deja las sugerencias del dia como al empezar: la primera vez que abra el modulo, se calculan. */
     quienVenderSim.reiniciar();
     quienVenderSim.usar(p.codven);
@@ -495,6 +499,26 @@ http.createServer((pet, res) => {
                     : que === "solicitud" ? ajusteSim.solicitud(params)
                     : que === "confirmar" ? ajusteSim.confirmar(d)
                     : ajusteSim.rechazar(d);
+
+            console.log(`      ajuste/${que}: ${r.status}` +
+                        (r.cuerpo.status && r.cuerpo.status !== "ok" ? ` ${r.cuerpo.status}` : ""));
+            responderPlano(res, r.cuerpo, r.status);
+        });
+    }
+
+    /* Ajuste directo y asignacion (grupo 25): sus propios documentos. Ver dev/simulador-ajuste-directo.js. */
+    if (/^\/v1\/ajuste\/(directo\/(documentos|documento|aplicar|vendedores|asignar)|asignados)$/.test(ruta)) {
+        return conCuerpo(pet, (d) => {
+            const q = new URL(pet.url, "http://x").searchParams;
+            const params = { tipo: q.get("tipo"), ndocu: q.get("ndocu"), desde: q.get("desde"), hasta: q.get("hasta"), pista: q.get("pista") };
+            const que = ruta.slice("/v1/ajuste/".length);
+
+            const r = que === "directo/documentos" ? directoSim.documentos(params)
+                    : que === "directo/documento" ? directoSim.documento(params)
+                    : que === "directo/aplicar" ? directoSim.aplicar(d)
+                    : que === "directo/vendedores" ? directoSim.vendedores(params)
+                    : que === "directo/asignar" ? directoSim.asignar(d)
+                    : directoSim.asignados(params);
 
             console.log(`      ajuste/${que}: ${r.status}` +
                         (r.cuerpo.status && r.cuerpo.status !== "ok" ? ` ${r.cuerpo.status}` : ""));
@@ -1798,11 +1822,11 @@ http.createServer((pet, res) => {
 
     /* El grupo 25 no registra una cuota de un solo monto: sin `crear`, y con los
        dos permisos de las rutas por marca. Cobertura y cartera siguen con `crear`. */
-    /* Los accesos de ajuste: cada grupo, los suyos. Supuesto nuestro: el backend aun no dijo
-       como se piden. Es lo que usan los demas modulos. Ver docs/respuesta-ajuste-precios.md. */
+    /* Los accesos de ajuste: cada grupo, los suyos (docs/ajuste-precios.md, secc. 2). Desde el 06/11 el grupo 25 suma
+       `directo` y `asignados` (docs/ajuste-directo.md). */
     if (ruta === "/v1/ajuste") {
         return responder(res, { status: "ok", codigo: 0,
-            data: esGrupo25(marcasSim.estado.rol) ? ["recibidas"] : ["enviar", "enviadas"] });
+            data: esGrupo25(marcasSim.estado.rol) ? ["recibidas", "directo", "asignados"] : ["enviar", "enviadas"] });
     }
 
     if (ruta === "/v1/cuota" && ["ESPECIALISTA", "JEFATURA"].includes(marcasSim.estado.rol)) {

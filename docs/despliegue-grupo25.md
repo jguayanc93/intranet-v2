@@ -332,3 +332,56 @@ git push origin main
   da conflicto (en `README.md`, y en lo que los dos tocaron). En ese orden, cada `revert` sale limpio, y tras el segundo queda el merge del grupo 25.
 - Queda abierto, **como entrega aparte**, aplicar la misma regla a las cotizaciones en **dólares** (en los dos lados el mismo día): ver la sección 2 de
   [respuesta-cotizacion-moneda.md](respuesta-cotizacion-moneda.md).
+
+---
+
+## 8 · Lo que suma el ajuste directo y la asignación (grupo 25, 06/11/2026)
+
+Va en **su propio merge** (rama `ajuste-directo`), encima del de la lista de precios, y se puede deshacer por separado. El contrato es
+[ajuste-directo.md](ajuste-directo.md); lo que hicimos con cada respuesta y el recorrido por bdnava08, en
+[respuesta-ajuste-directo.md](respuesta-ajuste-directo.md). Dos acciones nuevas en el hub de Ajustes, **solo para el grupo 25** (especialistas y
+jefaturas):
+
+| el frontend llama | para qué |
+|---|---|
+| `GET /v1/ajuste` del grupo 25 con `directo` y `asignados` | las dos tarjetas nuevas del hub, «Mis documentos» y «Asignados» |
+| `GET /v1/ajuste/directo/documentos?tipo=` (y `desde`, `hasta`, `ndocu`) | sus cotizaciones y pedidos, los últimos 30 días por defecto |
+| `GET /v1/ajuste/directo/documento?tipo=&ndocu=` | el detalle para ajustar |
+| `POST /v1/ajuste/directo/aplicar` | aplicar los precios (**modifica el documento**: descuento a 0 y fuera todas las promociones, flete incluido) |
+| `GET /v1/ajuste/directo/vendedores?pista=` y `POST /v1/ajuste/directo/asignar` | pasar el documento a un vendedor del grupo 20 (**no se deshace desde la intranet**) |
+| `GET /v1/ajuste/asignados` | el historial, de solo lectura |
+
+**El orden de salida es el de siempre, el mismo día, y en cualquier orden nada se rompe:**
+
+- **Si el backend enciende `directo` y `asignados` antes**, el hub que hay hoy en producción las ignora (avisa en la consola y no pinta nada): no
+  sale ninguna entrada genérica ni un 404.
+- **Si el frontend sube antes**, las dos tarjetas no aparecen hasta que el backend las mande; las rutas nuevas no se llaman.
+- **Lo único que cambia en algo que ya está en producción es «Recibidas»** (grupo 25): su tarjeta de precio pasó a una pieza compartida
+  ([js/ajuste/precio.js](../js/ajuste/precio.js)) y **una línea con costo 0 o sin costo se muestra sin controles de precio**. Es la regla del
+  backend desde el 06/11 (antes un costo 0 dejaba el mínimo en 0 y aceptaba cualquier precio). Con el backend anterior, el frontend nuevo
+  también deja sin controles una línea de costo 0: es más estricto, no más permisivo. El grupo 20 no cambia.
+- **Cuentas para el recorrido:** la jefatura **264** y la **071**, el especialista **229** y el **270**, y un vendedor del grupo 20 (**246** o **196**)
+  para el `403 sin permiso`. Los casos están en la sección 3 de [respuesta-ajuste-directo.md](respuesta-ajuste-directo.md). **Aplicar y asignar
+  modifican documentos reales**: la asignación (`009-00773963` a `V0278`, con un ajuste aplicado antes) va al final, y al terminar se avisa al
+  backend para que devuelva los documentos. **Las solicitudes de prueba de «Recibidas» vencen el 17/11/2026.**
+
+### Volver atrás del ajuste directo
+
+Entra en `main` con **su propio commit de merge** («Grupo 25: ajuste directo y asignación»), encima del de la lista de precios, así que se deshace
+igual y por separado, y **es lo primero que se deshace** si hay que volver atrás:
+
+```
+git log --merges -3 --format="%h %s"     # el de arriba es el del ajuste directo
+git revert -m 1 <hash del merge del ajuste directo>
+git push origin main
+```
+
+- La etiqueta **`pre-ajuste-directo`** marca lo que había justo antes (el último commit de la lista de precios, `ef055e2`).
+- **No hace falta que el backend quite nada antes**: con el frontend anterior, el hub ignora `directo` y `asignados`. Las rutas siguen respondiendo
+  al grupo 25 si alguien las llama a mano, que es cosa del backend.
+- Al deshacerlo, «Recibidas» vuelve a su tarjeta de precio anterior. Con una línea sin costo, esa versión dice «Costo $ 0.00», deja los
+  controles y, al confirmar esa línea, el backend responde `409 costo desconocido` y se muestra su `msg`. **No se rompe nada**: solo se pierde el
+  aviso previo. Comprobado pasando los casos de costo 0 del simulacro nuevo por la «Recibidas» de `ef055e2`. Lo mismo ve producción hoy si el backend
+  sube su regla del costo 0 antes que este frontend.
+- No toca ningún módulo fuera de Ajustes: solo archivos nuevos de `ajuste/` y `js/ajuste/`, `solicitud.js` y su página, dos líneas del catálogo,
+  `dev/` y los documentos.

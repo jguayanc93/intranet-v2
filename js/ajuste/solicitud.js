@@ -9,24 +9,14 @@
  *     calcula sin descuento, y por eso la pantalla dice lo que paga hoy.
  *   · **Se quitan TODAS las promociones del documento**, tambien las de otras
  *     marcas. Se avisa antes, con cuantas son.
- *   · **El precio no puede quedar por debajo de `precioMinimo`**: el costo redondeado
- *     HACIA ARRIBA al centimo (costo 7.4533 → minimo 7.46), porque el precio se guarda en
- *     centimos. El backend lo rechaza igual; aqui no se deja confirmar. **El precio se redondea
- *     al centimo, la mitad hacia arriba, ANTES de validar**: 18.405 se guarda como 18.41 y es
- *     valido con un minimo de 18.41; 18.404 queda en 18.40 y no. Se dice como queda. El costo puede traer
- *     hasta 4 decimales y se muestra con ellos: a 2 decimales un costo de 18.4033 diria 18.40,
- *     y el minimo 18.41 parecería un error.
+ *   · **El precio no puede quedar por debajo de `precioMinimo`**, y se redondea al centimo
+ *     ANTES de validar. Una linea sin costo (`costo` en null) se ve sin controles.
  *   · En un pedido solo se cambia el precio; en una cotizacion, tambien la cantidad.
  *   · Las lineas que no se tocan no se mandan, y se quedan como estaban.
  *
- * El calculo de precio, ganancia y % lo hace la pantalla: es lo que dice el
- * contrato (docs/ajuste-precios.md). Si se mueve el precio se recalcula el %, y si
- * se mueve el %, se recalcula el precio.
- *
- *     ganancia        = precio − costo
- *     % sobre costo   = ganancia / costo × 100
- *     % sobre venta   = ganancia / precio × 100
- *     precio desde %  = costo × (1 + % / 100)
+ * Las cuentas (redondeo, minimo, % sobre costo) y la tarjeta de cada linea son de
+ * js/ajuste/precio.js, que comparte con «Mis documentos» (ajuste_documento): una sola copia
+ * para que las dos pantallas redondeen y validen igual que el backend.
  */
 ;(function (global) {
     "use strict";
@@ -55,53 +45,8 @@
     if (!id) pintarNoExiste(null);
     else cargar();
 
-    /* ===============================================================
-     * Las cuentas
-     * ============================================================= */
-    function redondear(n) { return Math.round(n * 100) / 100; }
-    function techo(n) { return Math.ceil(n * 100 - 1e-9) / 100; }
-
-    /**
-     * El precio al centimo, **la mitad hacia arriba** (8.204 → 8.20, 8.205 → 8.21, 8.206 → 8.21): lo que hace el backend
-     * al confirmar, que valida contra `precioMinimo` el precio ya redondeado. Se hace con el exponente en texto porque
-     * 8.205 × 100 da 820.4999999999999 y `Math.round` lo bajaria.
-     */
-    function alCentimo(n) {
-        var r = Number(Math.round(Number(n + "e2")) + "e-2");
-        return isFinite(r) ? r : n;
-    }
-
-    function sobreCosto(precio, costo) { return costo > 0 ? (precio - costo) / costo * 100 : null; }
-    function sobreVenta(precio, costo) { return precio > 0 ? (precio - costo) / precio * 100 : null; }
-
-    /** El precio que da un % sobre el costo, a centavos. Con un costo de mas de dos decimales, sin quedar por debajo de el. */
-    function precioDesde(pct, costo) {
-        var p = costo * (1 + pct / 100);
-        var r = redondear(p);
-        return r < p - 1e-9 && r < costo ? techo(p) : r;
-    }
-
-    /** El numero escrito en un campo, o null si no hay o no es un numero. */
-    function numero(texto) {
-        var t = String(texto === undefined || texto === null ? "" : texto).trim().replace(",", ".");
-        if (t === "") return null;
-        var n = Number(t);
-        return isFinite(n) ? n : null;
-    }
-
-    function dinero(v) { return CDK.formato.moneda(v, datos.documento.moneda); }
-
-    /** Un monto con sus decimales de verdad, hasta 4: el costo y el precio neto los traen, y a 2 enganan. */
-    function dineroFino(v) {
-        var n = Number(v);
-        if (!isFinite(n)) return dinero(v);
-
-        var decimales = (String(Math.round(n * 10000) / 10000).split(".")[1] || "").length;
-        if (decimales <= 2) return dinero(v);
-
-        return (datos.documento.moneda === "S" ? "S/" : "$") + " " + CDK.formato.numero(n, decimales);
-    }
-    function pct(v) { return v === null || v === undefined ? "—" : CDK.formato.porcentaje(v, 2); }
+    /* Las cuentas y la tarjeta de precio son de js/ajuste/precio.js: las comparte con «Mis documentos». */
+    function dinero(v) { return A.dinero(v, datos.documento.moneda); }
 
     /* ===============================================================
      * Datos
@@ -278,7 +223,13 @@
         var ul = el("ul", { clase: "cdk-articulos", id: "ajuste-lineas" });
 
         d.lineas.forEach(function (l) {
-            ul.appendChild(d.puedoAjustar ? tarjetaEditable(l) : tarjetaDeLectura(l));
+            if (!d.puedoAjustar) return ul.appendChild(tarjetaDeLectura(l));
+            /* Sin costo no hay minimo contra el que validar: el backend la rechazaria. Se ve, sin controles. */
+            if (A.sinCosto(l)) return ul.appendChild(A.tarjetaSinCosto(l, d.documento.moneda));
+
+            var t = A.tarjetaDePrecio(l, { moneda: d.documento.moneda, cantidad: !!d.cantidadAjustable, alCambiar: revisar });
+            tarjetas.push(t);
+            ul.appendChild(t.nodo);
         });
 
         return el("section", { clase: "cdk-seccion", id: "ajuste-seccion-lineas" }, [
@@ -292,40 +243,9 @@
         ]);
     }
 
-    /** Lo que se sabe de una linea, igual se pueda ajustar o no. */
-    function datosDeLinea(l) {
-        var a = l.actual;
-        var hijos = [
-            el("div", { clase: "cdk-articulo__nombre", style: "overflow-wrap:anywhere", texto: l.descripcion }),
-            el("div", { clase: "cdk-articulo__detalle", texto: M.nombre(l.marca) + " · " + l.codf })
-        ];
-
-        var filas = [
-            ["Hoy", a.cantidad + " × " + dinero(a.precio) + (a.dsct ? " − " + CDK.formato.porcentaje(a.dsct, 1) : "") +
-                    " = " + dinero(a.total)],
-            ["Costo", dineroFino(l.costo) + (l.precioMinimo > l.costo + 1e-9 ? " · mínimo " + dinero(l.precioMinimo) : "")],
-            ["Stock", CDK.formato.numero(l.stock, 0) + " · " + CDK.catalogo.almacen(l.almacen)]
-        ];
-
-        if (l.margen) {
-            filas.push(["Margen sin descuento", dinero(l.margen.monto) + " · " + pct(l.margen.sobreCosto) + " sobre costo"]);
-        }
-
-        filas.forEach(function (f) {
-            hijos.push(el("div", { clase: "cdk-medida" }, [
-                el("div", { clase: "cdk-medida__fila" }, [
-                    el("span", { clase: "cdk-medida__etiqueta", texto: f[0] }),
-                    el("span", { clase: "cdk-medida__valor", style: "font-weight:500;text-align:right", texto: f[1] })
-                ])
-            ]));
-        });
-
-        return hijos;
-    }
-
     /** Una linea que ya no se puede ajustar: lo que quedo, si se ajusto. */
     function tarjetaDeLectura(l) {
-        var hijos = datosDeLinea(l);
+        var hijos = A.datosDeLinea(l, datos.documento.moneda);
         var j = l.ajuste;
 
         hijos.push(el("p", { clase: "cdk-pista", id: "linea-" + l.item + "-ajuste", style: "margin:10px 0 0",
@@ -337,148 +257,6 @@
 
         return el("li", { clase: "cdk-articulo", id: "linea-" + l.item }, [
             el("div", { clase: "cdk-articulo__cuerpo" }, hijos)
-        ]);
-    }
-
-    /** Lo que paga hoy el cliente por unidad: lo dice el backend (`precioNeto`); si no, sale del total de la linea. */
-    function netoDe(actual) {
-        return typeof actual.precioNeto === "number" ? actual.precioNeto : actual.total / actual.cantidad;
-    }
-
-    function tarjetaEditable(l) {
-        var d = datos;
-        var costo = l.costo;
-        var minimo = l.precioMinimo;
-        var t = { item: l.item, linea: l, activa: false, valida: true };
-
-        /* ---- lo que se escribe */
-        var entradaPrecio = el("input", {
-            type: "text", id: "linea-" + l.item + "-precio", clase: "cdk-entrada", style: "min-width:0",
-            inputmode: "decimal", autocomplete: "off", "aria-label": "Precio",
-            value: String(l.actual.precio)
-        });
-        var entradaPct = el("input", {
-            type: "text", id: "linea-" + l.item + "-pct", clase: "cdk-entrada", style: "min-width:0",
-            inputmode: "decimal", autocomplete: "off", "aria-label": "Porcentaje sobre el costo"
-        });
-
-        var listo = false;               // el contador avisa al crearse, antes de que exista lo que refrescar usa
-        var contador = d.cantidadAjustable
-            ? CDK.contador({ valor: l.actual.cantidad, min: 1, max: 99999, etiqueta: "Cantidad",
-                             alCambiar: function () { if (listo) refrescar(); } })
-            : null;
-        if (contador) contador.campo.id = "linea-" + l.item + "-cantidad";
-
-        var calculo = el("p", { clase: "cdk-pista", id: "linea-" + l.item + "-calculo", style: "margin:10px 0 0" });
-        var error = el("p", { clase: "cdk-campo__error", id: "linea-" + l.item + "-error", style: "margin:8px 0 0" });
-        error.classList.add("hidden");
-
-        var campos = [
-            el("div", { clase: "cdk-campo", style: "min-width:0" }, [
-                el("label", { clase: "cdk-campo__etiqueta", "for": entradaPrecio.id,
-                              texto: "Precio (" + (d.documento.moneda === "S" ? "S/" : "US$") + ")" }), entradaPrecio
-            ]),
-            el("div", { clase: "cdk-campo", style: "min-width:0" }, [
-                el("label", { clase: "cdk-campo__etiqueta", "for": entradaPct.id, texto: "% sobre costo" }), entradaPct
-            ])
-        ];
-
-        var editor = el("div", { id: "linea-" + l.item + "-editor", style: "margin-top:10px" }, [
-            el("div", { clase: "cdk-pareja", style: "grid-template-columns:minmax(0,1fr) minmax(0,1fr)" }, campos),
-            contador
-                ? el("div", { clase: "cdk-campo", style: "margin-top:10px" }, [
-                      el("label", { clase: "cdk-campo__etiqueta", texto: "Cantidad" }), contador
-                  ])
-                : null,
-            calculo,
-            l.actual.dsct
-                ? el("p", { clase: "cdk-pista", id: "linea-" + l.item + "-dscto", style: "margin:8px 0 0",
-                            texto: "Hoy el cliente paga " + dineroFino(netoDe(l.actual)) + " c/u (precio " +
-                                   dinero(l.actual.precio) + " con " + CDK.formato.porcentaje(l.actual.dsct, 1) +
-                                   " de descuento). Al ajustar, el descuento pasa a 0: el precio que pongas es el que paga." })
-                : null,
-            error
-        ]);
-        editor.classList.add("hidden");
-
-        var casilla = el("input", { type: "checkbox", id: "linea-" + l.item + "-activa", style: "width:20px;height:20px;margin:0" });
-        var etiquetaCasilla = el("label", {
-            "for": casilla.id, clase: "cdk-campo__etiqueta",
-            style: "display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer",
-            texto: ""
-        }, [casilla, el("span", { texto: "Ajustar esta línea" })]);
-
-        /* ---- lo que se calcula */
-        /* El precio que se guardaria: lo escrito, redondeado al centimo. Es contra ESTE que se valida y el que viaja. */
-        t.precio = function () {
-            var escrito = numero(entradaPrecio.value);
-            return escrito === null ? null : alCentimo(escrito);
-        };
-        t.cantidad = function () { return contador ? contador.valor() : l.actual.cantidad; };
-
-        function refrescar() {
-            var p = t.precio();
-            var escrito = numero(entradaPrecio.value);
-            var texto;
-
-            if (p === null || p <= 0) {
-                texto = "Escribe el precio.";
-            } else if (p < minimo - 1e-9) {
-                /* Con un costo de mas de dos decimales el minimo no es el costo, y se dicen los dos. */
-                texto = "El precio no puede ser menor que el costo (" +
-                        (minimo > costo + 1e-9 ? "costo " + dineroFino(costo) + ", mínimo " + dinero(minimo) : dinero(minimo)) + ").";
-            }
-
-            t.valida = !texto;
-            error.classList.toggle("hidden", !texto);
-            error.textContent = texto || "";
-            entradaPrecio.setAttribute("aria-invalid", texto ? "true" : "false");
-
-            if (p !== null && p > 0) {
-                /* Con mas de dos decimales se dice como queda: es el que ve el vendedor en el documento. */
-                calculo.textContent = (escrito !== p ? "Se guarda como " + dinero(p) + ". " : "") +
-                    "Ganancia " + dinero(p - costo) + " por unidad · " +
-                    pct(sobreCosto(p, costo)) + " sobre costo · " + pct(sobreVenta(p, costo)) + " sobre venta · " +
-                    "total de la línea " + dinero(p * t.cantidad());
-            } else {
-                calculo.textContent = "";
-            }
-
-            revisar();
-        }
-
-        entradaPrecio.addEventListener("input", function () {
-            var p = t.precio();
-            var c = p !== null ? sobreCosto(p, costo) : null;
-            entradaPct.value = c === null ? "" : String(redondear(c));
-            refrescar();
-        });
-
-        entradaPct.addEventListener("input", function () {
-            var x = numero(entradaPct.value);
-            if (x !== null && costo > 0) entradaPrecio.value = String(precioDesde(x, costo));
-            refrescar();
-        });
-
-        casilla.addEventListener("change", function () {
-            t.activa = casilla.checked;
-            editor.classList.toggle("hidden", !t.activa);
-            if (t.activa) {
-                var c = sobreCosto(l.actual.precio, costo);
-                entradaPct.value = c === null ? "" : String(redondear(c));
-                refrescar();
-                entradaPrecio.focus();
-            } else {
-                revisar();
-            }
-        });
-
-        tarjetas.push(t);
-        listo = true;
-
-        var cuerpo = datosDeLinea(l).concat([etiquetaCasilla, editor]);
-        return el("li", { clase: "cdk-articulo", id: "linea-" + l.item }, [
-            el("div", { clase: "cdk-articulo__cuerpo" }, cuerpo)
         ]);
     }
 
@@ -534,7 +312,10 @@
         botonConfirmar.disabled = enCurso || !elegidas.length || malas.length > 0;
         botonRechazar.disabled = enCurso;
 
-        if (!elegidas.length) {
+        if (!tarjetas.length) {
+            /* Todas sus lineas llegaron sin costo: no hay ninguna que marcar. */
+            resumen.textContent = "Ninguna línea se puede ajustar: no tienen costo cargado. Si no hay nada que ajustar, rechaza la solicitud.";
+        } else if (!elegidas.length) {
             resumen.textContent = "Marca las líneas que quieres ajustar. Si no hay nada que ajustar, rechaza la solicitud.";
         } else if (malas.length) {
             resumen.textContent = "Corrige el precio de " + plural(malas.length, "línea", "líneas") + " para poder confirmar.";
@@ -630,7 +411,8 @@
         var estado = M.statusDe(err);
         if (estado === "no identificado") return pintarSinAlta();
 
-        var desfasada = estado === "solicitud cerrada" || estado === "documento no ajustable";
+        /* `costo desconocido`: el costo se borro despues de abrirla; al volver a pedirla esa linea llega sin controles. */
+        var desfasada = estado === "solicitud cerrada" || estado === "documento no ajustable" || estado === "costo desconocido";
         CDK.toast(M.mensajeError(err), desfasada ? "aviso" : "error", 6000);
         if (desfasada) { menuAlDia(); cargar(); }
     }
