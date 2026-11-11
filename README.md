@@ -58,7 +58,7 @@ lista.
 | `especialista25` | Especialista registrado que aún no confirmó sus marcas: ve el borrador. **No tiene marcas, así que en Reportes ve el aviso de «sin marcas».** |
 | `confirmado25` | Especialista que ya confirmó: sus marcas, en solo lectura. **Tiene dos marcas (EP_IMPRESORAS y TDK): sirve para probar Reportes, la Cuota por marca, la Cobertura, el Vendedor del mes y el Ajuste de precios** (le llegan dos solicitudes pendientes y cuatro ya respondidas). TDK parte de la meta del mes pasado al fijar la suya. |
 | `pendiente25` | Especialista con una marca que le dio la jefatura y sin confirmar: en Reportes la ve, pero en Cuota **no le deja fijar la meta** y le lleva a Marcas. |
-| `jefatura25` | Jefatura registrada: ve el panel de su familia. En Reportes ve las suyas y las de sus especialistas de su familia. En Ajustes recibe, además de lo suyo, lo de las marcas sin dueño de su familia. |
+| `jefatura25` | Jefatura registrada: ve el panel de su familia. En Reportes ve las suyas y las de sus especialistas de su familia. En Ajustes recibe, además de lo suyo, lo de las marcas sin dueño de su familia. En **Ajustes → Mis documentos** tiene cotizaciones y pedidos propios para ajustar y asignar: `009-00969333` (con flete y una línea bajo el costo), `009-00971194` (aprobada, con una línea sin costo), `009-00962947` (ninguna línea suya: solo se asigna), `009-00971500` (en ajuste) y, buscándola por su número, `009-00821916` (de 2024). Lo que asigne a GONZALES CRISTOPHER le aparece a `vendedor20` en sus listas. |
 | `vendedor20` | **Del grupo 20**, no del 25: un vendedor que pide ajustes de precio y ve sus respuestas. Sin marcas ni reportes. Sirve para ver el otro lado de Ajustes: puede enviar la cotización `009-00970001` (tres responsables, una línea sin dueño y dos promociones) o el pedido `009-00775010`, en soles. |
 | `sintc20` | **Del grupo 20**, vendedor **sin tipo de cambio hoy** (`/vendedor` trae `tipoCambio: null`): la cotización nueva no deja elegir soles y dice por qué, y `/pegar` responde `tipcambio no registrado`. |
 | `cartera20`, `reponer20`, `dos20`, `reactivar20`, `sincompras20`, `libre20`, `nuevo20` | **Del grupo 20**: vendedores para ver «A quién vender hoy», cada uno con un caso distinto. `cartera20` (cartera) y `vendedor20` (cobertura) traen **2 para reponer y 1 para llamar**; `reponer20`, 3 para reponer; `dos20`, solo 2 tarjetas; `reactivar20`, 3 para reactivar; `sincompras20`, 3 clientes sin compras y sin productos; `libre20`, 3 clientes libres (lo que compraron a **todos** los vendedores); `nuevo20`, un vendedor recién llegado **sin clientes**: ninguna tarjeta y un aviso, que no es un error. Todos ven también las promociones vigentes. La primera vez de cada ingreso la pantalla tarda cerca de un segundo en «preparar» (como el backend); después contesta al instante lo mismo. |
@@ -227,6 +227,14 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   céntimo, la mitad hacia arriba, antes de validar** contra el mínimo, y el menú lleva el numerito de pendientes. El
   contrato es [docs/ajuste-precios.md](docs/ajuste-precios.md); **el backend ya contestó todas las preguntas**
   ([docs/respuesta-ajuste-precios.md](docs/respuesta-ajuste-precios.md)) y solo falta el servidor de prueba.
+  **Desde el 06/11, ajuste directo y asignación (grupo 25)**, en su propio merge (rama `ajuste-directo`): «Mis documentos» (sus propias
+  cotizaciones y pedidos, para ajustarles el precio sin que nadie se los envíe, o asignarlos a un vendedor del grupo 20) y
+  «Asignados» (el historial). La tarjeta de precio ahora es una sola pieza ([js/ajuste/precio.js](js/ajuste/precio.js)) que
+  comparten «Recibidas» y «Mis documentos», y las dos muestran **sin controles una línea sin costo** (un costo de 0 cuenta
+  como desconocido desde el 06/11). Contrato: [docs/ajuste-directo.md](docs/ajuste-directo.md); respuestas:
+  [docs/respuesta-ajuste-directo.md](docs/respuesta-ajuste-directo.md). **El backend contestó todo (10/11)**: falta recorrerlo
+  en bdnava08 **antes del 17/11** (cuando vencen las solicitudes de prueba), con la asignación al final. Cómo sale y cómo se
+  deshace: [docs/despliegue-grupo25.md](docs/despliegue-grupo25.md), sección 8.
 - **La cobertura de clientes por marca (grupo 25) está construida y falta recorrerla contra bdnava08.** Es otra
   pantalla en la raíz (`cobertura.html`, módulo `cobertura`; **no** la cobertura del grupo 20): las marcas del mes
   con sus clientes, unidades y venta, y los clientes de cada marca, para el mes en curso y los dos anteriores. No

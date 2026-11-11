@@ -5,7 +5,14 @@ especialista o la jefatura de la marca (grupo 25) le ajuste el precio, y se lo d
 pantallas: la del vendedor (pedir ajuste y mis ajustes) y la del grupo 25 (recibidas y ajustar).
 Implementado y probado en bdnava08.
 
-> **Actualizado el 21/10/2026, segunda ronda**: las tres preguntas que quedaban abiertas estan
+> **Actualizado el 06/11/2026, tercera ronda**: los documentos y solicitudes de prueba que pidieron
+> en [respuesta-ajuste-precios.md](respuesta-ajuste-precios.md) (su seccion 3) ya estan preparados en
+> bdnava08: **seccion 8**, reescrita. Ademas, el grupo 25 tiene dos acciones nuevas en el hub,
+> `directo` y `asignados` (seccion 2 y [ajuste-directo.md](ajuste-directo.md)). Y un cambio de
+> regla: **un costo de 0 cuenta como costo desconocido** (seccion 4, errores): antes dejaba el minimo
+> en 0 y se aceptaba cualquier precio.
+>
+> **21/10/2026, segunda ronda**: las tres preguntas que quedaban abiertas estan
 > respondidas en la seccion 10. Cambios de esta ronda: el precio se **redondea** al centimo
 > (seccion 4), `400 fechas invalidas` para `desde`/`hasta` (seccion 3) y `ajustesPendientes` cuenta
 > solo lo que se puede responder (seccion 7).
@@ -96,9 +103,12 @@ Como el resto de modulos: los accesos, doble codificado.
 
 ```
 grupo 20  ->  "{\"accesos\":[\"enviar\",\"enviadas\"]}"
-grupo 25  ->  "{\"accesos\":[\"recibidas\"]}"
+grupo 25  ->  "{\"accesos\":[\"recibidas\",\"directo\",\"asignados\"]}"
 otros     ->  "{\"accesos\":[]}"
 ```
+
+> Desde el 06/11/2026 el grupo 25 tiene ademas `directo` y `asignados`: ajustar el precio de sus
+> propios documentos y asignarlos a un vendedor. Contrato: [ajuste-directo.md](ajuste-directo.md).
 
 `enviar` cubre `previa` y `enviar`; `recibidas` cubre `recibidas`, `solicitud`, `confirmar` y
 `rechazar`.
@@ -350,7 +360,7 @@ El documento no cambia.
 | 409 | `precio bajo costo` | precio por debajo de `precioMinimo`. **No consume la solicitud**: se puede corregir y volver a confirmar |
 | 400 | `cantidad invalida` | cantidad no entera o menor que 1 |
 | 400 | `cantidad no ajustable` | se cambio la cantidad en un pedido |
-| 409 | `costo desconocido` | no se encontro el costo del producto en el almacen de la linea |
+| 409 | `costo desconocido` | el producto no tiene costo en el almacen de la linea: no existe **o es 0** (desde el 06/11/2026). En `/solicitud` esa linea llega con `costo`, `precioMinimo` y `margen` en `null`: mostrarla sin controles de precio |
 | 400 | `observacion requerida` | rechazar sin observacion |
 
 Ninguno de estos errores cambia nada, salvo `documento no ajustable`, que deja la solicitud en
@@ -427,13 +437,56 @@ El menu del grupo 25 queda en `marcas`, `cuota`, `reporte`, `cobertura`, `ajuste
 
 ## 8 · Para probar en bdnava08
 
-| caso | documento | quien |
-|---|---|---|
-| Cotizacion con EPSON (le llega a 229) y lineas sin responsable (BROTHER, HP) | `009-00969476` | envia 246, recibe 229 |
-| Pedido sin aprobar con EPSON (solo precio) | `009-00774171` | envia 196, recibe 229 |
+Preparado el 06/11/2026 para los casos de su seccion 3. Todo esta comprobado contra bdnava08 con
+la vista previa (que no crea nada) y leyendo cada solicitud desde las dos puntas.
 
-**Probar con documentos reales los modifica.** Para enviar, confirmar y rechazar, los documentos
-y solicitudes de prueba los prepara el backend antes de cada sesion; empiecen leyendo.
+**Las marcas de noviembre.** Se cargaron los mismos escenarios de octubre para el mes en curso:
+229 SAUÑE MANUEL tiene TDK, EPSON, RICOH y GIGABYTE (confirmado); 071 COSSIO JOANNA es jefatura de
+la familia 09 y tiene ACER; 233 tiene ADATA y 192 AVERY (sin confirmar); 270 no tiene ninguna. Las
+marcas de una familia con jefatura que nadie tiene le llegan a esa jefatura (por ejemplo TOSHIBA y
+KINGSTON, a 071). **Las familias 01 y 05 no tienen jefatura**: sus marcas sin dueño (BROTHER, HP...)
+no le llegan a nadie.
+
+### A · Para que ustedes envien (el vendedor es 246 GONZALES CRISTOPHER, salvo el pedido)
+
+Estan sin solicitud. **Cada uno se puede enviar una sola vez**: despues queda «en ajuste».
+
+| caso de su tabla | documento | lo que tiene que pasar |
+|---|---|---|
+| Marcas de dos o mas responsables | `009-00970587` | 2 solicitudes: GIGABYTE → **229** (`DUENO`) y HP → **163** (`JEFATURA`, familia 06) |
+| Lineas sin dueño ni jefatura, con su cantidad | `009-00969476` | a **229** van 4 lineas de EPSON; `sinResponsable`: 2 × BROTHER y 2 × HP |
+| Con promociones | `009-00969476` (el mismo) | `promociones: 1` en la vista previa y al enviar; `promocionesQuitadas: 1` al confirmar |
+| Responsable 229 ajusta una cotizacion con cantidad | `009-00969476` (despues de enviarla) | las lineas de EPSON tienen 2.5 % de descuento: `precio` 7.97 y `precioNeto` 7.7708; al confirmar el descuento queda en 0 |
+| Jefatura 071 recibe lineas sin dueño de su familia | `009-00969657` | 3 lineas de TOSHIBA → **071** (`JEFATURA`). Ademas tienen costo con **3 decimales**: 73.741 (minimo 73.75), 94.776 (94.78) y 142.857 (142.86) |
+| Solo marcas sin responsable | `009-00971988` | `409 sin responsables` |
+| Una aprobada | `009-00970978` | `409 documento no ajustable` (no sale en su lista con `editable = 1`: hay que escribir el numero) |
+| Numero sin serie | `969476` | `400 documento ambiguo` |
+| Pedido sin aprobar (solo precio) | `009-00774171`, **lo envia 196 HUAMANI ANTHONY** | 4 lineas de EPSON → **229**; al confirmar, `400 cantidad no ajustable` si se cambia la cantidad |
+
+### B · Solicitudes ya creadas (envio 246, le llegan a 229)
+
+> **10/11/2026**: las pendientes 16 y 20 habian vencido el 09/11 (vencen a los 3 dias). Se
+> renovaron, y todas las pendientes de prueba **vencen el 17/11/2026**; si prueban despues, avisen y
+> se renuevan. Se agregaron la **21** y la **22**: lineas sin costo, que pidieron en
+> [respuesta-ajuste-directo.md](respuesta-ajuste-directo.md) (su seccion 3).
+
+| id | documento | estado al leerla | para que |
+|---|---|---|---|
+| 16 | `009-00965513` | `PENDIENTE` | **rechazar** con observacion, y que 246 la lea. Mientras siga pendiente, enviar o modificar ese documento da `409 documento en ajuste` |
+| 21 | `009-00970744` | `PENDIENTE` | **lineas sin costo mezcladas con lineas con costo** (229): 4 lineas de EPSON en el almacen 16; los items 1 y 11 llegan con `costo`, `precioMinimo` y `margen` en `null` (no tienen costo en ese almacen) y los 12 y 13 con costo 7.23. Confirmar el item 1 o el 11 da `409 costo desconocido` y la solicitud sigue pendiente; los 12 y 13 se confirman normal. Ademas trae 11 lineas en `sinResponsable` |
+| 22 | `009-00971696` | `PENDIENTE` | **ninguna linea tiene costo** (le llega a la **jefatura 071**): 1 linea de KINGSTON en el almacen 06, sin costo. No hay nada que ajustar: se rechaza |
+| 20 | `009-00968753` | `PENDIENTE` | **costo con 3 decimales** (GIGABYTE): costo 310.832 → `precioMinimo` 310.84; costo 321.193 → 321.20. Un 0 % sobre costo se confirma con 310.84; **310.835 se guarda como 310.84 y vale; 310.834 queda en 310.83 y da `409 precio bajo costo`** sin consumir la solicitud |
+| 18 | `009-00944076` | `VENCIDA` | enviada hace 5 dias: como se ve una vencida en las dos puntas, y con el filtro de fechas |
+| 19 | `009-00964925` | `CERRADA` | la cotizacion ya esta aprobada: `recibidas`, `enviadas` y `solicitud` la devuelven `CERRADA`, nunca `PENDIENTE` |
+
+Hoy (10/11) `ajustesPendientes` da **3** para 229 (16, 20 y 21), **1** para 071 (22) y **4** para 246.
+Sube con cada envio de la parte A y baja al responder.
+
+`009-00970744` estaba en el almacen 01: se paso al 16 (como lo hace `/cotizacion/almacen`) para que
+tenga lineas sin costo. Cuando terminen, lo devolvemos al 01.
+
+**Probar con documentos reales los modifica**, y una solicitud respondida no se puede volver a
+responder. Si necesitan repetir un caso, avisen y lo volvemos a dejar como estaba.
 
 ---
 
