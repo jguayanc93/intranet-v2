@@ -24,6 +24,17 @@
  *       accionPorFila: { texto: "Dar de baja", peligro: true }
  *   });
  *
+ * Pasar a pedido (desde el 18/11) quiere otra cosa: justo las APROBADAS, que
+ * `soloAbiertas` deja fuera, y más días, porque la aprobación llega después.
+ * Para eso, todo opcional y sin cambiar lo de arriba:
+ *
+ *       periodos:      [{ boton, dias: 1 }, { boton, dias: 6 }, …],  // en vez de botonHoy/botonDosDias
+ *       diasIniciales: 6,
+ *       sinDomingos:   true,   // los días se cuentan sin domingo: 6 = hoy y los 5 anteriores que no son domingo
+ *       filtro:        function (coti) { return … },   // manda sobre soloAbiertas
+ *       etiqueta:      function (coti) { return { etiqueta, valor, tono } | null },
+ *       textoVacio:    function (cuantasLlegaron, dias) { return "…"; }
+ *
  * Devuelve { recargar } por si hay que repetirla después de guardar algo.
  */
 ;(function (global) {
@@ -95,12 +106,29 @@
 
     CDK.coti.listaDelDia = function (config) {
         var destino = config.destino;
-        var dias = 1;
+        var periodos = config.periodos || [
+            { boton: config.botonHoy, dias: 1 },
+            { boton: config.botonDosDias, dias: 2 }
+        ];
+        var dias = config.diasIniciales || periodos[0].dias;
 
+        /* Un día va como `dia`; varios, como rango que termina hoy: con 2 es
+           desde ayer, con 7 desde hace seis días. Con `sinDomingos` el domingo
+           no cuenta: un jueves, 6 días empiezan el viernes de la semana
+           anterior (jue, mié, mar, lun, sáb, vie). */
         function cuerpoPeriodo() {
             if (dias === 1) return { dia: CDK.formato.hoyISO() };
-            var ayer = new Date(Date.now() - 86400000);
-            return { desde: CDK.formato.aISO(ayer), hasta: CDK.formato.hoyISO() };
+            var desde;
+            if (config.sinDomingos) {
+                desde = new Date();
+                for (var faltan = dias - 1; faltan > 0;) {
+                    desde.setDate(desde.getDate() - 1);
+                    if (desde.getDay() !== 0) faltan--;
+                }
+            } else {
+                desde = new Date(Date.now() - (dias - 1) * 86400000);
+            }
+            return { desde: CDK.formato.aISO(desde), hasta: CDK.formato.hoyISO() };
         }
 
         function cargar() {
@@ -123,15 +151,16 @@
             /* Una facturada o convertida en pedido ya no se toca, así que las
                pantallas que escriben no la ofrecen: prometerla sería dejar que
                el vendedor haga el trabajo para que el backend lo rechace. */
-            var visibles = config.soloAbiertas
-                ? cotis.filter(function (c) { return c.editable; })
+            var visibles = config.filtro ? cotis.filter(config.filtro)
+                : config.soloAbiertas ? cotis.filter(function (c) { return c.editable; })
                 : cotis;
 
             destino.innerHTML = "";
 
             if (!visibles.length) {
                 destino.appendChild(el("div", { clase: "cdk-estado" }, [
-                    el("p", { clase: "cdk-estado__texto", texto: textoVacio(filas.length) })
+                    el("p", { clase: "cdk-estado__texto", texto: config.textoVacio
+                    ? config.textoVacio(filas.length, dias) : textoVacio(filas.length) })
                 ]));
                 return;
             }
@@ -145,9 +174,10 @@
                 /* El estado solo se señala cuando NO está abierta: una etiqueta
                    "cotizado" en todas las filas es ruido, y la ya facturada es
                    justo la que conviene distinguir. */
-                if (!c.editable && c.estado) {
-                    datos.push({ etiqueta: "", valor: c.estado, tono: "bien" });
-                }
+                var marca = config.etiqueta ? config.etiqueta(c)
+                    : !c.editable && c.estado ? { etiqueta: "", valor: c.estado, tono: "bien" }
+                    : null;
+                if (marca) datos.push(marca);
 
                 /* Con `accionPorFila` la elección va en un botón dentro de la
                    fila, no en la fila entera. Lo usa «Dar de baja»: la acción
@@ -188,23 +218,22 @@
 
         function fijarDias(n) {
             dias = n;
-            [[config.botonHoy, 1], [config.botonDosDias, 2]].forEach(function (par) {
-                if (!par[0]) return;
-                par[0].setAttribute("aria-pressed", String(n === par[1]));
-                par[0].className = "cdk-boton " +
-                    (n === par[1] ? "cdk-boton--primario" : "cdk-boton--suave");
+            periodos.forEach(function (p) {
+                if (!p.boton) return;
+                p.boton.setAttribute("aria-pressed", String(n === p.dias));
+                p.boton.className = "cdk-boton " +
+                    (n === p.dias ? "cdk-boton--primario" : "cdk-boton--suave");
             });
             cargar();
         }
 
-        if (config.botonHoy) {
-            config.botonHoy.addEventListener("click", function () { fijarDias(1); });
-        }
-        if (config.botonDosDias) {
-            config.botonDosDias.addEventListener("click", function () { fijarDias(2); });
-        }
+        periodos.forEach(function (p) {
+            if (p.boton) p.boton.addEventListener("click", function () { fijarDias(p.dias); });
+        });
 
-        cargar();
+        /* Marca el botón del periodo inicial y carga. Con Hoy/2 días deja los
+           botones como ya venían en el HTML. */
+        fijarDias(dias);
 
         return { recargar: cargar };
     };

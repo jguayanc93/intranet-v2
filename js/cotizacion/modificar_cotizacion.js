@@ -595,9 +595,9 @@
             var yaEsta = !!lineas[p.codigo];
 
             var datos = [
-                { etiqueta: "Principal", valor: p.stockPrincipal, tono: p.stockPrincipal ? "" : "nulo" },
-                { etiqueta: "M&M",       valor: p.stockMym,       tono: p.stockMym       ? "" : "nulo" },
-                { etiqueta: "Piura",     valor: p.stockPiura,     tono: p.stockPiura     ? "" : "nulo" }
+                { etiqueta: "Principal", valor: p.stockPrincipal, tono: CDK.coti.tonoStock(p.stockPrincipal) },
+                { etiqueta: "M&M",       valor: p.stockMym,       tono: CDK.coti.tonoStock(p.stockMym) },
+                { etiqueta: "Piura",     valor: p.stockPiura,     tono: CDK.coti.tonoStock(p.stockPiura) }
             ];
 
             if (yaEsta) datos.push({ etiqueta: "", valor: "Ya está en la cotización", tono: "bien" });

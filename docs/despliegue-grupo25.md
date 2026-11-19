@@ -1,7 +1,7 @@
 # Despliegue del grupo 25 y cómo probarlo contra el servidor de prueba
 
 Lo que hay que saber y comprobar antes de subir los módulos del grupo 25 (marcas, cuota por marca, reportes, ajuste,
-cobertura y vendedor del mes), y cómo recorrerlos contra el **backend de prueba** (base bdnava08).
+cobertura, vendedor del mes y, en la sección 9, pasar una cotización a pedido), y cómo recorrerlos contra el **backend de prueba** (base bdnava08).
 
 ---
 
@@ -385,3 +385,65 @@ git push origin main
   sube su regla del costo 0 antes que este frontend.
 - No toca ningún módulo fuera de Ajustes: solo archivos nuevos de `ajuste/` y `js/ajuste/`, `solicitud.js` y su página, dos líneas del catálogo,
   `dev/` y los documentos.
+---
+
+## 9 · Lo que suma pasar una cotización a pedido (grupos 20 y 25, 18/11/2026)
+
+Va en **su propio merge** (rama `coti-a-pedido`), encima del ajuste directo, y se puede deshacer por separado. El contrato es
+[coti-a-pedido.md](coti-a-pedido.md) (con su sección 11, del 19/11); lo que hicimos y el recorrido por bdnava08, en
+[respuesta-coti-a-pedido.md](respuesta-coti-a-pedido.md).
+
+| el frontend llama | para qué |
+|---|---|
+| `GET /v1/cotizacion` de los grupos 20 y 25 con `pedido` | la tarjeta «Pasar a pedido» del módulo Cotización y la misma opción en «Ver» |
+| `POST /v1/lista/cotisxdia` (la de siempre) | la lista: Hoy / 3 / 6 días **sin contar el domingo**; 6 es el plazo entero y la que abre |
+| `POST /v1/cotizacion/pedido/opciones` | si se puede (y por qué no), cuántos días le quedan, direcciones y tipos de entrega |
+| `POST /v1/cotizacion/pedido/transportista` | el buscador de transportistas de provincia |
+| `POST /v1/cotizacion/pedido` | convertir: **crea un pedido 098- real**, sin aprobar, y la cotización ya no se modifica ni se da de baja |
+
+Además, la sección 9 del contrato sale el mismo día y toca pantallas que ya están en producción:
+
+| cambio | quién lo ve |
+|---|---|
+| «Almacén» ofrece también las cotizaciones **aprobadas**, marcadas así | grupos 20, 25, 32 y 34 |
+| el stock del buscador de productos es el **disponible**: se muestra con su signo y en rojo si es negativo, y el aviso de stock suma solo lo positivo | todos los que cotizan |
+
+**Sale el mismo día que el backend**, como siempre. En cualquier orden no se rompe nada, pero hay dos días raros:
+
+- **Si el backend sube antes:**
+  - `pedido` no pinta nada: el hub en producción avisa en la consola y lo ignora (comprobado en `core/cdk-hub.js` de `539e8fb`).
+  - El stock disponible llega al frontend anterior, que **suma también los negativos**: un producto con 10 en Principal y −4 en M&M
+    diría «solo hay 6», y uno con todo en negativo, un total negativo. Es feo pero no rompe nada, y lo arregla subir este frontend.
+- **Si el frontend sube antes:**
+  - «Pasar a pedido» no aparece hasta que el backend mande `pedido`.
+  - «Almacén» ya ofrece las aprobadas, pero el backend anterior las rechaza con `403 coti desconocida`. La pantalla muestra su `msg`
+    y no cambia nada.
+
+**El recorrido**, con la sección 4 de [respuesta-coti-a-pedido.md](respuesta-coti-a-pedido.md):
+- Un vendedor del grupo 20 y uno del 25; uno del 34 para comprobar que no ve la tarjeta.
+- Cliente **C00904**. Las cotizaciones las crea el frontend con `/pegar` y las aprueba el backend, que además cambia la fecha de
+  emisión de la de **6 días** y la de **5**: hay que decirles cuál es cuál.
+- **Convertir crea pedidos reales en bdnava08**: al terminar se avisa al backend para que los borre.
+- Para el stock negativo: `0604-110018` (−2000) y `0601-060013` (291 en almacén, −291 disponible).
+
+### Volver atrás de pasar a pedido
+
+Entra en `main` con **su propio commit de merge** («Grupos 20 y 25: pasar cotización a pedido»), encima del ajuste directo, y **es lo
+primero que se deshace**:
+
+```
+git log --merges -3 --format="%h %s"     # el de arriba es el de pasar a pedido
+git revert -m 1 <hash del merge de pasar a pedido>
+git push origin main
+```
+
+- La etiqueta **`pre-coti-a-pedido`** marca lo que había justo antes (el merge del ajuste directo, `539e8fb`).
+- **No hace falta que el backend quite nada antes**: con el frontend anterior, `pedido` se ignora. Las rutas siguen respondiendo a los
+  grupos 20 y 25 si alguien las llama a mano, que es cosa del backend. Los pedidos ya creados siguen siendo pedidos normales del ERP.
+- Al deshacerlo vuelve lo de antes del 18/11:
+  - «Almacén» deja de ofrecer las aprobadas.
+  - El buscador vuelve a sumar los negativos, con el efecto de la lista de arriba.
+  - «Ver» deja de ofrecer «Pasar a pedido».
+  - `lista_dia.js` vuelve a su versión anterior; las opciones nuevas eran opcionales, así que Ver, Modificar y Eliminar no cambian.
+- Fuera de Cotización no toca nada: una página y un script nuevos, `lista_dia.js`, `cambio_almacen.js` y su página, `campos.js`,
+  `buscar_cliente_part2.js`, `modificar_cotizacion.js`, `ver_cotizacion.js`, una línea del catálogo, `dev/` y los documentos.

@@ -37,12 +37,18 @@
        número. Viene filtrada por el vendedor de la galleta, así que por aquí es
        imposible llegar a la de otro.
 
-       Solo las abiertas: a una facturada ya no se le cambia el almacén. */
+       Las que siguen siendo cotización, APROBADAS INCLUIDAS: desde el 18/11 el
+       backend cambia el almacén aunque esté aprobada (docs/coti-a-pedido.md,
+       sección 9). Sirve justo antes de pasarla a pedido, que sale del almacén
+       de cada línea. A una facturada o convertida ya no se le cambia. */
     CDK.coti.listaDelDia({
         destino: document.getElementById("lista-cotis"),
         botonHoy: document.getElementById("btn-hoy"),
         botonDosDias: document.getElementById("btn-dos-dias"),
-        soloAbiertas: true,
+        filtro: function (c) { return String(c.estado || "").toLowerCase() === "cotizado"; },
+        etiqueta: function (c) {
+            return c.editable ? null : { etiqueta: "", valor: "aprobada", tono: "bien" };
+        },
         alElegir: function (coti) {
             entrada.value = coti.documento;
             elegida.textContent = coti.cliente

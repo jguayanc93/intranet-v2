@@ -121,11 +121,11 @@
      *
      *   0  "0505-011055"                  código interno
      *   1  "BOTELLA TINTA EPSON T664…"    descripción
-     *   2  2401                           stock en Principal (01)
-     *   3  0                              stock en M&M (08)
+     *   2  2401                           disponible en Principal (01); puede ser negativo
+     *   3  0                              disponible en M&M (08)
      *   4  2                              descuento MÁXIMO permitido, en %
      *   5  7.97                           precio unitario para este cliente
-     *   6  0                              stock en Piura
+     *   6  0                              disponible en Piura
      *
      * Dos cosas que conviene no confundir:
      *
@@ -574,6 +574,13 @@
      *
      * `stockTotal` se calcula aquí porque el vendedor necesita saber si hay
      * existencias en algún sitio antes de mirar en cuál.
+     *
+     * Desde el 18/11 los tres son el DISPONIBLE (stock − separado − pedido),
+     * no el físico, y **pueden ser negativos** cuando hay más comprometido que
+     * físico (docs/coti-a-pedido.md, sección 9). Cada almacén se guarda con su
+     * signo, para enseñarlo tal cual. El total suma solo lo que hay de verdad:
+     * un −3 en M&M no resta de lo que queda en Principal, y un producto con
+     * todo en negativo está sin stock, no con «−3».
      */
     CDK.coti.producto = function (fila) {
         if (!fila) return null;
@@ -583,7 +590,7 @@
         p.stockPrincipal  = Number(p.stockPrincipal) || 0;
         p.stockMym        = Number(p.stockMym) || 0;
         p.stockPiura      = Number(p.stockPiura) || 0;
-        p.stockTotal      = p.stockPrincipal + p.stockMym + p.stockPiura;
+        p.stockTotal      = Math.max(p.stockPrincipal, 0) + Math.max(p.stockMym, 0) + Math.max(p.stockPiura, 0);
         p.precioUnitario  = Number(p.precioUnitario) || 0;
 
         // Sin dato se asume 0, no un valor de cortesía: el techo de descuento
@@ -591,6 +598,14 @@
         p.descuentoMaximo = Number(p.descuentoMaximo) || 0;
 
         return p;
+    };
+
+    /**
+     * El tono de la cifra de un almacén en la lista de resultados: atenuada si
+     * es 0, en alerta si es negativa (hay más comprometido que físico).
+     */
+    CDK.coti.tonoStock = function (n) {
+        return n < 0 ? "alerta" : n ? "" : "nulo";
     };
 
     /** Cabecera del documento, desde cualquier fila (se repite en todas). */

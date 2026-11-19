@@ -99,7 +99,9 @@
                 "leer":   { pagina: "cotizacion_observar",   etiqueta: "Ver",       descripcion: "Consultar una cotización" },
                 "update": { pagina: "cotizacion_modificar",  etiqueta: "Modificar", descripcion: "Modificar una cotización reciente" },
                 "delete": { pagina: "cotizacion_eliminar",   etiqueta: "Eliminar",  descripcion: "Dar de baja una cotización" },
-                "alm":    { pagina: "cotizacion_almacen",    etiqueta: "Almacén",   descripcion: "Cambiar el almacén de una cotización" }
+                "alm":    { pagina: "cotizacion_almacen",    etiqueta: "Almacén",   descripcion: "Cambiar el almacén de una cotización" },
+                /* Grupos 20 y 25, desde el 18/11 (docs/coti-a-pedido.md). Sin `pedido` en el menu no se pinta. */
+                "pedido": { pagina: "cotizacion_pedido",     etiqueta: "Pasar a pedido", descripcion: "Convertir una cotización aprobada en pedido" }
             }
         },
 
