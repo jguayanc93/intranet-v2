@@ -162,6 +162,8 @@ const promoVigentesSim = require("./simulador-promovigentes");
 const quienVenderSim = require("./simulador-quienvender");
 /* Lista de precios del grupo 20, desde el 30/10: ver o bajar a Excel los precios de venta. */
 const listaPreciosSim = require("./simulador-listaprecios");
+/* Pasar una cotizacion a pedido (grupos 20 y 25, desde el 18/11). Tambien pone sus cotizaciones en /lista/cotisxdia. */
+const cotiPedidoSim = require("./simulador-coti-pedido");
 
 let USUARIO = null;
 
@@ -170,6 +172,7 @@ function entrar(cuenta) {
     USUARIO = { nombre: p.nombre, grupo: p.grupo, tipo: p.tipo };
     ajusteSim.reiniciar();
     directoSim.reiniciar();
+    cotiPedidoSim.reiniciar();
     /* Cada ingreso deja las sugerencias del dia como al empezar: la primera vez que abra el modulo, se calculan. */
     quienVenderSim.reiniciar();
     quienVenderSim.usar(p.codven);
@@ -574,6 +577,25 @@ http.createServer((pet, res) => {
         return responder(res, { msg: "almacen actualizado" });
     }
 
+    /* Pasar a pedido (docs/coti-a-pedido.md). Ver dev/simulador-coti-pedido.js: 098-00000055 y 056 se convierten,
+       009-00969917 tiene una sola direccion, 098-00000058 (soles) falla la primera vez con 500, 059 no tiene
+       direcciones, 057 esta en ajuste, 009-00971087 sin aprobar; por numero, 098-00000050 (convertida) y
+       009-00970100 (anulada). */
+    const RUTAS_COTI_PEDIDO = {
+        "/v1/cotizacion/pedido/opciones": cotiPedidoSim.opciones,
+        "/v1/cotizacion/pedido/transportista": cotiPedidoSim.transportista,
+        "/v1/cotizacion/pedido": cotiPedidoSim.convertir
+    };
+    if (RUTAS_COTI_PEDIDO[ruta]) {
+        return conCuerpo(pet, (d) => {
+            const r = RUTAS_COTI_PEDIDO[ruta](d);
+            console.log("      " + ruta.slice(4) + " " + (d.ndocu || JSON.stringify(d.sugerencia || "")) + ": " + r.status +
+                        (r.cuerpo.status && r.cuerpo.status !== "ok" ? " " + r.cuerpo.status : "") +
+                        (r.cuerpo.pedido ? " → " + r.cuerpo.pedido : ""));
+            responder(res, r.cuerpo, r.status);
+        });
+    }
+
     // Búsqueda de cliente. Respuesta real del backend: { n: {0: codigo, 1: razon social} }.
     // Se busca por razón social o por RUC (11 dígitos).
     if (ruta === "/v1/cliente/buscar") {
@@ -619,7 +641,11 @@ http.createServer((pet, res) => {
             ["0505-012924", "TINTA BROTHER BTD100BK BLACK DCP-T230/430W/436W",     12, 0,   1, 8.39, 0],
             // Casos limite a proposito, para probar el comportamiento:
             ["0505-099001", "TONER HP 105A NEGRO ORIGINAL (sin stock)",            0,  0,   3, 58.40, 0],
-            ["0505-099002", "CABLE HDMI 2.0 3M (sin descuento permitido)",       340,  15,  0, 4.20, 0]
+            ["0505-099002", "CABLE HDMI 2.0 3M (sin descuento permitido)",       340,  15,  0, 4.20, 0],
+            /* Desde el 18/11 es el DISPONIBLE y puede ser negativo (docs/coti-a-pedido.md, secc. 9): uno con todo comprometido
+               de mas, y otro que tiene en Principal aunque M&M este en negativo. Buscar "comprometido". */
+            ["0505-099003", "TONER HP 26A NEGRO (comprometido de mas)",            -3, -1,  3, 61.10, 0],
+            ["0505-099004", "MOUSE LOGITECH M90 (comprometido en M&M)",            25, -4,  2, 5.60, 0]
         ];
 
         let cuerpo = "";
@@ -1795,8 +1821,15 @@ http.createServer((pet, res) => {
                   3: 3210.00, 4: "S", 5: ayer.replace(/\//g, "-") + " 09:40:22", 6: "facturado", 7: 0 }
             ];
 
+            /* Las de «Pasar a pedido» las pone su simulacro, que sabe cuales ya se convirtieron: las que tambien estan
+               arriba (009-00971087 y 009-00969917) se toman de alli. */
+            const delSim = cotiPedidoSim.filas(d);
+            const conocidas = delSim.map((c) => c[1]).concat(Object.keys(cotiPedidoSim.estado.cotis));
+
             const salida = {};
-            todas.filter((c) => rango || c[0] === hoy)
+            todas.filter((c) => (rango || c[0] === hoy) && conocidas.indexOf(c[1]) === -1)
+                 .concat(delSim)
+                 .sort((a, b) => (a[5] < b[5] ? 1 : a[5] > b[5] ? -1 : 0))
                  .forEach((c, i) => { salida[i] = c; });
 
             // Sin cotizaciones es un objeto vacio, no un error.
@@ -1827,6 +1860,12 @@ http.createServer((pet, res) => {
     if (ruta === "/v1/ajuste") {
         return responder(res, { status: "ok", codigo: 0,
             data: esGrupo25(marcasSim.estado.rol) ? ["recibidas", "directo", "asignados"] : ["enviar", "enviadas"] });
+    }
+
+    /* `pedido` (pasar a pedido) llega a los grupos 20 y 25, no al 34 (docs/coti-a-pedido.md, seccion 2). */
+    if (ruta === "/v1/cotizacion") {
+        return responder(res, { status: "ok", codigo: 0,
+            data: marcasSim.estado.rol === "ZONA" ? ACCESOS[ruta] : ACCESOS[ruta].concat(["pedido"]) });
     }
 
     if (ruta === "/v1/cuota" && ["ESPECIALISTA", "JEFATURA"].includes(marcasSim.estado.rol)) {

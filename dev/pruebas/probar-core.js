@@ -547,6 +547,15 @@ console.log("\n— producto —");
 
     const sinStock = C.coti.producto({0:"X", 1:"Y", 2:0, 3:0, 4:3, 5:58.4, 6:0});
     ok("producto sin stock",     sinStock.stockTotal, 0);
+
+    /* Desde el 18/11 es el disponible y puede ser negativo (docs/coti-a-pedido.md, secc. 9). */
+    const negativo = C.coti.producto({0:"X", 1:"Y", 2:-3, 3:-1, 4:3, 5:61.1, 6:0});
+    ok("disponible negativo: cada almacen con su signo", [negativo.stockPrincipal, negativo.stockMym], [-3, -1]);
+    ok("todo en negativo: sin stock, no -4", negativo.stockTotal, 0);
+    const mixto = C.coti.producto({0:"X", 1:"Y", 2:25, 3:-4, 4:2, 5:5.6, 6:2});
+    ok("un negativo no resta de los demas", mixto.stockTotal, 27);
+    ok("tono: negativo en alerta, 0 atenuado, positivo normal",
+       [C.coti.tonoStock(-3), C.coti.tonoStock(0), C.coti.tonoStock(5)], ["alerta", "nulo", ""]);
 }
 
 /* --------------------------------------------------------------- */
