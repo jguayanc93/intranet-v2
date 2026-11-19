@@ -285,9 +285,9 @@ function pintarResultados() {
            sin saber si hay cero o si el dato no llego.
            Los vacios van atenuados para que se vea de un vistazo donde si hay. */
         const datos = [
-            { etiqueta: "Principal", valor: p.stockPrincipal, tono: p.stockPrincipal ? "" : "nulo" },
-            { etiqueta: "M&M",       valor: p.stockMym,       tono: p.stockMym       ? "" : "nulo" },
-            { etiqueta: "Piura",     valor: p.stockPiura,     tono: p.stockPiura     ? "" : "nulo" }
+            { etiqueta: "Principal", valor: p.stockPrincipal, tono: CDK.coti.tonoStock(p.stockPrincipal) },
+            { etiqueta: "M&M",       valor: p.stockMym,       tono: CDK.coti.tonoStock(p.stockMym) },
+            { etiqueta: "Piura",     valor: p.stockPiura,     tono: CDK.coti.tonoStock(p.stockPiura) }
         ];
 
         if (yaEsta) {
