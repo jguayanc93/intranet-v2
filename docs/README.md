@@ -139,6 +139,12 @@ y están escritos contra el código, no de memoria.
   `400 fechas invalidas` y el precio **redondeado al céntimo, la mitad hacia arriba**. El 06/11, tercera ronda: los casos
   de prueba de bdnava08 (sección 8), las acciones `directo` y `asignados` del grupo 25, y **un costo de 0 cuenta como costo
   desconocido** (la línea se muestra sin controles de precio).
+- **[coti-a-pedido.md](coti-a-pedido.md)** — **Pasar una cotización a pedido** (grupos 20 y 25, 18/11/2026): la acción
+  `pedido` del módulo cotización; tres rutas bajo `/cotizacion/pedido` (opciones, transportista, convertir); el pedido 098-
+  nace sin aprobar. Su sección 9 trae cambios del mismo día: rechazos nuevos en crear, modificar y almacén, «Almacén» acepta
+  aprobadas y el buscador de productos muestra el **disponible**, que puede ser negativo. **Actualizado el 19/11**: el
+  plazo de **5 días sin contar el domingo** (`coti fuera de plazo`), `antiguedad` y `plazo` en `opciones`, sin
+  consignatario la observación va sin `ATC.`, y su sección 11 con las respuestas y los códigos con stock negativo.
 - **[ajuste-directo.md](ajuste-directo.md)** — El **ajuste directo y la asignación** (grupo 25, 06/11/2026): el especialista o la
   jefatura ajusta el precio de **sus propias** cotizaciones y pedidos —solo el precio, nunca la cantidad; se quitan todas las
   promociones, flete incluido— y, si quiere, los **asigna** a un vendedor del grupo 20; `asignados` es el historial. Seis rutas
@@ -201,6 +207,12 @@ Cosas que el frontend no puede resolver solo. Se archivan cuando se respondan.
   decimales y el mínimo, `precioNeto`, el filtro por fecha, los pedidos en el paso 1, el numerito del menú…) y a las tres
   preguntas de la segunda ronda (el contador, `fechas invalidas`, el redondeo), **sin nada abierto**, y cómo recorrerlo
   contra bdnava08 sin gastar solicitudes reales.
+- **[respuesta-coti-a-pedido.md](respuesta-coti-a-pedido.md)** — Para el backend: **«Pasar a pedido» está construido**, con
+  los cambios de su sección 9 («Almacén» con aprobadas, stock negativo). **Les pide una regla nueva (19/11): solo hasta 5
+  días de antigüedad sin contar el domingo** (`coti fuera de plazo` en `opciones` y `409` al convertir); la lista ofrece
+  Hoy / 3 / 6 días. Tres preguntas cortas (una, los feriados). **Segunda ronda cerrada el 19/11**: lo hicieron y lo
+  contestaron todo (sección 11 de su documento); usamos `antiguedad`/`plazo` para decir cuántos días quedan. Queda el
+  recorrido en bdnava08.
 - **[respuesta-ajuste-directo.md](respuesta-ajuste-directo.md)** — Para el backend: **el ajuste directo está construido**. Qué hicimos
   con cada una de sus respuestas, cómo quedó cada pantalla («Mis documentos», el documento y «Asignados»), el orden **«aplicar no
   cierra, asignar sí»**, la línea sin costo en las dos pantallas que ajustan y la tabla del recorrido por bdnava08, con la asignación

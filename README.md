@@ -289,6 +289,13 @@ Cosas identificadas y aún sin resolver, para que no se descubran por sorpresa:
   respuesta en [docs/respuesta-cotizacion-moneda.md](docs/respuesta-cotizacion-moneda.md). Queda propuesto, como entrega aparte, aplicar
   la misma regla a las cotizaciones en **dólares** (ahí `preciosinIGV` difiere hasta 8 céntimos en el 20 % de las líneas de la serie 098 y
   alimenta los umbrales de promoción).
+- **Pasar una cotización a pedido (grupos 20 y 25, 18/11) está construido y falta recorrerlo contra bdnava08.** «Pasar a pedido»
+  (`cotizacion/cotizacion_pedido.html`, acción `pedido`): la lista de **Hoy / 3 / 6 días sin contar el domingo**, porque solo se pasan las
+  **aprobadas con hasta 5 días** (`coti fuera de plazo`); el motivo cuando no se puede; Ventanilla y Lima con el transportista T0001 fijo, y
+  provincia con buscador; una de las direcciones registradas del cliente; y cuántos días le quedan. El pedido 098- **nace sin aprobar**. El
+  mismo día: «Almacén» ofrece también las aprobadas, y el buscador de productos muestra el **disponible**, con su signo. Contrato:
+  [docs/coti-a-pedido.md](docs/coti-a-pedido.md); respuestas: [docs/respuesta-coti-a-pedido.md](docs/respuesta-coti-a-pedido.md). **El
+  backend hizo y contestó todo (19/11).** Cómo sale y cómo se deshace: [docs/despliegue-grupo25.md](docs/despliegue-grupo25.md), sección 9.
 - **El menú del grupo 25 ya es el que fijó el backend**: `marcas`, `cuota`, `reporte`, `cobertura`, `ajuste`, `vendedormes` y `cotizacion`.
   Las rutas antiguas de cuota por marca y de reportes se retiraron el 21/10 (responden 404) y el frontend ya no las nombra.
 - **Sin marcas en el mes no hay reportes**, ni los del mes pasado: es una regla de negocio
