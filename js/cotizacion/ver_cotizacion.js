@@ -142,8 +142,9 @@
 
     // Acciones a las que se puede saltar desde una cotización ya encontrada.
     // Las claves son permisos del módulo: solo se ofrecen las que el backend
-    // conceda a esa persona.
-    var ATAJOS = ["update", "alm", "delete"];
+    // conceda a esa persona. `pedido` (pasar a pedido) solo llega a los grupos
+    // 20 y 25, desde el 18/11: docs/coti-a-pedido.md.
+    var ATAJOS = ["update", "alm", "delete", "pedido"];
 
     formulario.addEventListener("submit", function (ev) {
         ev.preventDefault();
@@ -161,11 +162,6 @@
        otra pantalla, la cotización se abre encima. */
     var pedida = new URLSearchParams(location.search).get("ncoti");
     if (pedida) abrir(pedida);
-
-    // Acciones a las que se puede saltar desde una cotización ya encontrada.
-    // Las claves son permisos del módulo: solo se ofrecen las que el backend
-    // conceda a esa persona.
-    var ATAJOS = ["update", "alm", "delete"];
 
     /* --- una línea de la cotización --------------------------------- */
 

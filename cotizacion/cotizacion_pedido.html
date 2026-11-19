@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pasar una cotización a pedido - CDK Sistema de Gestión de Ventas">
+    <link rel="stylesheet" href="/core/cdk-shell.css">
+    <title>CDK · Pasar a Pedido</title>
+</head>
+
+<body data-modulo="cotizacion" data-titulo="Pasar a Pedido">
+
+<div class="cdk-pagina">
+
+    <!-- Paso 1: elegir la cotización. Contrato: docs/coti-a-pedido.md. -->
+    <section class="cdk-seccion" id="seccion-elegir">
+        <h2 class="cdk-seccion__titulo">Pasar una cotización a pedido</h2>
+        <p class="cdk-seccion__sub">
+            Solo se pasan las tuyas que ya están aprobadas y tienen hasta 5 días, sin contar
+            el domingo. Las que esperan aprobación aparecen marcadas como «sin aprobar».
+        </p>
+
+        <!-- La lista viene filtrada por el vendedor de la galleta. La aprobación
+             llega después de crearla, así que por defecto se mira todo el plazo:
+             6 días (hoy y los 5 anteriores) sin contar el domingo. -->
+        <div class="cdk-acciones-fila" role="group" aria-label="Periodo">
+            <button type="button" id="btn-hoy" class="cdk-boton cdk-boton--suave" aria-pressed="false">
+                Hoy
+            </button>
+            <button type="button" id="btn-tres" class="cdk-boton cdk-boton--suave" aria-pressed="false">
+                3 días
+            </button>
+            <button type="button" id="btn-seis" class="cdk-boton cdk-boton--primario" aria-pressed="true">
+                6 días
+            </button>
+        </div>
+
+        <div id="lista-cotis" style="margin-top:12px"></div>
+
+        <details class="cdk-plegable" style="margin-top:16px">
+            <summary class="cdk-plegable__titulo">Buscar una cotización por su número</summary>
+
+            <form id="form-buscar" class="cdk-buscador" style="margin-top:12px">
+                <div class="cdk-buscador__campo">
+                    <label class="cdk-campo__etiqueta" for="ncoti">Número de cotización</label>
+                    <input type="search" name="ncoti" id="ncoti"
+                           class="cdk-entrada"
+                           autocomplete="off"
+                           placeholder="Ej: 098-00000055"
+                           required>
+                    <p class="cdk-campo__ayuda">Con su serie, como aparece en la lista.</p>
+                </div>
+                <button type="submit" id="buscar-coti" class="cdk-boton cdk-boton--suave">
+                    Abrir esa
+                </button>
+            </form>
+        </details>
+    </section>
+
+    <!-- Paso 2: el despacho. Lo arma js/cotizacion/a_pedido.js con lo que
+         responde /cotizacion/pedido/opciones. -->
+    <section class="cdk-seccion hidden" id="seccion-pedido">
+        <div class="cdk-elegido" style="margin-bottom:14px">
+            <div class="cdk-elegido__datos">
+                <div class="cdk-elegido__nombre" id="pedido-cliente"></div>
+                <div class="cdk-elegido__detalle" id="pedido-documento"></div>
+            </div>
+            <button type="button" id="btn-otra" class="cdk-boton cdk-boton--suave">Elegir otra</button>
+        </div>
+
+        <div id="pedido-cuerpo"></div>
+    </section>
+
+</div>
+
+<!-- ===== BLOQUE CORE: orden obligatorio ===== -->
+<script src="/core/cdk.js"></script>
+<script src="/core/cdk-rutas.js"></script>
+<script src="/core/cdk-http.js"></script>
+<script src="/core/cdk-sesion.js"></script>
+<script src="/core/cdk-catalogo.js"></script>
+<script src="/core/cdk-permisos.js"></script>
+<script src="/core/cdk-ui.js"></script>
+<script src="/core/cdk-formato.js"></script>
+<script src="/core/cdk-shell.js"></script>
+
+<!-- campos.js NO se carga: esta pantalla no lee el detalle de la cotización.
+     El pedido lleva sus líneas tal cual y eso lo hace el backend. -->
+<script src="/js/cotizacion/lista_dia.js"></script>
+<script src="/js/cotizacion/a_pedido.js"></script>
+</body>
+</html>
